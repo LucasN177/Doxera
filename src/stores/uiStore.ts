@@ -35,6 +35,11 @@ interface UiState {
   /** Batch processing dialog with its files (null: closed). */
   batchFiles: File[] | null
   setBatchFiles: (files: File[] | null) => void
+  /** Workflow preselected in the batch dialog. */
+  batchWorkflowId: string | null
+  setBatchWorkflowId: (id: string | null) => void
+  workflowsOpen: boolean
+  setWorkflowsOpen: (open: boolean) => void
 }
 
 /** Transient UI state that isn't tied to a document. */
@@ -65,4 +70,8 @@ export const useUiStore = create<UiState>()((set) => ({
   setDataExportOpen: (dataExportOpen) => set({ dataExportOpen }),
   batchFiles: null,
   setBatchFiles: (batchFiles) => set({ batchFiles }),
+  batchWorkflowId: null,
+  setBatchWorkflowId: (batchWorkflowId) => set({ batchWorkflowId }),
+  workflowsOpen: false,
+  setWorkflowsOpen: (workflowsOpen) => set({ workflowsOpen }),
 }))

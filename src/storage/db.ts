@@ -1,4 +1,5 @@
 import { deleteDB, openDB, type DBSchema, type IDBPDatabase } from 'idb'
+import type { Workflow } from '@/types/workflow'
 
 /** Metadata of a document kept in the local library (without file contents). */
 export interface LibraryEntry {
@@ -36,6 +37,12 @@ interface DoxeraDB extends DBSchema {
     value: StoredSignature
     indexes: { createdAt: number }
   }
+  /** Reusable processing workflows (step chains). */
+  workflows: {
+    key: string
+    value: Workflow
+    indexes: { updatedAt: number }
+  }
 }
 
 export interface StoredSignature {
@@ -49,7 +56,7 @@ export interface StoredSignature {
 export type DoxeraDatabase = IDBPDatabase<DoxeraDB>
 
 const DB_NAME = 'doxera'
-const DB_VERSION = 2
+const DB_VERSION = 3
 
 let dbPromise: Promise<DoxeraDatabase> | null = null
 
@@ -65,6 +72,10 @@ export function getDb(): Promise<DoxeraDatabase> {
       if (oldVersion < 2) {
         const signatures = db.createObjectStore('signatures', { keyPath: 'id' })
         signatures.createIndex('createdAt', 'createdAt')
+      }
+      if (oldVersion < 3) {
+        const workflows = db.createObjectStore('workflows', { keyPath: 'id' })
+        workflows.createIndex('updatedAt', 'updatedAt')
       }
     },
     // Another tab wants to delete or upgrade the database: release our connection

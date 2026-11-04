@@ -11,6 +11,7 @@ import type { ImageFormat } from '@/features/convert/renderImages'
 import { formatFileSize, hasPdfSignature, looksLikePdf } from '@/lib/file'
 import { looksLikeImage, prepareImage } from '@/lib/images'
 import type { OcrPage } from '@/types/ocr'
+import type { Workflow } from '@/types/workflow'
 
 export type BatchAction =
   | { type: 'compress'; level: CompressionLevel }
@@ -18,6 +19,7 @@ export type BatchAction =
   | { type: 'images'; format: ImageFormat; dpi: number }
   | { type: 'data'; format: DataFormat }
   | { type: 'merge' }
+  | { type: 'workflow'; workflow: Workflow }
 
 export interface BatchResult {
   files: File[]
@@ -55,7 +57,7 @@ export async function toPdfBytes(file: File): Promise<Uint8Array> {
   throw new Error(`„${file.name}“ ist weder PDF noch Bild.`)
 }
 
-function pdfFile(data: Uint8Array, name: string) {
+export function pdfFile(data: Uint8Array, name: string) {
   return new File([data.slice()], name, { type: 'application/pdf' })
 }
 
@@ -80,12 +82,12 @@ async function compress(
   }
 }
 
-async function recognize(
-  file: File,
+/** Recognizes text on the pages of a PDF; returns the PDF with text layer (or the input if none was found). */
+export async function ocrPdf(
   data: Uint8Array,
-  action: Extract<BatchAction, { type: 'ocr' }>,
+  options: { languages: OcrLanguage[]; skipPagesWithText: boolean },
   { signal, onProgress }: BatchContext,
-): Promise<BatchResult> {
+): Promise<{ data: Uint8Array; recognized: number; pages: number }> {
   const { recognizePage } = await import('@/features/ocr/recognizePage')
   const { terminateOcr } = await import('@/engine/ocr/tesseract')
   const { buildOcrPdf } = await import('@/engine/ocr/textLayer')
@@ -97,8 +99,8 @@ async function recognize(
     let recognized = 0
     for (let number = 1; number <= pdf.numPages; number++) {
       aborted(signal)
-      const result = await recognizePage(pdf, number, action.languages, {
-        skipPagesWithText: action.skipPagesWithText,
+      const result = await recognizePage(pdf, number, options.languages, {
+        skipPagesWithText: options.skipPagesWithText,
         onProgress: (value) => onProgress((number - 1 + value) / pdf.numPages),
         signal,
       })
@@ -111,16 +113,54 @@ async function recognize(
         ocr: result.status === 'recognized' ? result.ocr : EMPTY_OCR,
       })
     }
-    if (recognized === 0) {
-      return { files: [], note: 'Kein neuer Text erkannt (schon Text vorhanden oder leer)' }
-    }
-    const output = await buildOcrPdf(targets, new Map([['source', { data }]]))
-    return {
-      files: [pdfFile(output, `${baseName(file.name)} (OCR).pdf`)],
-      note: `Text auf ${recognized} von ${pdf.numPages} ${pdf.numPages === 1 ? 'Seite' : 'Seiten'} erkannt`,
-    }
+    const output =
+      recognized > 0 ? await buildOcrPdf(targets, new Map([['source', { data }]])) : data
+    return { data: output, recognized, pages: pdf.numPages }
   } finally {
     signal.removeEventListener('abort', stop)
+    void closePdf(pdf)
+  }
+}
+
+export function ocrNote(recognized: number, pages: number) {
+  return `Text auf ${recognized} von ${pages} ${pages === 1 ? 'Seite' : 'Seiten'} erkannt`
+}
+
+async function recognize(
+  file: File,
+  data: Uint8Array,
+  action: Extract<BatchAction, { type: 'ocr' }>,
+  context: BatchContext,
+): Promise<BatchResult> {
+  const result = await ocrPdf(data, action, context)
+  if (result.recognized === 0) {
+    return { files: [], note: 'Kein neuer Text erkannt (schon Text vorhanden oder leer)' }
+  }
+  return {
+    files: [pdfFile(result.data, `${baseName(file.name)} (OCR).pdf`)],
+    note: ocrNote(result.recognized, result.pages),
+  }
+}
+
+/** Every page of a PDF as image file named "<base>-seite-<n>". */
+export async function pdfToImageFiles(
+  data: Uint8Array,
+  base: string,
+  options: { format: ImageFormat; dpi: number },
+  { signal, onProgress }: BatchContext,
+): Promise<File[]> {
+  const { renderPdfPages } = await import('@/features/convert/renderImages')
+  const pdf = await openPdf(data)
+  try {
+    const pages = Array.from({ length: pdf.numPages }, (_, index) => ({ index, number: index + 1 }))
+    return await renderPdfPages(
+      pdf,
+      pages,
+      { ...options, name: base, digits: String(pdf.numPages).length },
+      (done, total) => onProgress(done / total),
+      signal,
+    )
+  } finally {
     void closePdf(pdf)
   }
 }
@@ -129,28 +169,10 @@ async function images(
   file: File,
   data: Uint8Array,
   action: Extract<BatchAction, { type: 'images' }>,
-  { signal, onProgress }: BatchContext,
+  context: BatchContext,
 ): Promise<BatchResult> {
-  const { renderPdfPages } = await import('@/features/convert/renderImages')
-  const pdf = await openPdf(data)
-  try {
-    const pages = Array.from({ length: pdf.numPages }, (_, index) => ({ index, number: index + 1 }))
-    const files = await renderPdfPages(
-      pdf,
-      pages,
-      {
-        format: action.format,
-        dpi: action.dpi,
-        name: baseName(file.name),
-        digits: String(pdf.numPages).length,
-      },
-      (done, total) => onProgress(done / total),
-      signal,
-    )
-    return { files, note: `${files.length} ${files.length === 1 ? 'Bild' : 'Bilder'}` }
-  } finally {
-    void closePdf(pdf)
-  }
+  const files = await pdfToImageFiles(data, baseName(file.name), action, context)
+  return { files, note: `${files.length} ${files.length === 1 ? 'Bild' : 'Bilder'}` }
 }
 
 /** Structured text and tables of a PDF (read with MuPDF), as for the data export. */
@@ -190,15 +212,16 @@ export async function documentData(
   }
 }
 
-async function extractData(
-  file: File,
+/** Text and tables of a PDF as export files, or none if it has no text. */
+export async function pdfToDataFiles(
+  name: string,
   data: Uint8Array,
   format: DataFormat,
   context: BatchContext,
 ): Promise<BatchResult> {
   const { buildDataFiles } = await import('@/engine/export/dataFiles')
   const { dataSummary } = await import('@/engine/export/dataExport')
-  const extracted = await documentData(file.name, data, context)
+  const extracted = await documentData(name, data, context)
   const summary = dataSummary(extracted)
   if (summary.blocks === 0 && summary.tables === 0) {
     return { files: [], note: 'Kein Text gefunden – zuerst Texterkennung ausführen' }
@@ -207,7 +230,7 @@ async function extractData(
     extracted,
     { text: true, tables: true, comments: false },
     format,
-    baseName(file.name),
+    baseName(name),
   )
   return {
     files,
@@ -231,7 +254,11 @@ export async function processFile(
     case 'images':
       return images(file, data, action, context)
     case 'data':
-      return extractData(file, data, action.format, context)
+      return pdfToDataFiles(file.name, data, action.format, context)
+    case 'workflow': {
+      const { runWorkflow } = await import('@/features/workflow/runWorkflow')
+      return runWorkflow(file.name, data, action.workflow, context)
+    }
   }
 }
 

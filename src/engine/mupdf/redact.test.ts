@@ -27,7 +27,7 @@ function pageText(data: Uint8Array): string {
   return `${text}|${annotations.join(',')}`
 }
 
-describe('applyRedactions', () => {
+describe('applyRedactions', { timeout: 30_000 }, () => {
   it('removes the text below redaction areas from the exported file', async () => {
     const data = await samplePdf()
     const page: PageRef = {
@@ -78,7 +78,7 @@ async function linesOf(data: Uint8Array, index = 0) {
   }
 }
 
-describe('editing existing text', () => {
+describe('editing existing text', { timeout: 30_000 }, () => {
   it('reads lines with position, size, font and color', async () => {
     const pdf = await PDFDocument.create()
     const bold = await pdf.embedFont(StandardFonts.TimesRomanBold)

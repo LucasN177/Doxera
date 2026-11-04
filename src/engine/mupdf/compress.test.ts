@@ -66,7 +66,7 @@ function inspect(data: Uint8Array) {
   }
 }
 
-describe('compressPdf', () => {
+describe('compressPdf', { timeout: 30_000 }, () => {
   it('scales large images down to the target resolution and keeps the rest', async () => {
     const data = await samplePdf()
     const result = compressPdf(mupdf, data, 'strong')

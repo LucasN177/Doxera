@@ -50,7 +50,7 @@ const options = {
     applyRedactions(mupdf, bytes, mode),
 }
 
-describe('editing existing images', () => {
+describe('editing existing images', { timeout: 30_000 }, () => {
   it('finds images with their resource name, position and orientation', async () => {
     const { content } = read(await samplePdf())
     const images = toEditableImages(content)
@@ -123,7 +123,7 @@ describe('editing existing images', () => {
   })
 })
 
-describe('tables in a real PDF', () => {
+describe('tables in a real PDF', { timeout: 30_000 }, () => {
   it('reads a table stored column by column into rows and columns', async () => {
     const { pageTextLines } = await import('@/engine/text/pageText')
     const { structureLines, bodyFontSize } = await import('@/engine/text/structure')

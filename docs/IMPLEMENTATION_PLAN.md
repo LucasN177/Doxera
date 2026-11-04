@@ -241,7 +241,7 @@ erkennbare Lücke dazwischen und verbundene Zellen werden nicht getrennt.
 | O2  | Struktur & Text | Überschriften/Absätze erkennen, erkannten Text als Text/Markdown exportieren  | ✅     |
 | O3  | Tabellen        | Tabellen aus Scans heuristisch erkennen, als CSV exportieren                  | ✅     |
 
-### Phase 6 – Verarbeitung & Automatisierung
+### Phase 6 – Verarbeitung & Automatisierung ✅
 
 - PDF komprimieren, PDF → Bilder, Bilder → PDF
 - Batch-Verarbeitung mehrerer Dateien (Queue im Worker)
@@ -256,7 +256,7 @@ erkennbare Lücke dazwischen und verbundene Zellen werden nicht getrennt.
 | V2  | Komprimieren       | Bilder herunterrechnen und neu komprimieren (MuPDF), Größe vorher/nachher                  | ✅     |
 | V3  | Datenexport        | Text, Tabellen, Kommentare als CSV, JSON und Excel (eigener XLSX-Schreiber mit fflate)     | ✅     |
 | V4  | Stapelverarbeitung | Mehrere Dateien mit einer Aktion (OCR, Komprimieren, Konvertieren, Export) → ZIP           | ✅     |
-| V5  | Workflows          | Schrittketten speichern (IndexedDB) und auf Dateien anwenden                               | offen  |
+| V5  | Workflows          | Schrittketten speichern (IndexedDB) und auf Dateien anwenden                               | ✅     |
 
 **Konvertieren (V1):** Für „Seiten als Bilder“ wird zuerst die exportierte PDF gebaut (Anmerkungen,
 Zuschnitt, Drehung, Text- und Bildänderungen, OCR-Text, Schwärzungen), dann rendert pdf.js jede Seite
@@ -291,6 +291,13 @@ nacheinander (Speicher auf iOS), mit Status und Kurzergebnis je Datei und Abbrec
 per Klick gespeichert (`saveFilesNow`: iOS-Teilen-Menü direkt im Tap, sonst Einzeldatei oder ZIP),
 Dateinamen eindeutig nummeriert. Unveränderte Kopien (bereits komprimiert, kein neuer Text) werden
 nicht ausgegeben. Seiten mit mittlerer OCR-Sicherheit unter 50 % gelten als ohne Text (Fotos).
+
+**Workflows (V5):** Ein Workflow ist eine Kette von PDF→PDF-Schritten (Texterkennung, Wasserzeichen,
+Komprimieren) plus Ausgabe (PDF, Bilder oder Daten). Gespeichert in IndexedDB (Store `workflows`,
+DB-Version 3), Vorlagen als Startpunkt („Scan archivieren“, „Für E-Mail verkleinern“, „Vertraulich
+markieren“, „Tabellen nach Excel“). Ausführung auf das offene Dokument (wie exportiert) oder als
+Aktion „Workflow“ in der Stapelverarbeitung; die Schritte nutzen dieselben Bausteine wie die
+Einzelfunktionen (`ocrPdf`, `watermarkPdf`, `compressPdfData`, `pdfToImageFiles`, `pdfToDataFiles`).
 
 ### Phase 7 – KI-Funktionen
 

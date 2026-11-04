@@ -1,9 +1,10 @@
-import { FileUp, Images, Layers, ShieldCheck } from 'lucide-react'
+import { FileUp, Images, Layers, ShieldCheck, Workflow } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { pickBatchFiles } from '@/features/batch/pickBatchFiles'
 import { pickImagesForPdf } from '@/features/convert/pickImages'
 import { RecentDocuments } from '@/features/library/RecentDocuments'
 import { useOpenDocument } from '@/hooks/useOpenDocument'
+import { useUiStore } from '@/stores/uiStore'
 
 export function EmptyState() {
   const { openFromPicker } = useOpenDocument()
@@ -28,6 +29,9 @@ export function EmptyState() {
             </Button>
             <Button variant="outline" onClick={() => void pickBatchFiles()}>
               <Layers /> Mehrere Dateien verarbeiten
+            </Button>
+            <Button variant="outline" onClick={() => useUiStore.getState().setWorkflowsOpen(true)}>
+              <Workflow /> Workflows
             </Button>
           </div>
           <p className="text-muted-foreground flex items-center gap-1.5 text-xs">

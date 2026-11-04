@@ -1,4 +1,12 @@
-import { FileArchive, FileImage, FileSpreadsheet, Images, Layers, Wrench } from 'lucide-react'
+import {
+  FileArchive,
+  FileImage,
+  FileSpreadsheet,
+  Images,
+  Layers,
+  Workflow,
+  Wrench,
+} from 'lucide-react'
 import { DropdownMenu } from 'radix-ui'
 import { IconButton } from '@/components/layout/IconButton'
 import { useUiStore } from '@/stores/uiStore'
@@ -48,6 +56,12 @@ export function ToolsMenu() {
           <DropdownMenu.Separator className="bg-border -mx-1 my-1 h-px" />
           <DropdownMenu.Item className={item} onSelect={openBatch}>
             <Layers /> Stapelverarbeitung (mehrere Dateien) …
+          </DropdownMenu.Item>
+          <DropdownMenu.Item
+            className={item}
+            onSelect={() => useUiStore.getState().setWorkflowsOpen(true)}
+          >
+            <Workflow /> Workflows …
           </DropdownMenu.Item>
         </DropdownMenu.Content>
       </DropdownMenu.Portal>

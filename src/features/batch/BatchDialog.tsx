@@ -8,12 +8,13 @@ import {
   FilePlus2,
   FileSpreadsheet,
   Layers,
+  Workflow,
   Loader2,
   ScanText,
   X,
   XCircle,
 } from 'lucide-react'
-import { useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 import { IconButton } from '@/components/layout/IconButton'
 import { Button } from '@/components/ui/button'
@@ -36,6 +37,8 @@ import { cn } from '@/lib/utils'
 import { useUiStore } from '@/stores/uiStore'
 import { pickBatchFiles } from './pickBatchFiles'
 import { mergeFiles, processFile, type BatchAction } from './processors'
+import { describeWorkflow } from '@/engine/workflow/templates'
+import { useWorkflowStore } from '@/stores/workflowStore'
 
 type ActionType = BatchAction['type']
 type Status = 'waiting' | 'running' | 'done' | 'skipped' | 'error'
@@ -53,6 +56,7 @@ const ACTIONS: Array<{ type: ActionType; label: string; hint: string; icon: type
   { type: 'images', label: 'Als Bilder', hint: 'Jede Seite als Bild', icon: FileImage },
   { type: 'data', label: 'Daten', hint: 'Text und Tabellen', icon: FileSpreadsheet },
   { type: 'merge', label: 'Zusammenführen', hint: 'Eine PDF aus allen', icon: Layers },
+  { type: 'workflow', label: 'Workflow', hint: 'Gespeicherte Schrittkette', icon: Workflow },
 ]
 
 export function BatchDialog() {
@@ -126,7 +130,18 @@ function BatchContent({
   onRun: (controller: AbortController | null) => void
   onClose: () => void
 }) {
-  const [type, setType] = useState<ActionType>('compress')
+  const workflows = useWorkflowStore((state) => state.workflows)
+  const workflowsLoaded = useWorkflowStore((state) => state.loaded)
+  const presetWorkflow = useUiStore((state) => state.batchWorkflowId)
+  const [type, setType] = useState<ActionType>(presetWorkflow ? 'workflow' : 'compress')
+  const [workflowId, setWorkflowId] = useState<string | null>(presetWorkflow)
+  const workflow = workflows.find((item) => item.id === workflowId) ?? workflows[0] ?? null
+
+  useEffect(() => {
+    if (!workflowsLoaded) void useWorkflowStore.getState().load()
+    // The preset is used once
+    useUiStore.getState().setBatchWorkflowId(null)
+  }, [workflowsLoaded])
   const [level, setLevel] = useState<CompressionLevel>('medium')
   const [languages, setLanguages] = useState<OcrLanguage[]>(['deu', 'eng'])
   const [skipText, setSkipText] = useState(true)
@@ -156,6 +171,8 @@ function BatchContent({
         return { type, format: dataFormat }
       case 'merge':
         return { type }
+      case 'workflow':
+        return { type, workflow: workflow! }
     }
   }
 
@@ -329,6 +346,38 @@ function BatchContent({
         ]}
       />
     )
+  } else if (type === 'workflow') {
+    options = workflow ? (
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-muted-foreground w-20 text-xs">Workflow</span>
+        <select
+          aria-label="Workflow"
+          className="border-input bg-background h-8 min-w-0 flex-1 rounded-md border px-2 text-sm"
+          value={workflow.id}
+          onChange={(event) => setWorkflowId(event.target.value)}
+        >
+          {workflows.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.name} – {describeWorkflow(item)}
+            </option>
+          ))}
+        </select>
+      </div>
+    ) : (
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="text-muted-foreground text-xs">Noch keine Workflows gespeichert.</p>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            onClose()
+            useUiStore.getState().setWorkflowsOpen(true)
+          }}
+        >
+          Workflows anlegen
+        </Button>
+      </div>
+    )
   } else {
     options = (
       <p className="text-muted-foreground text-xs">
@@ -416,7 +465,7 @@ function BatchContent({
             <FilePlus2 /> Dateien hinzufügen
           </Button>
           <div
-            className="grid grid-cols-2 gap-2 sm:grid-cols-5"
+            className="grid grid-cols-2 gap-2 sm:grid-cols-3"
             role="radiogroup"
             aria-label="Aktion"
           >
@@ -471,7 +520,8 @@ function BatchContent({
               disabled={
                 files.length === 0 ||
                 (type === 'ocr' && languages.length === 0) ||
-                (type === 'merge' && files.length < 2)
+                (type === 'merge' && files.length < 2) ||
+                (type === 'workflow' && !workflow)
               }
             >
               {files.length} {files.length === 1 ? 'Datei' : 'Dateien'} verarbeiten
