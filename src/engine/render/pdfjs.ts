@@ -90,13 +90,38 @@ export interface RenderHandle {
 const MAX_PIXEL_RATIO = 2
 
 /**
+ * Largest canvas area that renders reliably everywhere. Safari on iOS/iPadOS
+ * silently produces a blank canvas above 2^24 pixels (16.7 MP).
+ */
+export const MAX_CANVAS_PIXELS = 2 ** 24
+
+/**
+ * Render scale in device pixels for a page shown at `scale` CSS pixels per
+ * point: uses the display's pixel ratio for sharpness, but reduces it if the
+ * canvas would exceed {@link MAX_CANVAS_PIXELS} (the page then looks slightly
+ * softer at very high zoom instead of turning blank).
+ */
+export function getOutputScale(
+  width: number,
+  height: number,
+  scale: number,
+  devicePixelRatio: number,
+): number {
+  const preferred = scale * Math.min(devicePixelRatio || 1, MAX_PIXEL_RATIO)
+  const pixels = width * height * preferred * preferred
+  if (pixels <= MAX_CANVAS_PIXELS) return preferred
+  return preferred * Math.sqrt(MAX_CANVAS_PIXELS / pixels) * 0.999
+}
+
+/**
  * Renders a page into a fresh canvas. Using a new canvas per render lets the
  * caller keep showing the previous result until the new one is ready and avoids
  * pdf.js' "same canvas in multiple render() operations" error.
  */
 export function renderPage(page: PDFPageProxy, scale: number): RenderHandle {
-  const pixelRatio = Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO)
-  const viewport = page.getViewport({ scale: scale * pixelRatio })
+  const base = page.getViewport({ scale: 1 })
+  const outputScale = getOutputScale(base.width, base.height, scale, window.devicePixelRatio)
+  const viewport = page.getViewport({ scale: outputScale })
   const canvas = document.createElement('canvas')
   canvas.width = Math.floor(viewport.width)
   canvas.height = Math.floor(viewport.height)

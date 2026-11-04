@@ -2,16 +2,37 @@
 <html lang="de">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- viewport-fit=cover: draw under the iPhone notch/home indicator, safe areas are padded in CSS -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta
       name="description"
       content="A smarter way to work with documents – privacy-first PDF editor in your browser."
     />
-    <meta name="theme-color" content="#4f46e5" />
+    <meta name="theme-color" content="#ffffff" />
+    <!-- iOS/iPadOS: full-screen app when added to the home screen -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Doxera" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="format-detection" content="telephone=no" />
     <link rel="icon" href="./favicon.ico" sizes="48x48" />
     <link rel="icon" href="./favicon.svg" sizes="any" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./apple-touch-icon-180x180.png" />
     <title>Doxera – A smarter way to work with documents</title>
+    <script>
+      // Apply the saved theme before the first paint to avoid a light/dark flash
+      ;(function () {
+        try {
+          var stored = JSON.parse(localStorage.getItem('doxera-theme') || '{}')
+          var theme = (stored.state && stored.state.theme) || 'system'
+          var dark =
+            theme === 'dark' ||
+            (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+          if (dark) document.documentElement.classList.add('dark')
+          document.documentElement.style.colorScheme = dark ? 'dark' : 'light'
+        } catch (e) {}
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

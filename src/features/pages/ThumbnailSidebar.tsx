@@ -83,7 +83,9 @@ const Thumbnail = memo(function Thumbnail({
           )}
           style={{ width: THUMBNAIL_WIDTH, height: Math.round(size.height * scale) }}
         >
-          {inView && <PageCanvas pdf={pdf} pageNumber={pageNumber} scale={scale} />}
+          {inView && (
+            <PageCanvas pdf={pdf} pageNumber={pageNumber} scale={scale} showError={false} />
+          )}
         </div>
         <span
           className={cn(

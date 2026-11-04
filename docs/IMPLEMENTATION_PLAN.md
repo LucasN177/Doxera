@@ -90,7 +90,7 @@ mit pdf-lib bzw. MuPDF auf die Originaldatei angewendet. Vorteile: Undo/Redo, ve
 - GitHub-Actions-Workflow für CI und Deployment auf GitHub Pages
 - PWA-Grundgerüst: vite-plugin-pwa (Manifest, Service Worker, Precaching, Update-Hinweis), App-Icons
 
-### Phase 1 – Viewer & Grundgerüst (MVP)
+### Phase 1 – Viewer & Grundgerüst (MVP) ✅
 
 - App-Layout: Toolbar, Seiten-Sidebar, Arbeitsfläche, Eigenschaften-Panel
 - Datei öffnen per Dialog und Drag & Drop
@@ -110,7 +110,7 @@ mit pdf-lib bzw. MuPDF auf die Originaldatei angewendet. Vorteile: Undo/Redo, ve
 | M3  | Thumbnail-Sidebar        | Lazy gerenderte Vorschauen, aktive Seite hervorheben, Klick springt zur Seite                            | ✅     |
 | M4  | Text-Layer & Suche       | Text markieren/kopieren, Volltextsuche mit Treffer-Navigation und Hervorhebung                           | ✅     |
 | M5  | Lokale Bibliothek        | IndexedDB-Speicherung, „Zuletzt geöffnet“ im Leerzustand, Dokumente lokal löschen                        | ✅     |
-| M6  | Export & Feinschliff     | Download, Tastaturkürzel, Dark Mode, Lade-/Fehlerzustände, Performance mit großen PDFs                   | offen  |
+| M6  | Export & Feinschliff     | Download, Tastaturkürzel, Dark Mode, Lade-/Fehlerzustände, Performance mit großen PDFs                   | ✅     |
 
 ### Phase 2 – Seitenverwaltung
 

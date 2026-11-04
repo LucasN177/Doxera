@@ -44,9 +44,9 @@ export function SearchBar() {
   return (
     <div
       role="search"
-      className="bg-popover text-popover-foreground absolute top-3 right-5 z-20 flex items-center gap-1 rounded-lg border p-1.5 shadow-lg"
+      className="bg-popover text-popover-foreground absolute top-3 right-5 z-20 flex items-center gap-1 rounded-lg border p-1.5 shadow-lg max-sm:top-2 max-sm:right-2 max-sm:left-2"
     >
-      <div className="relative">
+      <div className="relative min-w-0 max-sm:flex-1">
         <Search
           className="text-muted-foreground pointer-events-none absolute top-1/2 left-2 size-4 -translate-y-1/2"
           aria-hidden
@@ -56,7 +56,7 @@ export function SearchBar() {
           type="search"
           aria-label="Im Dokument suchen"
           placeholder="Im Dokument suchen"
-          className="h-8 w-56 pl-8 [&::-webkit-search-cancel-button]:hidden"
+          className="h-8 w-56 pl-8 max-sm:w-full [&::-webkit-search-cancel-button]:hidden"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           onKeyDown={(event) => {
@@ -74,7 +74,7 @@ export function SearchBar() {
 
       <span
         className={cn(
-          'text-muted-foreground min-w-24 px-1 text-center text-xs whitespace-nowrap tabular-nums',
+          'text-muted-foreground min-w-24 px-1 text-center text-xs whitespace-nowrap tabular-nums max-sm:min-w-14',
           hasQuery && !searching && matches.length === 0 && 'text-destructive',
         )}
         aria-live="polite"
@@ -89,7 +89,7 @@ export function SearchBar() {
       <IconButton
         label="Groß-/Kleinschreibung beachten"
         aria-pressed={matchCase}
-        className={cn(matchCase && 'bg-accent text-accent-foreground')}
+        className={cn('max-sm:hidden', matchCase && 'bg-accent text-accent-foreground')}
         onClick={() => setMatchCase(!matchCase)}
       >
         <CaseSensitive />

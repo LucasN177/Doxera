@@ -1,5 +1,6 @@
 import type { PDFDocumentProxy } from 'pdfjs-dist'
-import { useEffect, useRef } from 'react'
+import { TriangleAlert } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import { renderPage, type RenderHandle } from '@/engine/render/pdfjs'
 import { cn } from '@/lib/utils'
 
@@ -9,14 +10,23 @@ interface PageCanvasProps {
   pageNumber: number
   scale: number
   className?: string
+  /** Show a short error text if rendering fails (off for tiny thumbnails). */
+  showError?: boolean
 }
 
 /**
  * Renders one PDF page, filling its (absolutely positioned) parent. While a new
  * scale renders, the previous canvas stays visible (stretched) to avoid flicker.
  */
-export function PageCanvas({ pdf, pageNumber, scale, className }: PageCanvasProps) {
+export function PageCanvas({
+  pdf,
+  pageNumber,
+  scale,
+  className,
+  showError = true,
+}: PageCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null)
+  const [failed, setFailed] = useState(false)
 
   useEffect(() => {
     const job: { cancelled: boolean; handle: RenderHandle | null } = {
@@ -35,10 +45,12 @@ export function PageCanvas({ pdf, pageNumber, scale, className }: PageCanvasProp
         if (job.cancelled || !canvas || !containerRef.current) return
         canvas.className = 'block size-full'
         containerRef.current.replaceChildren(canvas)
+        setFailed(false)
       })
       .catch((error: unknown) => {
-        if (!job.cancelled)
-          console.error(`Seite ${pageNumber} konnte nicht gerendert werden`, error)
+        if (job.cancelled) return
+        console.error(`Seite ${pageNumber} konnte nicht gerendert werden`, error)
+        setFailed(true)
       })
 
     return () => {
@@ -47,5 +59,21 @@ export function PageCanvas({ pdf, pageNumber, scale, className }: PageCanvasProp
     }
   }, [pdf, pageNumber, scale])
 
-  return <div ref={containerRef} className={cn('absolute inset-0', className)} aria-hidden />
+  return (
+    <>
+      <div ref={containerRef} className={cn('absolute inset-0', className)} aria-hidden />
+      {failed && (
+        <div
+          role="status"
+          className={cn(
+            'absolute inset-0 flex flex-col items-center justify-center gap-2 bg-white p-4 text-center text-sm text-neutral-500',
+            !showError && 'sr-only',
+          )}
+        >
+          <TriangleAlert className="size-6 text-amber-500" aria-hidden />
+          Seite {pageNumber} konnte nicht dargestellt werden.
+        </div>
+      )}
+    </>
+  )
 }

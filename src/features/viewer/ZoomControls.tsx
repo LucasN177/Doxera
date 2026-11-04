@@ -31,7 +31,7 @@ export function ZoomControls() {
       </IconButton>
       <select
         aria-label="Zoomstufe"
-        className="border-input bg-background focus-visible:ring-ring/50 h-8 rounded-md border px-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+        className="border-input bg-background focus-visible:ring-ring/50 h-8 rounded-md border px-2 text-sm shadow-xs outline-none focus-visible:ring-[3px] max-sm:hidden"
         value={value}
         onChange={(event) => onChange(event.target.value)}
       >
