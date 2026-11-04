@@ -15,11 +15,13 @@ import {
   getVisibleRange,
   type PageLayout,
 } from '@/lib/pageLayout'
-import { computeFitScale } from '@/lib/zoom'
+import { clampZoom, computeFitScale } from '@/lib/zoom'
+import { scrollForFocalPoint, type FocalPoint } from '@/lib/zoomFocus'
 import { useViewerStore } from '@/stores/viewerStore'
 import type { OpenDocument } from '@/types/document'
 import { PageCanvas } from './PageCanvas'
 import { TextLayerView } from './TextLayerView'
+import { resetPinchPreview, usePinchZoom } from './usePinchZoom'
 
 const PADDING = 24
 const GAP = 16
@@ -37,6 +39,13 @@ function getAnchor(layout: PageLayout, scrollTop: number): Anchor {
     index,
     fraction: (scrollTop - (layout.tops[index] ?? 0)) / Math.max(1, layout.heights[index] ?? 1),
   }
+}
+
+interface PendingFocus {
+  /** Layout and scale the focal point refers to (what was on screen). */
+  layout: PageLayout
+  scale: number
+  point: FocalPoint
 }
 
 interface DocumentViewerProps {
@@ -73,6 +82,10 @@ export function DocumentViewer({ document, pdf }: DocumentViewerProps) {
   const [range, setRange] = useState({ first: 0, last: 0 })
   const anchor = useRef<Anchor>({ index: 0, fraction: 0 })
   const prevLayout = useRef<PageLayout | null>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
+  /** Set by pinch and Ctrl+wheel zoom: keep this point in place instead of the top edge. */
+  const pendingFocus = useRef<PendingFocus | null>(null)
+  const rendered = useRef({ layout, scale })
 
   const syncWithScroll = useCallback(() => {
     const element = scrollRef.current
@@ -95,7 +108,22 @@ export function DocumentViewer({ document, pdf }: DocumentViewerProps) {
   // Keep the same document position in view when the zoom changes
   useLayoutEffect(() => {
     const element = scrollRef.current
-    if (element && prevLayout.current && prevLayout.current !== layout) {
+    const focus = pendingFocus.current
+    if (element && focus && focus.layout !== layout) {
+      // Zoom around the pinch center / cursor
+      const { scrollTop, scrollLeft } = scrollForFocalPoint(
+        focus.layout,
+        layout,
+        scale / focus.scale,
+        focus.point,
+        element.clientWidth,
+        PADDING,
+      )
+      resetPinchPreview(contentRef.current)
+      element.scrollTop = scrollTop
+      element.scrollLeft = scrollLeft
+      pendingFocus.current = null
+    } else if (element && prevLayout.current && prevLayout.current !== layout) {
       const maxScrollTop = element.scrollHeight - element.clientHeight
       // Unless the browser had to clamp scrollTop (content shrank), read the anchor
       // from the live position: scroll events are async and may not have run yet.
@@ -108,8 +136,46 @@ export function DocumentViewer({ document, pdf }: DocumentViewerProps) {
       }
     }
     prevLayout.current = layout
+    rendered.current = { layout, scale }
     syncWithScroll()
-  }, [layout, syncWithScroll, viewport.height])
+  }, [layout, scale, syncWithScroll, viewport.height])
+
+  /** Applies a zoom while keeping `point` (in the currently rendered layout) in place. */
+  const zoomAround = useCallback((nextScale: number, point: FocalPoint) => {
+    const element = scrollRef.current
+    const current = rendered.current
+    const clamped = clampZoom(nextScale)
+    // Several wheel events can arrive before React renders; the first focus wins
+    pendingFocus.current ??= { layout: current.layout, scale: current.scale, point }
+
+    if (Math.abs(clamped - useViewerStore.getState().scale) < 0.0005) {
+      // Scale unchanged (e.g. two-finger pan or at the zoom limit): just pan
+      const focus = pendingFocus.current
+      pendingFocus.current = null
+      resetPinchPreview(contentRef.current)
+      if (element && focus.scale === current.scale) {
+        const { scrollTop, scrollLeft } = scrollForFocalPoint(
+          current.layout,
+          current.layout,
+          1,
+          focus.point,
+          element.clientWidth,
+          PADDING,
+        )
+        element.scrollTop = scrollTop
+        element.scrollLeft = scrollLeft
+      }
+      return
+    }
+    useViewerStore.getState().setZoom(clamped)
+  }, [])
+
+  usePinchZoom({
+    scrollRef,
+    contentRef,
+    getScale: () => useViewerStore.getState().scale,
+    onCommit: zoomAround,
+  })
 
   // Explicit navigation (toolbar, thumbnails)
   const handledNavigation = useRef<number | null>(null)
@@ -134,12 +200,21 @@ export function DocumentViewer({ document, pdf }: DocumentViewerProps) {
     const onWheel = (event: WheelEvent) => {
       if (!event.ctrlKey && !event.metaKey) return
       event.preventDefault()
-      const { scale: current, setZoom } = useViewerStore.getState()
-      setZoom(current * Math.exp(-event.deltaY * 0.002))
+      const content = contentRef.current
+      if (!content) return
+      // Zoom towards the cursor
+      const contentRect = content.getBoundingClientRect()
+      const scrollerRect = element.getBoundingClientRect()
+      zoomAround(useViewerStore.getState().scale * Math.exp(-event.deltaY * 0.002), {
+        contentX: event.clientX - contentRect.left,
+        contentY: event.clientY - contentRect.top,
+        viewportX: event.clientX - scrollerRect.left,
+        viewportY: event.clientY - scrollerRect.top,
+      })
     }
     element.addEventListener('wheel', onWheel, { passive: false })
     return () => element.removeEventListener('wheel', onWheel)
-  }, [])
+  }, [zoomAround])
 
   const pages = []
   for (let index = range.first; index <= range.last && index < layout.tops.length; index++) {
@@ -168,12 +243,15 @@ export function DocumentViewer({ document, pdf }: DocumentViewerProps) {
   return (
     <div
       ref={scrollRef}
-      className="absolute inset-0 overflow-auto"
+      className="absolute inset-0 overflow-auto overscroll-contain"
+      // Native one-finger scrolling stays; pinching is handled by usePinchZoom
+      style={{ touchAction: 'pan-x pan-y' }}
       onScroll={syncWithScroll}
       tabIndex={0}
       aria-label="Dokumentansicht"
     >
       <div
+        ref={contentRef}
         className="relative mx-auto"
         style={{
           height: layout.totalHeight,

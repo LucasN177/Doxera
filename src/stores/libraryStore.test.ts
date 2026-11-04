@@ -35,8 +35,12 @@ describe('libraryStore', () => {
 
   it('reuses the entry when the same file is opened again', async () => {
     const { remember } = useLibraryStore.getState()
+    // Pauses give each step a distinct timestamp, so the order is well-defined
+    const tick = () => new Promise((resolve) => setTimeout(resolve, 2))
     await remember(doc('a.pdf', 'same'), pdf)
+    await tick()
     await remember(doc('b.pdf'), pdf)
+    await tick()
     await remember(doc('a-renamed.pdf', 'same'), pdf)
 
     const names = useLibraryStore.getState().entries.map((entry) => entry.name)
