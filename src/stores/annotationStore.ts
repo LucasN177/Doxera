@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { replaceAnnotation } from '@/engine/document/annotations'
+import { isTwoPoint, replaceAnnotation } from '@/engine/document/annotations'
 import type { Annotation } from '@/types/annotations'
 import { useDocumentStore } from './documentStore'
 
@@ -35,6 +35,8 @@ interface AnnotationState {
   tool: AnnotationTool
   style: AnnotationStyle
   selected: AnnotationRef | null
+  /** Color for highlighting / underlining selected text. */
+  markupColor: string
   /** Text annotation whose text is being edited. */
   editing: AnnotationRef | null
 
@@ -44,6 +46,7 @@ interface AnnotationState {
   setStyle: (style: Partial<AnnotationStyle>) => void
   select: (ref: AnnotationRef | null) => void
   setEditing: (ref: AnnotationRef | null) => void
+  setMarkupColor: (color: string) => void
 }
 
 const DEFAULT_STYLE: AnnotationStyle = {
@@ -59,7 +62,7 @@ export function applyStyle(annotation: Annotation, style: Partial<AnnotationStyl
   if (style.color) next.color = style.color
   if (next.type === 'text') {
     if (style.fontSize) next.fontSize = style.fontSize
-  } else {
+  } else if (isTwoPoint(next)) {
     if (style.strokeWidth) next.strokeWidth = style.strokeWidth
     if ((next.type === 'rect' || next.type === 'ellipse') && style.filled !== undefined) {
       next.filled = style.filled
@@ -74,6 +77,7 @@ export const useAnnotationStore = create<AnnotationState>()((set, get) => ({
   style: DEFAULT_STYLE,
   selected: null,
   editing: null,
+  markupColor: '#facc15',
 
   setActive: (active) =>
     set(active ? { active } : { active, tool: 'select', selected: null, editing: null }),
@@ -93,6 +97,7 @@ export const useAnnotationStore = create<AnnotationState>()((set, get) => ({
   },
   select: (selected) => set({ selected, editing: null }),
   setEditing: (editing) => set({ editing, selected: editing }),
+  setMarkupColor: (markupColor) => set({ markupColor }),
 }))
 
 // Selections refer to pages of one document

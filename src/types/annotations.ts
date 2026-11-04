@@ -47,5 +47,21 @@ export interface TextAnnotation extends AnnotationBase {
   turns: number
 }
 
-export type Annotation = ShapeAnnotation | LineAnnotation | TextAnnotation
+/** Rectangle given by two opposite corners (stored page space). */
+export interface PageRect {
+  a: PagePoint
+  b: PagePoint
+}
+
+/** Text markup created from a text selection: one rectangle per line. */
+export interface MarkupAnnotation extends AnnotationBase {
+  type: 'highlight' | 'underline' | 'strikeout'
+  rects: PageRect[]
+  /** Quarter turns the page was displayed with when marking; lines run along its x axis. */
+  turns: number
+}
+
+export type MarkupType = MarkupAnnotation['type']
+
+export type Annotation = ShapeAnnotation | LineAnnotation | TextAnnotation | MarkupAnnotation
 export type AnnotationType = Annotation['type']

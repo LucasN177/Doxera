@@ -1,5 +1,6 @@
 import { Loader2 } from 'lucide-react'
 import { AnnotationBar } from '@/features/annotations/AnnotationBar'
+import { SelectionMenu } from '@/features/annotations/SelectionMenu'
 import { CropDialog } from '@/features/pages/CropDialog'
 import { PageOverview } from '@/features/pages/PageOverview'
 import { SplitDialog } from '@/features/pages/SplitDialog'
@@ -39,6 +40,7 @@ export function AppLayout() {
                 <>
                   <DocumentViewer key={document.id} />
                   <SearchBar />
+                  <SelectionMenu />
                 </>
               )}
               <SplitDialog />

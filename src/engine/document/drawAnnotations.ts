@@ -1,6 +1,15 @@
 import type { PDFFont, PDFPage } from 'pdf-lib'
 import type { Annotation, PagePoint, TextAnnotation } from '@/types/annotations'
-import { TEXT_ASCENT, TEXT_LINE_HEIGHT, textLines, toDisplay, toStored } from './annotations'
+import {
+  isMarkup,
+  MARKUP_OPACITY,
+  markupPieces,
+  TEXT_ASCENT,
+  TEXT_LINE_HEIGHT,
+  textLines,
+  toDisplay,
+  toStored,
+} from './annotations'
 
 type PdfLib = typeof import('pdf-lib')
 
@@ -54,10 +63,32 @@ export function drawAnnotations(
   box: PageBox,
   font: PDFFont,
 ) {
-  const { rgb, degrees, LineCapStyle } = lib
+  const { rgb, degrees, LineCapStyle, BlendMode } = lib
 
   for (const annotation of annotations) {
     const color = rgb(...hexToRgb(annotation.color))
+
+    if (isMarkup(annotation)) {
+      for (const piece of markupPieces(annotation, box)) {
+        const a = toPdf(piece.a, box)
+        const b = toPdf(piece.b, box)
+        if (piece.kind === 'rect') {
+          page.drawRectangle({
+            x: Math.min(a.x, b.x),
+            y: Math.min(a.y, b.y),
+            width: Math.abs(a.x - b.x),
+            height: Math.abs(a.y - b.y),
+            color,
+            opacity: MARKUP_OPACITY,
+            // Like a highlighter: the text below stays dark and readable
+            blendMode: BlendMode.Multiply,
+          })
+        } else {
+          page.drawLine({ start: a, end: b, thickness: piece.thickness, color })
+        }
+      }
+      continue
+    }
 
     if (annotation.type === 'rect' || annotation.type === 'ellipse') {
       const a = toPdf(annotation.a, box)

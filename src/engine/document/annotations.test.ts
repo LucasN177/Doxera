@@ -1,7 +1,9 @@
-import type { ShapeAnnotation, TextAnnotation } from '@/types/annotations'
+import type { MarkupAnnotation, ShapeAnnotation, TextAnnotation } from '@/types/annotations'
 import type { PageRef } from '@/types/document'
 import {
   addAnnotation,
+  markupPieces,
+  mergeLineRects,
   moveAnnotation,
   removeAnnotation,
   replaceAnnotation,
@@ -73,5 +75,71 @@ describe('annotation page operations', () => {
 
     pages = removeAnnotation(pages, 'p', 'r')
     expect(pages[0]).not.toHaveProperty('annotations')
+  })
+})
+
+describe('text markup', () => {
+  const markup = (type: MarkupAnnotation['type'], turns = 0): MarkupAnnotation => ({
+    id: 'm',
+    type,
+    color: '#facc15',
+    turns,
+    rects: [{ a: { x: 0.1, y: 0.1 }, b: { x: 0.5, y: 0.12 } }],
+  })
+  const size = { width: 600, height: 800 }
+
+  it('highlights the whole line box', () => {
+    expect(markupPieces(markup('highlight'), size)).toEqual([
+      { kind: 'rect', a: { x: 0.1, y: 0.1 }, b: { x: 0.5, y: 0.12 } },
+    ])
+  })
+
+  it('underlines near the bottom and strikes through the middle', () => {
+    const [under] = markupPieces(markup('underline'), size)
+    const [strike] = markupPieces(markup('strikeout'), size)
+    expect(under.kind === 'line' && under.a.y).toBeCloseTo(0.118)
+    expect(strike.kind === 'line' && strike.a.y).toBeCloseTo(0.111)
+    expect(under.a.x).toBeCloseTo(0.1)
+    expect(under.b.x).toBeCloseTo(0.5)
+    // Line box is 16pt high → about 1.1pt thick
+    expect(under.kind === 'line' && under.thickness).toBeCloseTo(1.12)
+  })
+
+  it('keeps underlines under the text when it was marked on a rotated page', () => {
+    // Marked while shown with a quarter turn: text lines ran along the unrotated y axis
+    const rotated: MarkupAnnotation = {
+      ...markup('underline', 1),
+      rects: [{ a: { x: 0.1, y: 0.1 }, b: { x: 0.12, y: 0.5 } }],
+    }
+    const [line] = markupPieces(rotated, size)
+    expect(line.a.x).toBeCloseTo(line.b.x) // vertical on the unrotated page
+    expect(Math.abs(line.a.y - line.b.y)).toBeCloseTo(0.4)
+  })
+})
+
+describe('mergeLineRects', () => {
+  it('joins word boxes of a line and keeps lines apart', () => {
+    const merged = mergeLineRects([
+      { x0: 0, y0: 0, x1: 40, y1: 12 },
+      { x0: 44, y0: 1, x1: 90, y1: 12 },
+      { x0: 0, y0: 16, x1: 70, y1: 28 },
+    ])
+    expect(merged).toEqual([
+      { x0: 0, y0: 0, x1: 90, y1: 12 },
+      { x0: 0, y0: 16, x1: 70, y1: 28 },
+    ])
+  })
+
+  it('does not join columns with a wide gap', () => {
+    expect(
+      mergeLineRects([
+        { x0: 0, y0: 0, x1: 100, y1: 12 },
+        { x0: 160, y0: 0, x1: 260, y1: 12 },
+      ]),
+    ).toHaveLength(2)
+  })
+
+  it('ignores empty boxes', () => {
+    expect(mergeLineRects([{ x0: 5, y0: 5, x1: 5, y1: 20 }])).toEqual([])
   })
 })

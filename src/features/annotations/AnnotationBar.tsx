@@ -14,7 +14,7 @@ import { useEffect } from 'react'
 import { IconButton } from '@/components/layout/IconButton'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { removeAnnotation } from '@/engine/document/annotations'
+import { isTwoPoint, removeAnnotation } from '@/engine/document/annotations'
 import { cn } from '@/lib/utils'
 import {
   ANNOTATION_COLORS,
@@ -66,12 +66,12 @@ export function AnnotationBar() {
   })
   // Controls reflect the selected annotation, otherwise the style for new ones
   const kind = selectedAnnotation?.type ?? tool
-  const showStroke = kind !== 'text' && kind !== 'select'
+  const showStroke = ['rect', 'ellipse', 'line', 'arrow'].includes(kind)
   const showFill = kind === 'rect' || kind === 'ellipse'
   const showFont = kind === 'text'
   const color = selectedAnnotation?.color ?? style.color
   const strokeWidth =
-    selectedAnnotation && selectedAnnotation.type !== 'text'
+    selectedAnnotation && isTwoPoint(selectedAnnotation)
       ? selectedAnnotation.strokeWidth
       : style.strokeWidth
   const filled =

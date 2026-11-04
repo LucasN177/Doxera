@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState, type PointerEvent } from 'react'
 import {
   addAnnotation,
+  isMarkup,
+  isTwoPoint,
+  MARKUP_OPACITY,
+  markupPieces,
   moveAnnotation,
   removeAnnotation,
   replaceAnnotation,
@@ -11,6 +15,7 @@ import {
   textLines,
   toDisplay,
   toStored,
+  unrotatedSize,
 } from '@/engine/document/annotations'
 import { arrowHead } from '@/engine/document/drawAnnotations'
 import { useAnnotationStore, type AnnotationTool } from '@/stores/annotationStore'
@@ -71,6 +76,7 @@ export function AnnotationLayer({ page, scale, interactive }: AnnotationLayerPro
   const width = page.fullSize.width * scale
   const height = page.fullSize.height * scale
   const turns = page.turns
+  const storedSize = unrotatedSize(page.fullSize, turns)
 
   const svgRef = useRef<SVGSVGElement>(null)
   const drag = useRef<Drag | null>(null)
@@ -133,6 +139,8 @@ export function AnnotationLayer({ page, scale, interactive }: AnnotationLayerPro
     event.stopPropagation()
     event.currentTarget.setPointerCapture(event.pointerId)
     useAnnotationStore.getState().select({ pageId, id: annotation.id })
+    // Text markup is tied to the text below it: select only, don't move
+    if (isMarkup(annotation)) return
     drag.current = { kind: 'move', start: pointFrom(event), original: annotation }
   }
 
@@ -148,7 +156,7 @@ export function AnnotationLayer({ page, scale, interactive }: AnnotationLayerPro
     const current = drag.current
     if (!current) return
     const point = pointFrom(event)
-    if (current.kind === 'create' && current.original.type !== 'text') {
+    if (current.kind === 'create' && isTwoPoint(current.original)) {
       setDraft({ ...current.original, b: toStored(point, turns) })
     } else if (current.kind === 'move') {
       setDraft(
@@ -240,7 +248,13 @@ export function AnnotationLayer({ page, scale, interactive }: AnnotationLayerPro
           const box = boundingBox(annotation, px, scale, turns)
           return (
             <g key={annotation.id} data-annotation>
-              <AnnotationShape annotation={annotation} px={px} scale={scale} turns={turns} />
+              <AnnotationShape
+                annotation={annotation}
+                px={px}
+                scale={scale}
+                turns={turns}
+                storedSize={storedSize}
+              />
               {active && tool === 'select' && (
                 <rect
                   {...pad(box, 6)}
@@ -284,7 +298,7 @@ export function AnnotationLayer({ page, scale, interactive }: AnnotationLayerPro
 // ---------------------------------------------------------------------------
 
 function isTiny(annotation: Annotation, turns: number): boolean {
-  if (annotation.type === 'text') return false
+  if (!isTwoPoint(annotation)) return false
   const a = toDisplay(annotation.a, turns)
   const b = toDisplay(annotation.b, turns)
   return Math.abs(a.x - b.x) < MIN_SIZE && Math.abs(a.y - b.y) < MIN_SIZE
@@ -296,7 +310,7 @@ function resize(
   point: PagePoint,
   turns: number,
 ): Annotation {
-  if (annotation.type === 'text') return annotation
+  if (!isTwoPoint(annotation)) return annotation
   if (annotation.type === 'line' || annotation.type === 'arrow') {
     const moved = toStored(point, turns)
     return handle === 'a' ? { ...annotation, a: moved } : { ...annotation, b: moved }
@@ -349,6 +363,17 @@ function boundingBox(
       height: Math.max(...ys) - Math.min(...ys),
     }
   }
+  if (isMarkup(annotation)) {
+    const corners = annotation.rects.flatMap((rect) => [px(rect.a), px(rect.b)])
+    const xs = corners.map((c) => c.x)
+    const ys = corners.map((c) => c.y)
+    return {
+      x: Math.min(...xs),
+      y: Math.min(...ys),
+      width: Math.max(...xs) - Math.min(...xs),
+      height: Math.max(...ys) - Math.min(...ys),
+    }
+  }
   const a = px(annotation.a)
   const b = px(annotation.b)
   return {
@@ -377,9 +402,11 @@ interface ShapeProps {
   px: (point: PagePoint) => { x: number; y: number }
   scale: number
   turns: number
+  /** Unrotated page size in points (for markup line thickness). */
+  storedSize: { width: number; height: number }
 }
 
-export function AnnotationShape({ annotation, px, scale, turns }: ShapeProps) {
+export function AnnotationShape({ annotation, px, scale, turns, storedSize }: ShapeProps) {
   const { color } = annotation
 
   if (annotation.type === 'text') {
@@ -400,6 +427,42 @@ export function AnnotationShape({ annotation, px, scale, turns }: ShapeProps) {
             {line}
           </text>
         ))}
+      </g>
+    )
+  }
+
+  if (isMarkup(annotation)) {
+    return (
+      <g>
+        {markupPieces(annotation, storedSize).map((piece, index) => {
+          const a = px(piece.a)
+          const b = px(piece.b)
+          if (piece.kind === 'rect') {
+            return (
+              <rect
+                key={index}
+                x={Math.min(a.x, b.x)}
+                y={Math.min(a.y, b.y)}
+                width={Math.abs(a.x - b.x)}
+                height={Math.abs(a.y - b.y)}
+                fill={color}
+                fillOpacity={MARKUP_OPACITY}
+                style={{ mixBlendMode: 'multiply' }}
+              />
+            )
+          }
+          return (
+            <line
+              key={index}
+              x1={a.x}
+              y1={a.y}
+              x2={b.x}
+              y2={b.y}
+              stroke={color}
+              strokeWidth={Math.max(1, piece.thickness * scale)}
+            />
+          )
+        })}
       </g>
     )
   }
