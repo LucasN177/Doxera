@@ -1,0 +1,12 @@
+# Enforce LF line endings (matches Prettier default)
+* text=auto eol=lf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.wasm binary
+*.traineddata binary
