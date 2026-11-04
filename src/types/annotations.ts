@@ -101,7 +101,36 @@ export interface ImageAsset {
   url: string
 }
 
+/** Freehand drawing: one stroke as a list of points. */
+export interface InkAnnotation extends AnnotationBase {
+  type: 'ink'
+  points: PagePoint[]
+  /** Line width in PDF points. */
+  strokeWidth: number
+  /** Translucent marker (like a highlighter) instead of a pen. */
+  marker?: boolean
+}
+
+/** Large translucent text or image across the page, e.g. "VERTRAULICH". */
+export interface WatermarkAnnotation extends AnnotationBase {
+  type: 'watermark'
+  /** Text (ignored when an image is used). */
+  text: string
+  /** Image instead of text. */
+  assetId?: string
+  /** Width as fraction of the page width (in the orientation it was added in). */
+  size: number
+  /** 0–1 */
+  opacity: number
+  /** Counter-clockwise angle in degrees, e.g. 45 for a diagonal. */
+  angle: number
+  /** Quarter turns the page was displayed with when adding. */
+  turns: number
+}
+
 export type Annotation =
+  | InkAnnotation
+  | WatermarkAnnotation
   | ShapeAnnotation
   | LineAnnotation
   | TextAnnotation

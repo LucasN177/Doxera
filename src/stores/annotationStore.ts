@@ -3,7 +3,8 @@ import { isTwoPoint, replaceAnnotation } from '@/engine/document/annotations'
 import type { Annotation } from '@/types/annotations'
 import { useDocumentStore } from './documentStore'
 
-export type AnnotationTool = 'select' | 'rect' | 'ellipse' | 'line' | 'arrow' | 'text' | 'note'
+export type AnnotationTool =
+  'select' | 'rect' | 'ellipse' | 'line' | 'arrow' | 'ink' | 'marker' | 'text' | 'note'
 
 export interface AnnotationStyle {
   color: string
@@ -68,6 +69,9 @@ export function applyStyle(annotation: Annotation, style: Partial<AnnotationStyl
   if (style.color) next.color = style.color
   if (next.type === 'text') {
     if (style.fontSize) next.fontSize = style.fontSize
+  } else if (next.type === 'ink') {
+    if (style.strokeWidth)
+      next.strokeWidth = next.marker ? style.strokeWidth * 5 : style.strokeWidth
   } else if (isTwoPoint(next)) {
     if (style.strokeWidth) next.strokeWidth = style.strokeWidth
     if ((next.type === 'rect' || next.type === 'ellipse') && style.filled !== undefined) {

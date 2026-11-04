@@ -135,7 +135,7 @@ Undo/Redo speichert Schnappschüsse der Liste.
 | P5  | Teilen & Zuschneiden | PDF aufteilen (alle N Seiten / an Auswahl), Seiten zuschneiden                      | ✅     |
 | P6  | Seitenübersicht      | Rasteransicht aller Seiten zum Organisieren, auch auf dem Smartphone                | ✅     |
 
-### Phase 3 – Annotationen & Ergänzungen
+### Phase 3 – Annotationen & Ergänzungen ✅
 
 - Hervorheben, Freitext, Kommentare/Notizen
 - Bilder und Formen einfügen, verschieben, skalieren
@@ -155,7 +155,7 @@ Seiteninhalt ein, sodass sie in jedem PDF-Programm gleich aussehen.
 | A2  | Text markieren           | Hervorheben, Unterstreichen, Durchstreichen auf Basis der Textauswahl                   | ✅     |
 | A3  | Kommentare & Notizen     | Notizzettel mit Text, Liste aller Kommentare                                            | ✅     |
 | A4  | Bilder & Signaturen      | Bilder einfügen; Signatur zeichnen, tippen oder laden, lokal speichern                  | ✅     |
-| A5  | Freihand & Wasserzeichen | Freihandzeichnen; Text-/Bild-Wasserzeichen für alle Seiten                              | offen  |
+| A5  | Freihand & Wasserzeichen | Freihandzeichnen; Text-/Bild-Wasserzeichen für alle Seiten                              | ✅     |
 
 ### Phase 4 – Echtes Editieren (MuPDF.js)
 

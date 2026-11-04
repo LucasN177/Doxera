@@ -38,6 +38,7 @@ export async function buildPdf(
   const { PDFDocument, degrees, StandardFonts } = lib
   const output = await PDFDocument.create()
   let font: PDFFont | null = null
+  let boldFont: PDFFont | null = null
 
   // Load every used source once and copy all its needed pages in one call
   const sourceIds = [...new Set(pages.map((page) => page.sourceId))]
@@ -59,11 +60,15 @@ export async function buildPdf(
   const images = new Map<string, PDFImage>()
   for (const ref of pages) {
     for (const annotation of ref.annotations ?? []) {
-      if (annotation.type !== 'image' || images.has(annotation.assetId)) continue
-      const asset = assets.get(annotation.assetId)
+      const assetId =
+        annotation.type === 'image' || annotation.type === 'watermark'
+          ? annotation.assetId
+          : undefined
+      if (!assetId || images.has(assetId)) continue
+      const asset = assets.get(assetId)
       if (!asset) continue
       images.set(
-        annotation.assetId,
+        assetId,
         asset.mimeType === 'image/png'
           ? await output.embedPng(asset.data)
           : await output.embedJpg(asset.data),
@@ -89,7 +94,10 @@ export async function buildPdf(
     const box = page.getCropBox()
     if (ref.annotations?.length) {
       font ??= await output.embedFont(StandardFonts.Helvetica)
-      drawAnnotations(lib, page, ref.annotations, box, font, images)
+      if (ref.annotations.some((annotation) => annotation.type === 'watermark')) {
+        boldFont ??= await output.embedFont(StandardFonts.HelveticaBold)
+      }
+      drawAnnotations(lib, page, ref.annotations, box, font, images, boldFont ?? font)
       const notes = ref.annotations.filter((annotation) => annotation.type === 'note')
       if (notes.length > 0) addNoteAnnotations(lib, page, notes, box)
     }

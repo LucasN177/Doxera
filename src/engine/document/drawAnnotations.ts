@@ -1,7 +1,17 @@
 import type { PDFFont, PDFImage, PDFPage } from 'pdf-lib'
-import type { Annotation, NoteAnnotation, PagePoint, TextAnnotation } from '@/types/annotations'
+import type {
+  Annotation,
+  NoteAnnotation,
+  PagePoint,
+  TextAnnotation,
+  WatermarkAnnotation,
+} from '@/types/annotations'
 import {
   imagePlacement,
+  MARKER_OPACITY,
+  smoothPath,
+  WATERMARK_CAP_HEIGHT,
+  watermarkFontSize,
   isMarkup,
   MARKUP_OPACITY,
   markupPieces,
@@ -64,12 +74,36 @@ export function drawAnnotations(
   box: PageBox,
   font: PDFFont,
   images: ReadonlyMap<string, PDFImage> = new Map(),
+  /** Bold font for watermarks. */
+  boldFont: PDFFont = font,
 ) {
   const { rgb, degrees, LineCapStyle, BlendMode } = lib
 
   for (const annotation of annotations) {
     // Notes become real PDF comments, see addNoteAnnotations
     if (annotation.type === 'note') continue
+
+    if (annotation.type === 'ink') {
+      // SVG coordinates (y down) relative to the top-left corner of the page box
+      const d = smoothPath(
+        annotation.points.map((point) => ({ x: point.x * box.width, y: point.y * box.height })),
+      )
+      page.drawSvgPath(d, {
+        x: box.x,
+        y: box.y + box.height,
+        borderColor: rgb(...hexToRgb(annotation.color)),
+        borderWidth: annotation.strokeWidth,
+        borderLineCap: LineCapStyle.Round,
+        borderOpacity: annotation.marker ? MARKER_OPACITY : 1,
+        blendMode: annotation.marker ? BlendMode.Multiply : undefined,
+      })
+      continue
+    }
+
+    if (annotation.type === 'watermark') {
+      drawWatermark(lib, page, annotation, box, boldFont, images)
+      continue
+    }
 
     if (annotation.type === 'image') {
       const image = images.get(annotation.assetId)
@@ -147,6 +181,60 @@ export function drawAnnotations(
     }
 
     if (annotation.type === 'text') drawText(page, annotation, box, font, color, degrees)
+  }
+}
+
+/**
+ * Watermark centered on the page, laid out in the orientation it was added in
+ * and rotated by its angle around the center.
+ */
+function drawWatermark(
+  lib: PdfLib,
+  page: PDFPage,
+  watermark: WatermarkAnnotation,
+  box: PageBox,
+  font: PDFFont,
+  images: ReadonlyMap<string, PDFImage>,
+) {
+  const turns = ((watermark.turns % 4) + 4) % 4
+  const frameWidth = turns % 2 === 0 ? box.width : box.height
+  const frameHeight = turns % 2 === 0 ? box.height : box.width
+  const image = watermark.assetId ? images.get(watermark.assetId) : undefined
+
+  let width: number
+  let height: number
+  let fontSize = 0
+  if (image) {
+    width = watermark.size * frameWidth
+    height = (width * image.height) / Math.max(1, image.width)
+  } else {
+    fontSize = watermarkFontSize(watermark, frameWidth, font.widthOfTextAtSize(watermark.text, 1))
+    width = font.widthOfTextAtSize(watermark.text, fontSize)
+    height = fontSize * WATERMARK_CAP_HEIGHT
+  }
+
+  // Bottom-left start point in the (y-up) frame: center minus the rotated half size
+  const angle = (watermark.angle * Math.PI) / 180
+  const cx = frameWidth / 2
+  const cy = frameHeight / 2
+  const sx = cx - (width / 2) * Math.cos(angle) + (height / 2) * Math.sin(angle)
+  const sy = cy - (width / 2) * Math.sin(angle) - (height / 2) * Math.cos(angle)
+  const start = toStored({ x: sx / frameWidth, y: 1 - sy / frameHeight }, turns)
+  const { x, y } = toPdf(start, box)
+  const rotate = lib.degrees(watermark.angle + turns * 90)
+
+  if (image) {
+    page.drawImage(image, { x, y, width, height, rotate, opacity: watermark.opacity })
+  } else if (watermark.text.trim()) {
+    page.drawText(encodable(font, watermark.text), {
+      x,
+      y,
+      size: fontSize,
+      font,
+      color: lib.rgb(...hexToRgb(watermark.color)),
+      opacity: watermark.opacity,
+      rotate,
+    })
   }
 }
 

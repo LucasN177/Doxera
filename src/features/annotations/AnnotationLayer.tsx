@@ -6,6 +6,10 @@ import {
   imageDisplayAngle,
   isMarkup,
   isTwoPoint,
+  MARKER_OPACITY,
+  simplifyPoints,
+  smoothPath,
+  watermarkFontSize,
   MARKUP_OPACITY,
   markupPieces,
   moveAnnotation,
@@ -22,15 +26,13 @@ import {
 } from '@/engine/document/annotations'
 import { arrowHead, NOTE_ICON_SIZE } from '@/engine/document/drawAnnotations'
 import { cn } from '@/lib/utils'
-import {
-  NOTE_DEFAULT_COLOR,
-  useAnnotationStore,
-  type AnnotationTool,
-} from '@/stores/annotationStore'
+import { NOTE_DEFAULT_COLOR, useAnnotationStore } from '@/stores/annotationStore'
 import { useDocumentStore } from '@/stores/documentStore'
 import type {
   Annotation,
   ImageAnnotation,
+  InkAnnotation,
+  WatermarkAnnotation,
   NoteAnnotation,
   PagePoint,
   TextAnnotation,
@@ -41,6 +43,7 @@ type Handle = 'a' | 'b' | 'nw' | 'ne' | 'sw' | 'se'
 
 type Drag =
   | { kind: 'create'; original: Annotation }
+  | { kind: 'ink'; original: InkAnnotation; points: PagePoint[]; pointerId: number }
   | { kind: 'move'; start: PagePoint; original: Annotation }
   | { kind: 'resize'; handle: Handle; original: Annotation }
 
@@ -62,10 +65,10 @@ const MIN_SIZE = 0.005
 let measureContext: CanvasRenderingContext2D | null = null
 
 /** Width of a text line in CSS pixels, using the same font as rendering. */
-function measureText(text: string, fontSizePx: number): number {
+function measureText(text: string, fontSizePx: number, weight = 'normal'): number {
   measureContext ??= document.createElement('canvas').getContext('2d')
   if (!measureContext) return text.length * fontSizePx * 0.55
-  measureContext.font = `${fontSizePx}px ${TEXT_FONT_FAMILY}`
+  measureContext.font = `${weight} ${fontSizePx}px ${TEXT_FONT_FAMILY}`
   return measureContext.measureText(text).width
 }
 
@@ -154,12 +157,28 @@ export function AnnotationLayer({ page, scale, interactive }: AnnotationLayerPro
     }
 
     event.currentTarget.setPointerCapture(event.pointerId)
+
+    if (tool === 'ink' || tool === 'marker') {
+      const marker = tool === 'marker'
+      const ink: InkAnnotation = {
+        id,
+        type: 'ink',
+        color,
+        strokeWidth: marker ? Math.max(8, strokeWidth * 5) : strokeWidth,
+        marker,
+        points: [at],
+      }
+      drag.current = { kind: 'ink', original: ink, points: [at], pointerId: event.pointerId }
+      setDraft(ink)
+      return
+    }
+
     const original: Annotation =
       tool === 'rect' || tool === 'ellipse'
         ? { id, type: tool, color, a: at, b: at, strokeWidth, filled }
         : {
             id,
-            type: tool as Exclude<AnnotationTool, 'select' | 'text' | 'note' | 'rect' | 'ellipse'>,
+            type: tool as 'line' | 'arrow',
             color,
             a: at,
             b: at,
@@ -194,7 +213,15 @@ export function AnnotationLayer({ page, scale, interactive }: AnnotationLayerPro
     const current = drag.current
     if (!current) return
     const point = pointFrom(event)
-    if (current.kind === 'create' && isTwoPoint(current.original)) {
+    if (current.kind === 'ink') {
+      if (event.pointerId !== current.pointerId) return
+      const next = toStored(point, turns)
+      const previous = toDisplay(current.points[current.points.length - 1], turns)
+      // Skip tiny moves: fewer points, same look
+      if (Math.hypot((point.x - previous.x) * width, (point.y - previous.y) * height) < 1.5) return
+      current.points.push(next)
+      setDraft({ ...current.original, points: [...current.points] })
+    } else if (current.kind === 'create' && isTwoPoint(current.original)) {
       setDraft({ ...current.original, b: toStored(point, turns) })
     } else if (current.kind === 'move') {
       // Small jitter isn't a move (lets a tap on a note open it)
@@ -224,6 +251,19 @@ export function AnnotationLayer({ page, scale, interactive }: AnnotationLayerPro
       return
     }
     if (!result || result === current.original) return
+
+    if (current.kind === 'ink') {
+      // Simplify with a tolerance of about half a pixel at the current zoom
+      const tolerance = 0.5 / Math.max(width, height)
+      const points = simplifyPoints(current.points, tolerance)
+      const stroke: InkAnnotation = {
+        ...current.original,
+        points: points.length > 1 ? points : [points[0], points[0]],
+      }
+      // Keep the pen: draw the next stroke right away
+      commit((pages) => addAnnotation(pages, pageId, stroke))
+      return
+    }
 
     if (current.kind === 'create') {
       if (result.type === 'text' || isTiny(result, turns)) return
@@ -285,11 +325,31 @@ export function AnnotationLayer({ page, scale, interactive }: AnnotationLayerPro
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
+        onTouchStart={(event) => {
+          // A second finger means pinch-to-zoom, not drawing: drop the started stroke
+          if (event.touches.length > 1 && drag.current?.kind === 'ink') {
+            drag.current = null
+            setDraft(null)
+          }
+        }}
         data-annotation-layer
         aria-hidden={!active}
       >
         {shown.map((annotation) => {
           if (annotation.id === editingHere || annotation.type === 'note') return null
+          // Watermarks are managed in their dialog, not on the page
+          if (annotation.type === 'watermark') {
+            return (
+              <AnnotationShape
+                key={annotation.id}
+                annotation={annotation}
+                px={px}
+                scale={scale}
+                turns={turns}
+                storedSize={storedSize}
+              />
+            )
+          }
           const box = boundingBox(annotation, px, scale, turns)
           return (
             <g key={annotation.id} data-annotation>
@@ -534,6 +594,19 @@ function boundingBox(
       height: Math.max(...ys) - Math.min(...ys),
     }
   }
+  if (annotation.type === 'ink') {
+    const points = annotation.points.map(px)
+    const pad = (annotation.strokeWidth * scale) / 2
+    const xs = points.map((p) => p.x)
+    const ys = points.map((p) => p.y)
+    return {
+      x: Math.min(...xs) - pad,
+      y: Math.min(...ys) - pad,
+      width: Math.max(...xs) - Math.min(...xs) + 2 * pad,
+      height: Math.max(...ys) - Math.min(...ys) + 2 * pad,
+    }
+  }
+  if (annotation.type === 'watermark') return { x: 0, y: 0, width: 0, height: 0 }
   if (annotation.type === 'note') {
     const at = px(annotation.at)
     return { x: at.x, y: at.y, width: NOTE_ICON_PX, height: NOTE_ICON_PX }
@@ -584,7 +657,9 @@ interface ShapeProps {
 export function AnnotationShape({ annotation, px, scale, turns, storedSize }: ShapeProps) {
   const { color } = annotation
   const assetUrl = useDocumentStore((state) =>
-    annotation.type === 'image' ? state.assets.get(annotation.assetId)?.url : undefined,
+    annotation.type === 'image' || (annotation.type === 'watermark' && annotation.assetId)
+      ? state.assets.get(annotation.assetId!)?.url
+      : undefined,
   )
 
   if (annotation.type === 'image') {
@@ -636,6 +711,34 @@ export function AnnotationShape({ annotation, px, scale, turns, storedSize }: Sh
   }
 
   if (annotation.type === 'note') return null
+
+  if (annotation.type === 'ink') {
+    return (
+      <path
+        d={smoothPath(annotation.points.map(px))}
+        fill="none"
+        stroke={color}
+        strokeWidth={Math.max(0.75, annotation.strokeWidth * scale)}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeOpacity={annotation.marker ? MARKER_OPACITY : 1}
+        style={annotation.marker ? { mixBlendMode: 'multiply' } : undefined}
+      />
+    )
+  }
+
+  if (annotation.type === 'watermark') {
+    return (
+      <WatermarkShape
+        watermark={annotation}
+        px={px}
+        scale={scale}
+        turns={turns}
+        storedSize={storedSize}
+        url={assetUrl}
+      />
+    )
+  }
 
   if (isMarkup(annotation)) {
     return (
@@ -711,6 +814,69 @@ export function AnnotationShape({ annotation, px, scale, turns, storedSize }: Sh
           <line key={index} x1={b.x} y1={b.y} x2={x} y2={y} {...line} />
         ))}
     </g>
+  )
+}
+
+/** Watermark centered on the page (same layout as in the PDF export). */
+function WatermarkShape({
+  watermark,
+  px,
+  scale,
+  turns,
+  storedSize,
+  url,
+}: {
+  watermark: WatermarkAnnotation
+  px: (point: PagePoint) => { x: number; y: number }
+  scale: number
+  turns: number
+  storedSize: { width: number; height: number }
+  url?: string
+}) {
+  const center = px({ x: 0.5, y: 0.5 })
+  const frameWidth = ((watermark.turns % 4) + 4) % 2 === 0 ? storedSize.width : storedSize.height
+  // Page turned since adding (clockwise) minus the watermark's own counter-clockwise angle
+  const rotation = ((((turns - watermark.turns) % 4) + 4) % 4) * 90 - watermark.angle
+  const transform = `rotate(${rotation} ${center.x} ${center.y})`
+  const asset = useDocumentStore((state) =>
+    watermark.assetId ? state.assets.get(watermark.assetId) : undefined,
+  )
+
+  if (watermark.assetId) {
+    if (!url || !asset) return null
+    const width = watermark.size * frameWidth * scale
+    const height = (width * asset.height) / Math.max(1, asset.width)
+    return (
+      <image
+        href={url}
+        x={center.x - width / 2}
+        y={center.y - height / 2}
+        width={width}
+        height={height}
+        opacity={watermark.opacity}
+        transform={transform}
+        preserveAspectRatio="none"
+      />
+    )
+  }
+  const fontSize =
+    watermarkFontSize(watermark, frameWidth, measureText(watermark.text, 100, 'bold') / 100) * scale
+  return (
+    <text
+      x={center.x}
+      y={center.y}
+      textAnchor="middle"
+      dominantBaseline="central"
+      fontFamily={TEXT_FONT_FAMILY}
+      fontWeight="bold"
+      fontSize={fontSize}
+      fill={watermark.color}
+      fillOpacity={watermark.opacity}
+      transform={transform}
+      style={{ whiteSpace: 'pre' }}
+    >
+      {watermark.text}
+    </text>
   )
 }
 

@@ -1,4 +1,9 @@
-import type { MarkupAnnotation, ShapeAnnotation, TextAnnotation } from '@/types/annotations'
+import type {
+  InkAnnotation,
+  MarkupAnnotation,
+  ShapeAnnotation,
+  TextAnnotation,
+} from '@/types/annotations'
 import type { PageRef } from '@/types/document'
 import {
   addAnnotation,
@@ -7,6 +12,9 @@ import {
   moveAnnotation,
   removeAnnotation,
   replaceAnnotation,
+  setWatermarks,
+  simplifyPoints,
+  smoothPath,
   textDisplayAngle,
   toDisplay,
   toStored,
@@ -141,5 +149,84 @@ describe('mergeLineRects', () => {
 
   it('ignores empty boxes', () => {
     expect(mergeLineRects([{ x0: 5, y0: 5, x1: 5, y1: 20 }])).toEqual([])
+  })
+})
+
+describe('freehand ink', () => {
+  it('drops points on a straight line and keeps corners', () => {
+    const line = Array.from({ length: 11 }, (_, i) => ({ x: i / 10, y: 0 }))
+    expect(simplifyPoints(line, 0.001)).toEqual([line[0], line[10]])
+    const corner = [
+      { x: 0, y: 0 },
+      { x: 0.5, y: 0.001 },
+      { x: 1, y: 0 },
+      { x: 1, y: 1 },
+    ]
+    expect(simplifyPoints(corner, 0.01)).toEqual([corner[0], corner[2], corner[3]])
+  })
+
+  it('builds smooth paths', () => {
+    expect(smoothPath([])).toBe('')
+    expect(
+      smoothPath([
+        { x: 0, y: 0 },
+        { x: 10, y: 0 },
+      ]),
+    ).toBe('M 0 0 L 10 0')
+    expect(
+      smoothPath([
+        { x: 0, y: 0 },
+        { x: 10, y: 0 },
+        { x: 10, y: 10 },
+      ]),
+    ).toBe('M 0 0 Q 10 0 10 5 L 10 10')
+  })
+
+  it('moves all points of a stroke', () => {
+    const ink: InkAnnotation = {
+      id: 'i',
+      type: 'ink',
+      color: '#000',
+      strokeWidth: 2,
+      points: [
+        { x: 0.1, y: 0.1 },
+        { x: 0.2, y: 0.3 },
+      ],
+    }
+    const moved = moveAnnotation(ink, 0.1, 0, 0)
+    expect(moved.type === 'ink' && moved.points.map((p) => +p.x.toFixed(2))).toEqual([0.2, 0.3])
+  })
+})
+
+describe('setWatermarks', () => {
+  it('adds, replaces and removes watermarks without touching other annotations', () => {
+    const page: PageRef = {
+      id: 'p',
+      sourceId: 's',
+      sourceIndex: 0,
+      rotation: 0,
+      annotations: [rect],
+    }
+    const other: PageRef = { id: 'q', sourceId: 's', sourceIndex: 1, rotation: 0 }
+    const watermark = (text: string) => ({
+      id: text,
+      type: 'watermark' as const,
+      color: '#000',
+      text,
+      size: 0.5,
+      opacity: 0.2,
+      angle: 45,
+      turns: 0,
+    })
+    let pages = setWatermarks([page, other], new Set(['p', 'q']), () => watermark('A'))
+    expect(pages[0].annotations?.map((a) => a.id)).toEqual(['A', 'r'])
+    expect(pages[1].annotations?.map((a) => a.id)).toEqual(['A'])
+
+    pages = setWatermarks(pages, new Set(['p']), () => watermark('B'))
+    expect(pages[0].annotations?.map((a) => a.id)).toEqual(['B', 'r'])
+
+    pages = setWatermarks(pages, new Set(['p', 'q']), () => null)
+    expect(pages[0].annotations?.map((a) => a.id)).toEqual(['r'])
+    expect(pages[1]).not.toHaveProperty('annotations')
   })
 })

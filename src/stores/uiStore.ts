@@ -15,6 +15,8 @@ interface UiState {
   setCommentsOpen: (open: boolean) => void
   signatureOpen: boolean
   setSignatureOpen: (open: boolean) => void
+  watermarkOpen: boolean
+  setWatermarkOpen: (open: boolean) => void
 }
 
 /** Transient UI state that isn't tied to a document. */
@@ -29,4 +31,6 @@ export const useUiStore = create<UiState>()((set) => ({
   setCommentsOpen: (commentsOpen) => set({ commentsOpen }),
   signatureOpen: false,
   setSignatureOpen: (signatureOpen) => set({ signatureOpen }),
+  watermarkOpen: false,
+  setWatermarkOpen: (watermarkOpen) => set({ watermarkOpen }),
 }))

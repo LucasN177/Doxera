@@ -1,5 +1,6 @@
 import type {
   Annotation,
+  WatermarkAnnotation,
   ImageAnnotation,
   LineAnnotation,
   MarkupAnnotation,
@@ -70,6 +71,9 @@ export function moveAnnotation(
       rects: annotation.rects.map((rect) => ({ a: shift(rect.a), b: shift(rect.b) })),
     }
   }
+  if (annotation.type === 'ink') return { ...annotation, points: annotation.points.map(shift) }
+  // Watermarks are always centered on the page
+  if (annotation.type === 'watermark') return annotation
   return { ...annotation, a: shift(annotation.a), b: shift(annotation.b) }
 }
 
@@ -245,4 +249,114 @@ export function imagePlacement(image: ImageAnnotation, size: { width: number; he
 /** Clockwise rotation (degrees) of an image's content on a page displayed with `turns`. */
 export function imageDisplayAngle(image: ImageAnnotation, turns: number): number {
   return mod4(turns - image.turns) * 90
+}
+
+// ---------------------------------------------------------------------------
+// Freehand ink
+// ---------------------------------------------------------------------------
+
+/** Squared distance of point p to the segment a–b. */
+function segmentDistanceSquared(p: PagePoint, a: PagePoint, b: PagePoint): number {
+  const dx = b.x - a.x
+  const dy = b.y - a.y
+  const lengthSquared = dx * dx + dy * dy
+  const t = lengthSquared === 0 ? 0 : ((p.x - a.x) * dx + (p.y - a.y) * dy) / lengthSquared
+  const clamped = Math.max(0, Math.min(1, t))
+  const x = a.x + clamped * dx - p.x
+  const y = a.y + clamped * dy - p.y
+  return x * x + y * y
+}
+
+/**
+ * Ramer–Douglas–Peucker simplification: drops points that lie within
+ * `tolerance` of the line through their neighbours. Keeps strokes small
+ * without visibly changing them.
+ */
+export function simplifyPoints(points: readonly PagePoint[], tolerance: number): PagePoint[] {
+  if (points.length <= 2) return [...points]
+  const toleranceSquared = tolerance * tolerance
+  const keep = new Array<boolean>(points.length).fill(false)
+  keep[0] = keep[points.length - 1] = true
+  const stack: Array<[number, number]> = [[0, points.length - 1]]
+  while (stack.length > 0) {
+    const [start, end] = stack.pop()!
+    let index = -1
+    let max = toleranceSquared
+    for (let i = start + 1; i < end; i++) {
+      const distance = segmentDistanceSquared(points[i], points[start], points[end])
+      if (distance > max) {
+        max = distance
+        index = i
+      }
+    }
+    if (index !== -1) {
+      keep[index] = true
+      stack.push([start, index], [index, end])
+    }
+  }
+  return points.filter((_, i) => keep[i])
+}
+
+/**
+ * Smooth SVG path through the points: quadratic curves between the midpoints
+ * of consecutive segments. Works for screen pixels and PDF points alike.
+ */
+export function smoothPath(points: ReadonlyArray<{ x: number; y: number }>): string {
+  if (points.length === 0) return ''
+  const f = (n: number) => Math.round(n * 100) / 100
+  const [first] = points
+  if (points.length === 1)
+    return `M ${f(first.x)} ${f(first.y)} L ${f(first.x + 0.01)} ${f(first.y)}`
+  if (points.length === 2) {
+    return `M ${f(first.x)} ${f(first.y)} L ${f(points[1].x)} ${f(points[1].y)}`
+  }
+  let d = `M ${f(first.x)} ${f(first.y)}`
+  for (let i = 1; i < points.length - 1; i++) {
+    const current = points[i]
+    const next = points[i + 1]
+    d += ` Q ${f(current.x)} ${f(current.y)} ${f((current.x + next.x) / 2)} ${f((current.y + next.y) / 2)}`
+  }
+  const last = points[points.length - 1]
+  return `${d} L ${f(last.x)} ${f(last.y)}`
+}
+
+/** Opacity and width factor of the marker (highlighter-like) ink. */
+export const MARKER_OPACITY = 0.4
+
+// ---------------------------------------------------------------------------
+// Watermarks
+// ---------------------------------------------------------------------------
+
+/** Font size so the watermark text spans `size` × page width (in its orientation). */
+export function watermarkFontSize(
+  watermark: WatermarkAnnotation,
+  frameWidth: number,
+  textWidthAtSize1: number,
+): number {
+  return (watermark.size * frameWidth) / Math.max(0.01, textWidthAtSize1)
+}
+
+/** Cap height relative to the font size, used to center text vertically. */
+export const WATERMARK_CAP_HEIGHT = 0.7
+
+/**
+ * Replaces the watermark of the given pages: `create` returns the new
+ * watermark for a page, or null to remove it. Other annotations stay.
+ */
+export function setWatermarks(
+  pages: readonly PageRef[],
+  ids: ReadonlySet<string>,
+  create: (page: PageRef) => WatermarkAnnotation | null,
+): PageRef[] {
+  return pages.map((page) => {
+    if (!ids.has(page.id)) return page
+    const others = (page.annotations ?? []).filter((item) => item.type !== 'watermark')
+    const watermark = create(page)
+    // Watermarks go first so they are drawn below everything else
+    const annotations = watermark ? [watermark, ...others] : others
+    if (annotations.length > 0) return { ...page, annotations }
+    const cleared = { ...page }
+    delete cleared.annotations
+    return cleared
+  })
 }

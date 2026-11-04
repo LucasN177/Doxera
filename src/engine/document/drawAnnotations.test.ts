@@ -194,3 +194,56 @@ describe('images', () => {
     expect(xObjects(1)?.[0]).toBe(first?.[0])
   })
 })
+
+describe('ink and watermarks in the export', () => {
+  it('draws freehand strokes and watermarks', async () => {
+    const source = await PDFDocument.create()
+    source.addPage([600, 800])
+    const data = new Uint8Array(await source.save())
+    const base = { id: 'p', sourceId: 's', sourceIndex: 0, rotation: 0 as const }
+    const plain = await buildPdf([base], new Map([['s', { data }]]))
+    const annotated = await buildPdf(
+      [
+        {
+          ...base,
+          annotations: [
+            {
+              id: 'ink',
+              type: 'ink',
+              color: '#2563eb',
+              strokeWidth: 3,
+              marker: true,
+              points: [
+                { x: 0.1, y: 0.1 },
+                { x: 0.2, y: 0.15 },
+                { x: 0.3, y: 0.1 },
+              ],
+            },
+            {
+              id: 'wm',
+              type: 'watermark',
+              color: '#e11d48',
+              text: 'VERTRAULICH',
+              size: 0.8,
+              opacity: 0.2,
+              angle: 45,
+              turns: 0,
+            },
+          ],
+        },
+      ],
+      new Map([['s', { data }]]),
+    )
+    const doc = await PDFDocument.load(annotated)
+    const fonts = doc.getPage(0).node.Resources()?.lookup(PDFName.of('Font'), PDFDict)
+    // The watermark is set in Helvetica Bold
+    const baseFonts = fonts
+      ?.keys()
+      .map((key) => fonts.lookup(key, PDFDict).get(PDFName.of('BaseFont'))?.toString())
+    expect(baseFonts).toContain('/Helvetica-Bold')
+    // Transparency for the watermark and the marker is set via graphics states
+    const states = doc.getPage(0).node.Resources()?.lookup(PDFName.of('ExtGState'), PDFDict)
+    expect(states?.keys().length).toBeGreaterThanOrEqual(2)
+    expect(annotated.length).toBeGreaterThan(plain.length)
+  })
+})

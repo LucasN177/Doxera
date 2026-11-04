@@ -41,6 +41,7 @@ export const SHORTCUT_GROUPS: Array<{
       { keys: ['V'], label: 'Auswählen und verschieben' },
       { keys: ['R', 'E'], label: 'Rechteck / Ellipse' },
       { keys: ['L', 'P'], label: 'Linie / Pfeil' },
+      { keys: ['D', 'M'], label: 'Stift / Marker (freihand)' },
       { keys: ['T'], label: 'Text' },
       { keys: ['K'], label: 'Notiz / Kommentar' },
       { keys: ['Entf'], label: 'Ausgewähltes Element löschen' },

@@ -1,14 +1,17 @@
 import {
   Check,
   Circle,
+  Highlighter,
   ImagePlus,
   MessageSquareText,
   Minus,
   MousePointer2,
   MoveUpRight,
   PaintBucket,
+  Pencil,
   Signature,
   Square,
+  Stamp,
   StickyNote,
   Trash2,
   Type,
@@ -38,6 +41,8 @@ const TOOLS: Array<{ tool: AnnotationTool; label: string; icon: LucideIcon; key:
   { tool: 'ellipse', label: 'Ellipse', icon: Circle, key: 'E' },
   { tool: 'line', label: 'Linie', icon: Minus, key: 'L' },
   { tool: 'arrow', label: 'Pfeil', icon: MoveUpRight, key: 'P' },
+  { tool: 'ink', label: 'Stift (freihand)', icon: Pencil, key: 'D' },
+  { tool: 'marker', label: 'Marker (freihand)', icon: Highlighter, key: 'M' },
   { tool: 'text', label: 'Text', icon: Type, key: 'T' },
   { tool: 'note', label: 'Notiz / Kommentar', icon: StickyNote, key: 'K' },
 ]
@@ -88,14 +93,18 @@ export function AnnotationBar() {
   })
   // Controls reflect the selected annotation, otherwise the style for new ones
   const kind = selectedAnnotation?.type ?? tool
-  const showStroke = ['rect', 'ellipse', 'line', 'arrow'].includes(kind)
+  const showStroke = ['rect', 'ellipse', 'line', 'arrow', 'ink', 'marker'].includes(kind)
   const showFill = kind === 'rect' || kind === 'ellipse'
   const showFont = kind === 'text'
   const color = selectedAnnotation?.color ?? style.color
   const strokeWidth =
     selectedAnnotation && isTwoPoint(selectedAnnotation)
       ? selectedAnnotation.strokeWidth
-      : style.strokeWidth
+      : selectedAnnotation?.type === 'ink'
+        ? selectedAnnotation.marker
+          ? selectedAnnotation.strokeWidth / 5
+          : selectedAnnotation.strokeWidth
+        : style.strokeWidth
   const filled =
     selectedAnnotation?.type === 'rect' || selectedAnnotation?.type === 'ellipse'
       ? selectedAnnotation.filled
@@ -179,6 +188,12 @@ export function AnnotationBar() {
 
       <IconButton label="Bild einfügen" onClick={() => void pickAndInsertImage()}>
         <ImagePlus />
+      </IconButton>
+      <IconButton
+        label="Wasserzeichen"
+        onClick={() => useUiStore.getState().setWatermarkOpen(true)}
+      >
+        <Stamp />
       </IconButton>
       <IconButton
         label="Signatur einfügen"
@@ -282,9 +297,11 @@ export function AnnotationBar() {
           ? 'Element anklicken zum Bearbeiten, Doppelklick auf Text zum Ändern'
           : tool === 'text'
             ? 'Auf die Seite klicken und schreiben'
-            : tool === 'note'
-              ? 'Auf die Seite klicken, um eine Notiz zu setzen'
-              : 'Auf der Seite ziehen zum Zeichnen'}
+            : tool === 'ink' || tool === 'marker'
+              ? 'Auf der Seite zeichnen – zwei Finger zoomen'
+              : tool === 'note'
+                ? 'Auf die Seite klicken, um eine Notiz zu setzen'
+                : 'Auf der Seite ziehen zum Zeichnen'}
       </span>
       <Button size="sm" onClick={() => setActive(false)}>
         Fertig
