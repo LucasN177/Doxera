@@ -253,7 +253,7 @@ erkennbare Lücke dazwischen und verbundene Zellen werden nicht getrennt.
 | #   | Milestone          | Inhalt                                                                                     | Status |
 | --- | ------------------ | ------------------------------------------------------------------------------------------ | ------ |
 | V1  | Konvertieren       | Seiten → Bilder (PNG/JPEG, dpi, mit allen Bearbeitungen); Bilder → PDF (neu oder einfügen) | ✅     |
-| V2  | Komprimieren       | Bilder herunterrechnen und neu komprimieren (MuPDF), Größe vorher/nachher                  | offen  |
+| V2  | Komprimieren       | Bilder herunterrechnen und neu komprimieren (MuPDF), Größe vorher/nachher                  | ✅     |
 | V3  | Datenexport        | Text, Tabellen, Kommentare als CSV, JSON und Excel (eigener XLSX-Schreiber mit fflate)     | offen  |
 | V4  | Stapelverarbeitung | Mehrere Dateien mit einer Aktion (OCR, Komprimieren, Konvertieren, Export) → ZIP           | offen  |
 | V5  | Workflows          | Schrittketten speichern (IndexedDB) und auf Dateien anwenden                               | offen  |
@@ -264,6 +264,15 @@ Zuschnitt, Drehung, Text- und Bildänderungen, OCR-Text, Schwärzungen), dann re
 (`deliverGeneratedFiles`). „Bilder zu PDF“ nutzt `prepareImage` (HEIC, WebP …) und pdf-lib: A4 oder
 Letter (bei breiten Bildern quer, mit optionalem Rand) oder Seitengröße wie das Bild (96 dpi). Öffnen
 und Ablegen nehmen Bilder an; Einstieg auch über die Startseite und das Menü „Werkzeuge“.
+
+**Komprimieren (V2):** Im MuPDF-Worker. Für jedes Bild-Objekt wird die größte angezeigte Größe über alle
+Seiten bestimmt (Bildblöcke + XObject-Zuordnung); unbekannte Verwendung (z. B. in Formularobjekten)
+zählt als ganze A4-Seite. Bilder werden per `warp` auf die Ziel-Auflösung verkleinert (Ausgewogen
+150 dpi / Q75, Stark 96 dpi / Q55), als JPEG kodiert und das Objekt an Ort und Stelle ersetzt – nur
+wenn es mindestens 10 % kleiner wird; Transparenz (SMask) bleibt, 1-Bit-Scans und Masken bleiben
+unverändert. Danach Schrift-Subsets und Neuschreiben mit Objekt-Streams. Verlustfrei schreibt nur neu.
+Eine größere Datei wird nie ausgegeben. Hinweis: MuPDF liefert Puffer als Ansicht auf den
+WebAssembly-Speicher – Längen und Daten sofort kopieren, bevor weiterer Speicher angefordert wird.
 
 ### Phase 7 – KI-Funktionen
 

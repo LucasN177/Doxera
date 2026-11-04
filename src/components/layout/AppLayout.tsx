@@ -5,6 +5,7 @@ import { NotePopover } from '@/features/annotations/NotePopover'
 import { SignatureDialog } from '@/features/annotations/SignatureDialog'
 import { WatermarkDialog } from '@/features/annotations/WatermarkDialog'
 import { OcrDialog } from '@/features/ocr/OcrDialog'
+import { CompressDialog } from '@/features/convert/CompressDialog'
 import { ExportImagesDialog } from '@/features/convert/ExportImagesDialog'
 import { ImagesToPdfDialog } from '@/features/convert/ImagesToPdfDialog'
 import { TextExportDialog } from '@/features/text/TextExportDialog'
@@ -60,6 +61,7 @@ export function AppLayout() {
               <OcrDialog />
               <TextExportDialog />
               <ExportImagesDialog />
+              <CompressDialog />
               <CropDialog />
             </>
           ) : (

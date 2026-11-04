@@ -1,5 +1,6 @@
 import { expose, transfer } from 'comlink'
 import type { PDFDocument } from 'mupdf'
+import { compressPdf, type CompressionLevel, type CompressionResult } from './compress'
 import { applyRedactions, type RedactionMode } from './redact'
 import { extractImage, extractPageContent, type ImagePixels, type RawPageText } from './pageContent'
 
@@ -28,6 +29,14 @@ const api = {
   async redact(data: Uint8Array, mode: RedactionMode = 'redact'): Promise<Uint8Array> {
     const result = applyRedactions(await loadMupdf(), data, mode)
     return transfer(result, [result.buffer as ArrayBuffer])
+  },
+
+  /** Makes a PDF smaller (see `compressPdf`). */
+  async compress(data: Uint8Array, level: CompressionLevel): Promise<CompressionResult> {
+    const result = compressPdf(await loadMupdf(), data, level)
+    // The input may come back unchanged; copy so it can be transferred
+    const output = result.data === data ? data.slice() : result.data
+    return transfer({ ...result, data: output }, [output.buffer as ArrayBuffer])
   },
 
   /** Whether a document is open under this key (otherwise send its data). */

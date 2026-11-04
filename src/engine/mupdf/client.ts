@@ -1,4 +1,5 @@
 import type { Remote } from 'comlink'
+import type { CompressionLevel, CompressionResult } from './compress'
 import type { MupdfWorkerApi } from './mupdf.worker'
 import type { RedactionMode } from './redact'
 import type { ImagePixels, RawPageText } from './pageContent'
@@ -39,6 +40,15 @@ export async function redactPdf(
 ): Promise<Uint8Array> {
   const { api, failed } = await connect()
   return Promise.race([api.redact(data, mode), failed])
+}
+
+/** Makes a PDF smaller in the MuPDF worker (see `compressPdf`). */
+export async function compressPdfData(
+  data: Uint8Array,
+  level: CompressionLevel,
+): Promise<CompressionResult> {
+  const { api, failed } = await connect()
+  return Promise.race([api.compress(data, level), failed])
 }
 
 /**

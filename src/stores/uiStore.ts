@@ -28,6 +28,8 @@ interface UiState {
   setImagesToPdf: (files: File[] | null) => void
   exportImagesOpen: boolean
   setExportImagesOpen: (open: boolean) => void
+  compressOpen: boolean
+  setCompressOpen: (open: boolean) => void
 }
 
 /** Transient UI state that isn't tied to a document. */
@@ -52,4 +54,6 @@ export const useUiStore = create<UiState>()((set) => ({
   setImagesToPdf: (imagesToPdf) => set({ imagesToPdf }),
   exportImagesOpen: false,
   setExportImagesOpen: (exportImagesOpen) => set({ exportImagesOpen }),
+  compressOpen: false,
+  setCompressOpen: (compressOpen) => set({ compressOpen }),
 }))

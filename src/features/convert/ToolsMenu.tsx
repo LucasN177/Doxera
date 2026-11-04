@@ -1,4 +1,4 @@
-import { FileImage, Images, Wrench } from 'lucide-react'
+import { FileArchive, FileImage, Images, Wrench } from 'lucide-react'
 import { DropdownMenu } from 'radix-ui'
 import { IconButton } from '@/components/layout/IconButton'
 import { useUiStore } from '@/stores/uiStore'
@@ -22,6 +22,12 @@ export function ToolsMenu() {
           sideOffset={6}
           className="bg-popover text-popover-foreground z-50 min-w-60 rounded-md border p-1 shadow-md"
         >
+          <DropdownMenu.Item
+            className={item}
+            onSelect={() => useUiStore.getState().setCompressOpen(true)}
+          >
+            <FileArchive /> PDF komprimieren …
+          </DropdownMenu.Item>
           <DropdownMenu.Item
             className={item}
             onSelect={() => useUiStore.getState().setExportImagesOpen(true)}

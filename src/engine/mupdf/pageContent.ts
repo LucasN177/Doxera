@@ -57,7 +57,7 @@ export interface RawPageText {
   images: RawImage[]
 }
 
-interface ImageBlock {
+export interface ImageBlock {
   bbox: Rect4
   transform: Matrix6
   width: number
@@ -104,7 +104,10 @@ function imageXObjects(page: Mupdf.PDFPage): Map<string, { width: number; height
  * `/Name Do`. When the page draws exactly the reported images in order, they
  * match by position; otherwise only images whose pixel size is unique.
  */
-function matchXObjects(page: Mupdf.PDFPage, blocks: readonly ImageBlock[]): (string | null)[] {
+export function matchXObjects(
+  page: Mupdf.PDFPage,
+  blocks: readonly ImageBlock[],
+): (string | null)[] {
   let images: Map<string, { width: number; height: number }>
   let content: string
   try {
