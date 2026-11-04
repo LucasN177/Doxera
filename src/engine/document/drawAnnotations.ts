@@ -21,6 +21,7 @@ import {
   textLines,
   toDisplay,
   toStored,
+  standardFontName,
 } from './annotations'
 
 type PdfLib = typeof import('pdf-lib')
@@ -77,6 +78,8 @@ export function drawAnnotations(
   images: ReadonlyMap<string, PDFImage> = new Map(),
   /** Bold font for watermarks. */
   boldFont: PDFFont = font,
+  /** Fonts for text annotations, by standard font name (see `standardFontName`). */
+  textFonts: ReadonlyMap<string, PDFFont> = new Map(),
 ) {
   const { rgb, degrees, LineCapStyle, BlendMode } = lib
 
@@ -182,7 +185,10 @@ export function drawAnnotations(
       continue
     }
 
-    if (annotation.type === 'text') drawText(page, annotation, box, font, color, degrees)
+    if (annotation.type === 'text') {
+      const textFont = textFonts.get(standardFontName(annotation)) ?? font
+      drawText(page, annotation, box, textFont, color, degrees)
+    }
   }
 }
 

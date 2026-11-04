@@ -85,7 +85,14 @@ function errorMessage(error: unknown): string {
 
 export const useDocumentStore = create<DocumentState>()((set, get) => {
   const releaseAll = () => {
+    const ids = [...get().sources.keys()]
     for (const source of get().sources.values()) void closePdf(source.pdf)
+    // Sources opened in the MuPDF worker for text editing (no-op if it never ran)
+    if (ids.length > 0) {
+      void import('@/engine/mupdf/client').then(({ closeTextSource }) =>
+        Promise.all(ids.map(closeTextSource)),
+      )
+    }
     for (const asset of get().assets.values()) URL.revokeObjectURL(asset.url)
   }
 

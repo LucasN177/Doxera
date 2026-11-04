@@ -1,6 +1,8 @@
 import type { PDFFont, PDFImage } from 'pdf-lib'
 import type { PageRef } from '@/types/document'
+import { standardFontName } from './annotations'
 import { addNoteAnnotations, addRedactAnnotations, drawAnnotations } from './drawAnnotations'
+import { hasTextReplacements, textRemovalPages } from './textEditing'
 
 /** What the builder needs from a source: its original bytes. */
 export interface SourceData {
@@ -16,8 +18,11 @@ export interface BuildOptions {
    * Applies the redaction annotations of the built PDF for good. Defaults to
    * MuPDF in a worker; tests pass MuPDF directly.
    */
-  redact?: (data: Uint8Array) => Promise<Uint8Array>
+  redact?: (data: Uint8Array, mode: 'redact' | 'text') => Promise<Uint8Array>
 }
+
+/** Source id of the intermediate file with replaced text removed. */
+const TEXT_REMOVED_SOURCE = 'doxera:text-removed'
 
 export interface ImageData {
   mimeType: 'image/png' | 'image/jpeg'
@@ -39,12 +44,33 @@ export async function buildPdf(
 ): Promise<Uint8Array> {
   if (pages.length === 0) throw new Error('Ein PDF braucht mindestens eine Seite.')
 
+  // Edited text: first remove the original lines (MuPDF), then build from that
+  // intermediate file, where the new text is drawn like any text annotation
+  if (hasTextReplacements(pages)) {
+    const removed = await buildPdf(textRemovalPages(pages), sources, {
+      redact: (data) => redact(data, 'text'),
+    })
+    return buildPdf(
+      pages.map((page, index) => ({
+        ...page,
+        sourceId: TEXT_REMOVED_SOURCE,
+        sourceIndex: index,
+        annotations: page.annotations?.map((item) =>
+          item.type === 'text' && item.replaces ? { ...item, replaces: undefined } : item,
+        ),
+      })),
+      new Map(sources).set(TEXT_REMOVED_SOURCE, { data: removed }),
+      { title, assets, redact },
+    )
+  }
+
   // Loaded on demand: pdf-lib is only needed when exporting edited documents
   const lib = await import('pdf-lib')
   const { PDFDocument, degrees, StandardFonts } = lib
   const output = await PDFDocument.create()
   let font: PDFFont | null = null
   let boldFont: PDFFont | null = null
+  const textFonts = new Map<string, PDFFont>()
 
   // Load every used source once and copy all its needed pages in one call
   const sourceIds = [...new Set(pages.map((page) => page.sourceId))]
@@ -103,7 +129,12 @@ export async function buildPdf(
       if (ref.annotations.some((annotation) => annotation.type === 'watermark')) {
         boldFont ??= await output.embedFont(StandardFonts.HelveticaBold)
       }
-      drawAnnotations(lib, page, ref.annotations, box, font, images, boldFont ?? font)
+      for (const annotation of ref.annotations) {
+        if (annotation.type !== 'text') continue
+        const name = standardFontName(annotation)
+        if (!textFonts.has(name)) textFonts.set(name, await output.embedFont(name))
+      }
+      drawAnnotations(lib, page, ref.annotations, box, font, images, boldFont ?? font, textFonts)
       const notes = ref.annotations.filter((annotation) => annotation.type === 'note')
       if (notes.length > 0) addNoteAnnotations(lib, page, notes, box)
       const redactions = ref.annotations.filter((annotation) => annotation.type === 'redact')
@@ -126,10 +157,10 @@ export async function buildPdf(
   output.setModificationDate(new Date())
   const data = await output.save()
   const redacting = pages.some((page) => page.annotations?.some((item) => item.type === 'redact'))
-  return redacting ? redact(data) : data
+  return redacting ? redact(data, 'redact') : data
 }
 
-async function defaultRedact(data: Uint8Array): Promise<Uint8Array> {
+async function defaultRedact(data: Uint8Array, mode: 'redact' | 'text'): Promise<Uint8Array> {
   const { redactPdf } = await import('@/engine/mupdf/client')
-  return redactPdf(data)
+  return redactPdf(data, mode)
 }

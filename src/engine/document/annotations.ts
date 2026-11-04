@@ -8,6 +8,7 @@ import type {
   PagePoint,
   ShapeAnnotation,
   TextAnnotation,
+  TextFont,
 } from '@/types/annotations'
 import type { PageRef } from '@/types/document'
 
@@ -364,3 +365,60 @@ export function setWatermarks(
 
 /** Fill of redactions (MuPDF draws the same black box on export). */
 export const REDACT_COLOR = '#000000'
+
+/** On-screen font stacks matching the standard PDF fonts used on export. */
+export const TEXT_FONT_FAMILIES: Record<TextFont, string> = {
+  sans: TEXT_FONT_FAMILY,
+  serif: '"Times New Roman", Times, serif',
+  mono: '"Courier New", Courier, monospace',
+}
+
+type TextStyle = Pick<TextAnnotation, 'font' | 'bold' | 'italic'>
+
+/** CSS font properties of a text annotation. */
+export function textFontCss(text: TextStyle) {
+  return {
+    family: TEXT_FONT_FAMILIES[text.font ?? 'sans'],
+    weight: text.bold ? 'bold' : 'normal',
+    style: text.italic ? 'italic' : 'normal',
+  }
+}
+
+/** Name of the standard PDF font (one of the 14 base fonts) for a text annotation. */
+export function standardFontName(text: TextStyle): string {
+  const { bold = false, italic = false } = text
+  switch (text.font ?? 'sans') {
+    case 'serif':
+      return bold && italic
+        ? 'Times-BoldItalic'
+        : bold
+          ? 'Times-Bold'
+          : italic
+            ? 'Times-Italic'
+            : 'Times-Roman'
+    case 'mono':
+      return `Courier${bold || italic ? '-' : ''}${bold ? 'Bold' : ''}${italic ? 'Oblique' : ''}`
+    default:
+      return `Helvetica${bold || italic ? '-' : ''}${bold ? 'Bold' : ''}${italic ? 'Oblique' : ''}`
+  }
+}
+
+/**
+ * Guesses family and style from a PDF font name such as "ABCDEF+Arial-BoldMT"
+ * or "Times-Italic" (embedded fonts are replaced with the closest standard font).
+ */
+export function classifyFont(name: string): Required<TextStyle> {
+  const plain = name.replace(/^[A-Z]{6}\+/, '')
+  const mono = /courier|mono|consol|menlo|typewriter/i.test(plain)
+  const serif =
+    !mono &&
+    !/sans/i.test(plain) &&
+    /times|serif|roman|georgia|garamond|cambria|minion|palatino|book|baskerville|caslon|didot/i.test(
+      plain,
+    )
+  return {
+    font: mono ? 'mono' : serif ? 'serif' : 'sans',
+    bold: /bold|black|heavy|semibold|demi/i.test(plain),
+    italic: /italic|oblique/i.test(plain) || /-It(?:[A-Z]|$)/.test(plain),
+  }
+}

@@ -18,6 +18,7 @@ import {
   replaceAnnotation,
   TEXT_ASCENT,
   TEXT_FONT_FAMILY,
+  textFontCss,
   TEXT_LINE_HEIGHT,
   textDisplayAngle,
   textLines,
@@ -26,6 +27,7 @@ import {
   unrotatedSize,
 } from '@/engine/document/annotations'
 import { arrowHead, NOTE_ICON_SIZE } from '@/engine/document/drawAnnotations'
+import { replacementFor, sameRect, type EditableLine } from '@/engine/document/textEditing'
 import { cn } from '@/lib/utils'
 import { NOTE_DEFAULT_COLOR, useAnnotationStore } from '@/stores/annotationStore'
 import { useDocumentStore } from '@/stores/documentStore'
@@ -36,9 +38,11 @@ import type {
   WatermarkAnnotation,
   NoteAnnotation,
   PagePoint,
+  PageRect,
   TextAnnotation,
 } from '@/types/annotations'
 import type { PageRef, ResolvedPage } from '@/types/document'
+import { useEditableLines } from './useEditableLines'
 
 type Handle = 'a' | 'b' | 'nw' | 'ne' | 'sw' | 'se'
 
@@ -66,10 +70,16 @@ const MIN_SIZE = 0.005
 let measureContext: CanvasRenderingContext2D | null = null
 
 /** Width of a text line in CSS pixels, using the same font as rendering. */
-function measureText(text: string, fontSizePx: number, weight = 'normal'): number {
+function measureText(
+  text: string,
+  fontSizePx: number,
+  weight = 'normal',
+  family = TEXT_FONT_FAMILY,
+  style = 'normal',
+): number {
   measureContext ??= document.createElement('canvas').getContext('2d')
   if (!measureContext) return text.length * fontSizePx * 0.55
-  measureContext.font = `${weight} ${fontSizePx}px ${TEXT_FONT_FAMILY}`
+  measureContext.font = `${style} ${weight} ${fontSizePx}px ${family}`
   return measureContext.measureText(text).width
 }
 
@@ -92,6 +102,7 @@ export function AnnotationLayer({ page, scale, interactive }: AnnotationLayerPro
   const tool = useAnnotationStore((state) => state.tool)
   const selected = useAnnotationStore((state) => state.selected)
   const editing = useAnnotationStore((state) => state.editing)
+  const lines = useEditableLines(page, interactive && modeActive && tool === 'edittext')
 
   const active = interactive && modeActive
   const drawing = active && tool !== 'select'
@@ -125,9 +136,12 @@ export function AnnotationLayer({ page, scale, interactive }: AnnotationLayerPro
   const onSurfacePointerDown = (event: PointerEvent<SVGSVGElement>) => {
     if (!drawing || event.button !== 0) return
     event.preventDefault()
+    // Existing text is edited through the line targets
+    if (tool === 'edittext') return
     const at = toStored(pointFrom(event), turns)
     const id = crypto.randomUUID()
-    const { color, strokeWidth, filled, fontSize } = useAnnotationStore.getState().style
+    const { color, strokeWidth, filled, fontSize, font, bold, italic } =
+      useAnnotationStore.getState().style
 
     if (tool === 'note') {
       // Center the icon on the click
@@ -150,7 +164,18 @@ export function AnnotationLayer({ page, scale, interactive }: AnnotationLayerPro
     }
 
     if (tool === 'text') {
-      const text: TextAnnotation = { id, type: 'text', color, at, text: '', fontSize, turns }
+      const text: TextAnnotation = {
+        id,
+        type: 'text',
+        color,
+        at,
+        text: '',
+        fontSize,
+        turns,
+        font,
+        bold,
+        italic,
+      }
       setDraft(text)
       useAnnotationStore.getState().setTool('select')
       useAnnotationStore.getState().setEditing({ pageId, id })
@@ -297,10 +322,18 @@ export function AnnotationLayer({ page, scale, interactive }: AnnotationLayerPro
     if (!editingText) return
     const exists = annotations.some((item) => item.id === editingText.id)
     const text = value.replace(/\s+$/, '')
-    if (!text) {
+    // Replaced PDF text stays replaced even when emptied (that deletes the line)
+    const replacing = !!editingText.replaces
+    const unchanged = text === editingText.text
+    let kept = true
+    if (!exists && replacing && unchanged) {
+      // Opened an existing line without changing it: keep the original
+      kept = false
+    } else if (!text && !replacing) {
       if (exists) commit((pages) => removeAnnotation(pages, pageId, editingText.id))
+      kept = false
     } else if (exists) {
-      if (text !== editingText.text) {
+      if (!unchanged) {
         commit((pages) => replaceAnnotation(pages, pageId, { ...editingText, text }))
       }
     } else {
@@ -308,8 +341,39 @@ export function AnnotationLayer({ page, scale, interactive }: AnnotationLayerPro
     }
     setDraft(null)
     useAnnotationStore.getState().setEditing(null)
-    if (text) useAnnotationStore.getState().select({ pageId, id: editingText.id })
+    if (kept) useAnnotationStore.getState().select({ pageId, id: editingText.id })
   }
+
+  /** Starts editing a line of the PDF itself (or the text that already replaces it). */
+  const editLine = (line: EditableLine) => (event: PointerEvent<SVGElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    const store = useAnnotationStore.getState()
+    const existing = annotations.find(
+      (item): item is TextAnnotation =>
+        item.type === 'text' && !!item.replaces && sameRect(item.replaces, line.rect),
+    )
+    if (existing) {
+      store.setEditing({ pageId, id: existing.id })
+      return
+    }
+    const replacement = replacementFor(line, crypto.randomUUID())
+    const cover = sampleBackground(
+      svgRef.current,
+      { a: px(line.rect.a), b: px(line.rect.b) },
+      {
+        width,
+        height,
+      },
+    )
+    if (cover && cover !== '#ffffff') replacement.cover = cover
+    setDraft(replacement)
+    store.setEditing({ pageId, id: replacement.id })
+  }
+  const editableLines =
+    active && tool === 'edittext' && lines?.status === 'ready' ? lines.lines : []
+  // Text editing only needs the line targets; elsewhere the page keeps scrolling
+  const capturing = drawing && tool !== 'edittext'
 
   if (shown.length === 0 && !drawing) return null
 
@@ -323,9 +387,9 @@ export function AnnotationLayer({ page, scale, interactive }: AnnotationLayerPro
         width={width}
         height={height}
         style={{
-          pointerEvents: drawing ? 'all' : 'none',
-          cursor: drawing ? (tool === 'text' ? 'text' : 'crosshair') : undefined,
-          touchAction: drawing ? 'none' : undefined,
+          pointerEvents: capturing ? 'all' : 'none',
+          cursor: capturing ? (tool === 'text' ? 'text' : 'crosshair') : undefined,
+          touchAction: capturing ? 'none' : undefined,
         }}
         onPointerDown={onSurfacePointerDown}
         onPointerMove={onPointerMove}
@@ -341,6 +405,37 @@ export function AnnotationLayer({ page, scale, interactive }: AnnotationLayerPro
         data-annotation-layer
         aria-hidden={!active}
       >
+        {/* Replaced PDF text is hidden below its new version (removed on export) */}
+        {shown.map((annotation) =>
+          annotation.type === 'text' && annotation.replaces ? (
+            <ReplacedTextCover
+              key={`cover-${annotation.id}`}
+              rect={annotation.replaces}
+              color={annotation.cover}
+              px={px}
+            />
+          ) : null,
+        )}
+        {editableLines.map((line, index) => {
+          const a = px(line.rect.a)
+          const b = px(line.rect.b)
+          return (
+            <rect
+              key={index}
+              x={Math.min(a.x, b.x) - 2}
+              y={Math.min(a.y, b.y) - 2}
+              width={Math.abs(a.x - b.x) + 4}
+              height={Math.abs(a.y - b.y) + 4}
+              className="fill-transparent stroke-sky-500/40 hover:fill-sky-500/10 hover:stroke-sky-500"
+              strokeDasharray="3 2"
+              style={{ pointerEvents: 'all', cursor: 'text' }}
+              onPointerDown={editLine(line)}
+              data-annotation
+            >
+              <title>{`Bearbeiten: ${line.text}`}</title>
+            </rect>
+          )
+        })}
         {shown.map((annotation) => {
           if (annotation.id === editingHere || annotation.type === 'note') return null
           // Watermarks are managed in their dialog, not on the page
@@ -579,7 +674,11 @@ function boundingBox(
     const anchor = px(annotation.at)
     const fontSize = annotation.fontSize * scale
     const lines = textLines(annotation.text)
-    const w = Math.max(fontSize * 0.5, ...lines.map((line) => measureText(line, fontSize)))
+    const font = textFontCss(annotation)
+    const w = Math.max(
+      fontSize * 0.5,
+      ...lines.map((line) => measureText(line, fontSize, font.weight, font.family, font.style)),
+    )
     const h = lines.length * fontSize * TEXT_LINE_HEIGHT
     const angle = (textDisplayAngle(annotation, turns) * Math.PI) / 180
     const corners = [
@@ -697,6 +796,7 @@ export function AnnotationShape({ annotation, px, scale, turns, storedSize }: Sh
   if (annotation.type === 'text') {
     const anchor = px(annotation.at)
     const fontSize = annotation.fontSize * scale
+    const font = textFontCss(annotation)
     return (
       <g transform={`rotate(${textDisplayAngle(annotation, turns)} ${anchor.x} ${anchor.y})`}>
         {textLines(annotation.text).map((line, index) => (
@@ -706,7 +806,9 @@ export function AnnotationShape({ annotation, px, scale, turns, storedSize }: Sh
             y={anchor.y + fontSize * (TEXT_ASCENT + index * TEXT_LINE_HEIGHT)}
             fill={color}
             fontSize={fontSize}
-            fontFamily={TEXT_FONT_FAMILY}
+            fontFamily={font.family}
+            fontWeight={font.weight}
+            fontStyle={font.style}
             style={{ whiteSpace: 'pre' }}
           >
             {line}
@@ -966,6 +1068,59 @@ function SelectionFrame({
   )
 }
 
+/**
+ * Hides replaced PDF text on screen with the page color next to it. On export
+ * the original glyphs are removed instead, so the real background stays.
+ */
+function ReplacedTextCover({
+  rect,
+  color = '#ffffff',
+  px,
+}: {
+  rect: PageRect
+  color?: string
+  px: (point: PagePoint) => { x: number; y: number }
+}) {
+  const a = px(rect.a)
+  const b = px(rect.b)
+  return (
+    <rect
+      x={Math.min(a.x, b.x) - 1}
+      y={Math.min(a.y, b.y) - 1}
+      width={Math.abs(a.x - b.x) + 2}
+      height={Math.abs(a.y - b.y) + 2}
+      fill={color}
+    />
+  )
+}
+
+/**
+ * Color of the rendered page just left of a text line (right of it, if the
+ * line starts at the edge), or undefined if the page isn't rendered yet.
+ */
+function sampleBackground(
+  svg: SVGSVGElement | null,
+  line: { a: { x: number; y: number }; b: { x: number; y: number } },
+  size: { width: number; height: number },
+): string | undefined {
+  const canvas = svg?.parentElement?.querySelector('canvas')
+  const context = canvas?.getContext('2d')
+  if (!canvas || !context) return undefined
+  const ratio = canvas.width / size.width
+  const y = Math.round(((line.a.y + line.b.y) / 2) * ratio)
+  const left = Math.min(line.a.x, line.b.x) - 4
+  const right = Math.max(line.a.x, line.b.x) + 4
+  const x = Math.round((left >= 0 ? left : right) * ratio)
+  if (x < 0 || x >= canvas.width || y < 0 || y >= canvas.height) return undefined
+  try {
+    const [r, g, b, alpha] = context.getImageData(x, y, 1, 1).data
+    if (alpha < 250) return undefined
+    return `#${[r, g, b].map((value) => value.toString(16).padStart(2, '0')).join('')}`
+  } catch {
+    return undefined
+  }
+}
+
 function TextEditor({
   annotation,
   anchor,
@@ -983,16 +1138,24 @@ function TextEditor({
   const ref = useRef<HTMLTextAreaElement>(null)
   const done = useRef(false)
   const fontSize = annotation.fontSize * scale
+  const font = textFontCss(annotation)
   const lines = textLines(value)
   const widthPx = Math.max(
     fontSize * 4,
-    ...lines.map((line) => measureText(line, fontSize) + fontSize),
+    ...lines.map(
+      (line) => measureText(line, fontSize, font.weight, font.family, font.style) + fontSize,
+    ),
   )
+  const replacing = !!annotation.replaces
 
   useEffect(() => {
-    ref.current?.focus()
-    ref.current?.select()
-  }, [])
+    const textarea = ref.current
+    if (!textarea) return
+    textarea.focus()
+    // Existing PDF text: caret at the end for small corrections; new text: select all
+    if (replacing) textarea.setSelectionRange(textarea.value.length, textarea.value.length)
+    else textarea.select()
+  }, [replacing])
 
   const finish = () => {
     if (done.current) return
@@ -1014,7 +1177,9 @@ function TextEditor({
         height: lines.length * fontSize * TEXT_LINE_HEIGHT + 2,
         fontSize,
         lineHeight: TEXT_LINE_HEIGHT,
-        fontFamily: TEXT_FONT_FAMILY,
+        fontFamily: font.family,
+        fontWeight: font.weight,
+        fontStyle: font.style,
         color: annotation.color,
         transform: `rotate(${angle}deg)`,
         transformOrigin: '0 0',

@@ -171,13 +171,21 @@ Schwärzungen sind Annotationen (`type: 'redact'`); pdf-lib schreibt sie als /Re
 MuPDF wendet sie danach an (Text entfernen, Bildpixel löschen, vollständig überdeckte Vektorgrafik
 entfernen) und schreibt die Datei vollständig neu (`garbage=compact`), damit nichts Entferntes übrig bleibt.
 
+**Text bearbeiten (E3):** MuPDF liest die Textzeilen einer Seite (Position, Schrift, Größe, Farbe) im
+Worker. Eine bearbeitete Zeile wird zur Text-Annotation mit `replaces` (Bereich der Originalzeile).
+Export in zwei Stufen: zuerst entfernt MuPDF nur die Glyphen der ersetzten Zeilen (ohne schwarze
+Kästen), danach zeichnet pdf-lib den neuen Text mit der passenden Standardschrift (Helvetica, Times,
+Courier, jeweils fett/kursiv) an der Originalposition. Grenzen: zeilenweise, nur waagerechter Text,
+eingebettete Schriften werden durch die ähnlichste Standardschrift ersetzt, Zeichen außerhalb von
+WinAnsi werden zu „?“.
+
 **Milestones Phase 4:**
 
 | #   | Milestone           | Inhalt                                                                                   | Status |
 | --- | ------------------- | ---------------------------------------------------------------------------------------- | ------ |
 | E1  | MuPDF-Grundlage     | MuPDF.js lazy im Worker, Nachbearbeitung beim Export, PWA-Caching                        | ✅     |
 | E2  | Schwärzen           | Bereiche aufziehen oder Text markieren; beim Export dauerhaft entfernt                   | ✅     |
-| E3  | Text bearbeiten     | Vorhandenen Text auswählen, Inhalt/Größe/Farbe ändern (alter Text entfernt, neu gesetzt) | offen  |
+| E3  | Text bearbeiten     | Vorhandenen Text auswählen, Inhalt/Größe/Farbe ändern (alter Text entfernt, neu gesetzt) | ✅     |
 | E4  | Elemente bearbeiten | Vorhandene Bilder auswählen, verschieben, skalieren, entfernen                           | offen  |
 
 ### Phase 5 – OCR

@@ -1,10 +1,20 @@
 import { create } from 'zustand'
 import { isTwoPoint, replaceAnnotation } from '@/engine/document/annotations'
-import type { Annotation } from '@/types/annotations'
+import type { Annotation, TextFont } from '@/types/annotations'
 import { useDocumentStore } from './documentStore'
 
 export type AnnotationTool =
-  'select' | 'rect' | 'ellipse' | 'line' | 'arrow' | 'ink' | 'marker' | 'text' | 'note' | 'redact'
+  | 'select'
+  | 'rect'
+  | 'ellipse'
+  | 'line'
+  | 'arrow'
+  | 'ink'
+  | 'marker'
+  | 'text'
+  | 'note'
+  | 'redact'
+  | 'edittext'
 
 export interface AnnotationStyle {
   color: string
@@ -13,6 +23,9 @@ export interface AnnotationStyle {
   filled: boolean
   /** Font size in PDF points. */
   fontSize: number
+  font: TextFont
+  bold: boolean
+  italic: boolean
 }
 
 export interface AnnotationRef {
@@ -61,6 +74,9 @@ const DEFAULT_STYLE: AnnotationStyle = {
   strokeWidth: 2,
   filled: false,
   fontSize: 14,
+  font: 'sans',
+  bold: false,
+  italic: false,
 }
 
 /** Applies the relevant style properties to an existing annotation. */
@@ -71,6 +87,9 @@ export function applyStyle(annotation: Annotation, style: Partial<AnnotationStyl
   if (style.color) next.color = style.color
   if (next.type === 'text') {
     if (style.fontSize) next.fontSize = style.fontSize
+    if (style.font) next.font = style.font
+    if (style.bold !== undefined) next.bold = style.bold
+    if (style.italic !== undefined) next.italic = style.italic
   } else if (next.type === 'ink') {
     if (style.strokeWidth)
       next.strokeWidth = next.marker ? style.strokeWidth * 5 : style.strokeWidth

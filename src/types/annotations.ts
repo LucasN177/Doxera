@@ -45,7 +45,20 @@ export interface TextAnnotation extends AnnotationBase {
    * written. The text is upright in that orientation.
    */
   turns: number
+  /** Font family (standard PDF fonts on export); sans-serif if missing. */
+  font?: TextFont
+  bold?: boolean
+  italic?: boolean
+  /**
+   * Set when this text replaces text of the PDF itself: the original text in
+   * this area is hidden on screen and removed from the page on export.
+   */
+  replaces?: PageRect
+  /** Page background next to the replaced text, to hide it on screen (white if missing). */
+  cover?: string
 }
+
+export type TextFont = 'sans' | 'serif' | 'mono'
 
 /** Rectangle given by two opposite corners (stored page space). */
 export interface PageRect {

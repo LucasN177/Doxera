@@ -24,9 +24,9 @@ Comprehensive tools for viewing and editing existing PDF documents.
 - [x] View and navigate PDF documents (zoom, fit to width/page, page navigation)
 - [x] Select and copy text
 - [x] Full-text search with highlighted matches
-- [ ] Select and edit existing text
+- [x] Select and edit existing text (line by line: change, restyle or delete a line; exported in place of the original)
 - [ ] Add, modify and delete text blocks
-- [ ] Change font size, font family and text color
+- [x] Change font size, font family, bold/italic and text color
 - [ ] Move and resize existing elements
 - [ ] Select, move and remove images
 - [x] Add shapes, lines, arrows and text boxes (select, move, resize, recolor)
@@ -136,7 +136,7 @@ The project is built on a modern TypeScript-based frontend and browser-native do
 | WebAssembly | High-performance browser processing (PDF.js image decoders) | ✅ in use |
 | vite-plugin-pwa / Workbox | Offline support and installation | ✅ in use |
 | Vitest & Testing Library | Unit and component tests | ✅ in use |
-| MuPDF.js | Advanced PDF processing (redaction; text editing planned) | ✅ in use (loaded on demand) |
+| MuPDF.js | Advanced PDF processing (redaction, text editing) | ✅ in use (loaded on demand) |
 | Tesseract.js | Optical Character Recognition | 🔜 planned |
 
 Additional AI technologies and integrations will be evaluated during development.
@@ -233,7 +233,7 @@ The main objectives are:
 - ✅ **Phase 1 – Viewer:** viewing, search, local library, export, offline support, dark mode, iPhone/iPad support
 - ✅ **Phase 2 – Page management:** rotate, delete, duplicate, reorder, merge, extract, split and crop pages, with a page overview that also works on smartphones
 - ✅ **Phase 3 – Annotations:** shapes, lines, arrows, text boxes, freehand drawing, text highlighting, comments, images, signatures and watermarks – all exported into the PDF
-- 🚧 **Phase 4 – Real editing:** permanent redaction with MuPDF.js is done; editing existing text and images is next
+- 🚧 **Phase 4 – Real editing:** permanent redaction and editing existing text with MuPDF.js are done; editing existing images is next
 - 🔜 **Next phases:** OCR, automation and AI features
 
 The full roadmap is in the [implementation plan](docs/IMPLEMENTATION_PLAN.md).

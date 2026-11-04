@@ -17,7 +17,11 @@ import {
   Type,
   type LucideIcon,
   EyeOff,
+  Bold,
+  Italic,
+  TextCursorInput,
 } from 'lucide-react'
+import type { TextFont } from '@/types/annotations'
 import { useEffect } from 'react'
 import { toast } from 'sonner'
 import { IconButton } from '@/components/layout/IconButton'
@@ -45,6 +49,7 @@ const TOOLS: Array<{ tool: AnnotationTool; label: string; icon: LucideIcon; key:
   { tool: 'ink', label: 'Stift (freihand)', icon: Pencil, key: 'D' },
   { tool: 'marker', label: 'Marker (freihand)', icon: Highlighter, key: 'M' },
   { tool: 'text', label: 'Text', icon: Type, key: 'T' },
+  { tool: 'edittext', label: 'Vorhandenen Text bearbeiten', icon: TextCursorInput, key: 'B' },
   { tool: 'note', label: 'Notiz / Kommentar', icon: StickyNote, key: 'K' },
   { tool: 'redact', label: 'Schwärzen (dauerhaft)', icon: EyeOff, key: 'X' },
 ]
@@ -62,6 +67,11 @@ async function pickAndInsertImage() {
 }
 const STROKE_WIDTHS = [1, 2, 3, 5, 8]
 const FONT_SIZES = [8, 10, 12, 14, 18, 24, 32, 48]
+const TEXT_FONTS: Array<{ value: TextFont; name: string }> = [
+  { value: 'sans', name: 'Helvetica' },
+  { value: 'serif', name: 'Times' },
+  { value: 'mono', name: 'Courier' },
+]
 const COLOR_NAMES: Record<string, string> = {
   '#e11d48': 'Rot',
   '#f59e0b': 'Gelb',
@@ -111,8 +121,15 @@ export function AnnotationBar() {
     selectedAnnotation?.type === 'rect' || selectedAnnotation?.type === 'ellipse'
       ? selectedAnnotation.filled
       : style.filled
-  const fontSize =
-    selectedAnnotation?.type === 'text' ? selectedAnnotation.fontSize : style.fontSize
+  const selectedText = selectedAnnotation?.type === 'text' ? selectedAnnotation : null
+  const fontSize = selectedText?.fontSize ?? style.fontSize
+  const font = selectedText ? (selectedText.font ?? 'sans') : style.font
+  const bold = selectedText ? !!selectedText.bold : style.bold
+  const italic = selectedText ? !!selectedText.italic : style.italic
+  // Sizes read from a PDF can be anything (e.g. 10.5 pt)
+  const fontSizes = FONT_SIZES.includes(fontSize)
+    ? FONT_SIZES
+    : [...FONT_SIZES, fontSize].sort((a, b) => a - b)
 
   const deleteSelected = () => {
     const current = useAnnotationStore.getState().selected
@@ -271,17 +288,49 @@ export function AnnotationBar() {
             value={fontSize}
             onChange={(event) => setStyle({ fontSize: Number(event.target.value) })}
           >
-            {FONT_SIZES.map((size) => (
+            {fontSizes.map((size) => (
               <option key={size} value={size}>
                 {size} pt
               </option>
             ))}
           </select>
+          <select
+            aria-label="Schriftart"
+            className="border-input bg-background h-8 rounded-md border px-1.5 text-sm"
+            value={font}
+            onChange={(event) => setStyle({ font: event.target.value as TextFont })}
+          >
+            {TEXT_FONTS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.name}
+              </option>
+            ))}
+          </select>
+          <IconButton
+            label="Fett"
+            aria-pressed={bold}
+            className={cn(bold && 'bg-accent text-accent-foreground')}
+            onClick={() => setStyle({ bold: !bold })}
+          >
+            <Bold />
+          </IconButton>
+          <IconButton
+            label="Kursiv"
+            aria-pressed={italic}
+            className={cn(italic && 'bg-accent text-accent-foreground')}
+            onClick={() => setStyle({ italic: !italic })}
+          >
+            <Italic />
+          </IconButton>
         </>
       )}
 
       {selectedAnnotation && (
-        <IconButton label="Auswahl löschen" shortcut="Entf" onClick={deleteSelected}>
+        <IconButton
+          label={selectedText?.replaces ? 'Änderung verwerfen (Originaltext)' : 'Auswahl löschen'}
+          shortcut="Entf"
+          onClick={deleteSelected}
+        >
           <Trash2 />
         </IconButton>
       )}
@@ -296,18 +345,20 @@ export function AnnotationBar() {
       </IconButton>
 
       <div className="flex-1" />
-      <span className="text-muted-foreground px-2 text-xs whitespace-nowrap max-lg:hidden">
+      <span className="text-muted-foreground px-2 text-xs whitespace-nowrap max-2xl:hidden">
         {tool === 'select'
           ? 'Element anklicken zum Bearbeiten, Doppelklick auf Text zum Ändern'
           : tool === 'text'
             ? 'Auf die Seite klicken und schreiben'
-            : tool === 'redact'
-              ? 'Bereich aufziehen – Inhalt darunter wird beim Export entfernt'
-              : tool === 'ink' || tool === 'marker'
-                ? 'Auf der Seite zeichnen – zwei Finger zoomen'
-                : tool === 'note'
-                  ? 'Auf die Seite klicken, um eine Notiz zu setzen'
-                  : 'Auf der Seite ziehen zum Zeichnen'}
+            : tool === 'edittext'
+              ? 'Textzeile anklicken und ändern – leeren löscht sie'
+              : tool === 'redact'
+                ? 'Bereich aufziehen – Inhalt darunter wird beim Export entfernt'
+                : tool === 'ink' || tool === 'marker'
+                  ? 'Auf der Seite zeichnen – zwei Finger zoomen'
+                  : tool === 'note'
+                    ? 'Auf die Seite klicken, um eine Notiz zu setzen'
+                    : 'Auf der Seite ziehen zum Zeichnen'}
       </span>
       <Button size="sm" onClick={() => setActive(false)}>
         Fertig

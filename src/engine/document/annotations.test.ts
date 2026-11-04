@@ -13,6 +13,8 @@ import {
   removeAnnotation,
   replaceAnnotation,
   setWatermarks,
+  standardFontName,
+  classifyFont,
   simplifyPoints,
   smoothPath,
   textDisplayAngle,
@@ -228,5 +230,27 @@ describe('setWatermarks', () => {
     pages = setWatermarks(pages, new Set(['p', 'q']), () => null)
     expect(pages[0].annotations?.map((a) => a.id)).toEqual(['r'])
     expect(pages[1]).not.toHaveProperty('annotations')
+  })
+})
+
+describe('fonts', () => {
+  it('classifies embedded font names', () => {
+    expect(classifyFont('ABCDEF+Arial-BoldMT')).toEqual({ font: 'sans', bold: true, italic: false })
+    expect(classifyFont('TimesNewRomanPS-ItalicMT')).toEqual({
+      font: 'serif',
+      bold: false,
+      italic: true,
+    })
+    expect(classifyFont('MinionPro-It')).toMatchObject({ italic: true })
+    expect(classifyFont('CourierNewPSMT')).toMatchObject({ font: 'mono' })
+    expect(classifyFont('OpenSans-Regular')).toMatchObject({ font: 'sans', bold: false })
+  })
+
+  it('picks the matching standard PDF font', () => {
+    expect(standardFontName({})).toBe('Helvetica')
+    expect(standardFontName({ bold: true, italic: true })).toBe('Helvetica-BoldOblique')
+    expect(standardFontName({ font: 'serif' })).toBe('Times-Roman')
+    expect(standardFontName({ font: 'serif', italic: true })).toBe('Times-Italic')
+    expect(standardFontName({ font: 'mono', bold: true })).toBe('Courier-Bold')
   })
 })

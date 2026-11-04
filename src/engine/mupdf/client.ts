@@ -1,5 +1,7 @@
 import type { Remote } from 'comlink'
 import type { MupdfWorkerApi } from './mupdf.worker'
+import type { RedactionMode } from './redact'
+import type { RawPageText } from './textLines'
 
 interface Connection {
   api: Remote<MupdfWorkerApi>
@@ -31,7 +33,34 @@ function connect(): Promise<Connection> {
 }
 
 /** Applies all redaction annotations of a PDF for good (see `applyRedactions`). */
-export async function redactPdf(data: Uint8Array): Promise<Uint8Array> {
+export async function redactPdf(
+  data: Uint8Array,
+  mode: RedactionMode = 'redact',
+): Promise<Uint8Array> {
   const { api, failed } = await connect()
-  return Promise.race([api.redact(data), failed])
+  return Promise.race([api.redact(data, mode), failed])
+}
+
+/**
+ * Text lines of a page of a source PDF. The file is sent to the worker only
+ * the first time a source is used.
+ */
+export async function readTextLines(
+  source: { id: string; data: Uint8Array },
+  index: number,
+): Promise<RawPageText> {
+  const { api, failed } = await connect()
+  const read = async () => {
+    // The worker copies the data; the source keeps its own bytes
+    const data = (await api.hasDocument(source.id)) ? undefined : source.data.slice()
+    return api.textLines(source.id, index, data)
+  }
+  return Promise.race([read(), failed])
+}
+
+/** Frees a source in the worker, if it was opened there. */
+export async function closeTextSource(id: string) {
+  if (!connection) return
+  const { api } = await connection
+  await api.closeDocument(id)
 }

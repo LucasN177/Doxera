@@ -1,9 +1,11 @@
 // @vitest-environment node
 import * as mupdf from 'mupdf'
-import { PDFDocument, StandardFonts } from 'pdf-lib'
+import { degrees, PDFDocument, rgb, StandardFonts } from 'pdf-lib'
 import { buildPdf } from '@/engine/document/buildPdf'
 import type { PageRef } from '@/types/document'
+import { replacementFor, toEditableLines } from '@/engine/document/textEditing'
 import { applyRedactions } from './redact'
+import { extractTextLines } from './textLines'
 
 async function samplePdf() {
   const document = await PDFDocument.create()
@@ -45,7 +47,7 @@ describe('applyRedactions', () => {
       ],
     }
     const result = await buildPdf([page], new Map([['s', { data }]]), {
-      redact: async (bytes) => applyRedactions(mupdf, bytes),
+      redact: async (bytes, mode) => applyRedactions(mupdf, bytes, mode),
     })
 
     const text = pageText(result)
@@ -61,5 +63,72 @@ describe('applyRedactions', () => {
     const text = pageText(applyRedactions(mupdf, data))
     expect(text).toContain('SECRET 4711')
     expect(text).toContain('PUBLIC TEXT')
+  })
+})
+
+async function linesOf(data: Uint8Array, index = 0) {
+  const document = new mupdf.PDFDocument(data)
+  try {
+    const page = document.loadPage(index)
+    const rotate = page.getObject().get('Rotate').valueOf()
+    page.destroy()
+    return toEditableLines(extractTextLines(document, index), Number(rotate) || 0)
+  } finally {
+    document.destroy()
+  }
+}
+
+describe('editing existing text', () => {
+  it('reads lines with position, size, font and color', async () => {
+    const pdf = await PDFDocument.create()
+    const bold = await pdf.embedFont(StandardFonts.TimesRomanBold)
+    const page = pdf.addPage([600, 800])
+    page.drawText('Hello World', { x: 60, y: 700, size: 24, font: bold, color: rgb(0.8, 0, 0) })
+    const [line] = await linesOf(await pdf.save())
+    expect(line).toMatchObject({
+      text: 'Hello World',
+      fontSize: 24,
+      color: '#cc0000',
+      font: 'serif',
+      bold: true,
+      italic: false,
+    })
+    // Baseline at y = 700 (from the bottom) → 100 pt from the top; box top = baseline - ascent
+    expect(line.at.x).toBeCloseTo(60 / 600, 3)
+    expect(line.at.y).toBeCloseTo((100 - 24 * 0.8) / 800, 3)
+  })
+
+  it('maps lines of pages with their own rotation to the unrotated page', async () => {
+    const pdf = await PDFDocument.create()
+    const font = await pdf.embedFont(StandardFonts.Helvetica)
+    const page = pdf.addPage([600, 800])
+    page.setRotation(degrees(90))
+    page.drawText('Rotated', { x: 60, y: 700, size: 20, font })
+    const [line] = await linesOf(await pdf.save())
+    expect(line.text).toBe('Rotated')
+    expect(line.at.x).toBeCloseTo(60 / 600, 2)
+    expect(line.rect.b.y).toBeCloseTo(100 / 800, 1)
+  })
+
+  it('replaces a line in the export: old text removed, new text drawn, rest kept', async () => {
+    const data = await samplePdf()
+    const [secret] = await linesOf(data)
+    expect(secret.text).toBe('SECRET 4711')
+    const replacement = { ...replacementFor(secret, 'e'), text: 'Geheim entfernt' }
+    const page: PageRef = {
+      id: 'p',
+      sourceId: 's',
+      sourceIndex: 0,
+      rotation: 90,
+      annotations: [replacement],
+    }
+    const result = await buildPdf([page], new Map([['s', { data }]]), {
+      redact: async (bytes, mode) => applyRedactions(mupdf, bytes, mode),
+    })
+    const text = pageText(result)
+    expect(text).not.toContain('SECRET')
+    expect(text).toContain('Geheim entfernt')
+    expect(text).toContain('PUBLIC TEXT')
+    expect(text).not.toContain('Redact')
   })
 })
