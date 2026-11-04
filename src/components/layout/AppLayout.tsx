@@ -1,5 +1,7 @@
 import { Loader2 } from 'lucide-react'
 import { ThumbnailSidebar } from '@/features/pages/ThumbnailSidebar'
+import { SearchBar } from '@/features/search/SearchBar'
+import { useSearchShortcuts } from '@/features/search/useSearchShortcuts'
 import { DocumentViewer } from '@/features/viewer/DocumentViewer'
 import { EmptyState } from '@/features/viewer/EmptyState'
 import { useDocumentStore } from '@/stores/documentStore'
@@ -11,6 +13,7 @@ export function AppLayout() {
   const pdf = useDocumentStore((state) => state.pdf)
   const loading = useDocumentStore((state) => state.loading)
   const sidebarOpen = useViewerStore((state) => state.sidebarOpen)
+  useSearchShortcuts()
 
   return (
     <div className="bg-background text-foreground flex h-svh flex-col">
@@ -21,7 +24,10 @@ export function AppLayout() {
         )}
         <main className="bg-muted relative min-w-0 flex-1">
           {document && pdf ? (
-            <DocumentViewer key={document.id} document={document} pdf={pdf} />
+            <>
+              <DocumentViewer key={document.id} document={document} pdf={pdf} />
+              <SearchBar />
+            </>
           ) : (
             <EmptyState />
           )}

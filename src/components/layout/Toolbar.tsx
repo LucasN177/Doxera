@@ -1,4 +1,4 @@
-import { FolderOpen, PanelLeft, X } from 'lucide-react'
+import { FolderOpen, PanelLeft, Search, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { PageNavigation } from '@/features/viewer/PageNavigation'
@@ -6,6 +6,7 @@ import { ZoomControls } from '@/features/viewer/ZoomControls'
 import { useOpenDocument } from '@/hooks/useOpenDocument'
 import { formatFileSize } from '@/lib/file'
 import { useDocumentStore } from '@/stores/documentStore'
+import { useSearchStore } from '@/stores/searchStore'
 import { useViewerStore } from '@/stores/viewerStore'
 import { IconButton } from './IconButton'
 
@@ -15,6 +16,7 @@ export function Toolbar() {
   const sidebarOpen = useViewerStore((state) => state.sidebarOpen)
   const toggleSidebar = useViewerStore((state) => state.toggleSidebar)
   const { openFromPicker } = useOpenDocument()
+  const openSearch = useSearchStore((state) => state.openSearch)
 
   return (
     <header className="bg-background flex h-12 shrink-0 items-center gap-1 border-b px-2">
@@ -56,6 +58,9 @@ export function Toolbar() {
           <Separator orientation="vertical" className="mx-1 data-[orientation=vertical]:h-6" />
           <ZoomControls />
           <Separator orientation="vertical" className="mx-1 data-[orientation=vertical]:h-6" />
+          <IconButton label="Suchen" shortcut="Strg+F" onClick={openSearch}>
+            <Search />
+          </IconButton>
           <IconButton label="Dokument schließen" onClick={close}>
             <X />
           </IconButton>

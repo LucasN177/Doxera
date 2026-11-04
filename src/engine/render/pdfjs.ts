@@ -1,5 +1,6 @@
 import type { PDFDocumentProxy, PDFPageProxy } from 'pdfjs-dist'
 import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
+import type { TextContent, TextItem } from 'pdfjs-dist/types/src/display/api'
 import type { PageSize } from '@/types/document'
 
 type PdfJs = typeof import('pdfjs-dist')
@@ -111,5 +112,117 @@ export function renderPage(page: PDFPageProxy, scale: number): RenderHandle {
       },
     ),
     cancel: () => task.cancel(),
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Text content & text layer
+// ---------------------------------------------------------------------------
+
+/** A run of text as extracted by pdf.js, in content-stream order. */
+export interface TextRun {
+  str: string
+  /** The run ends a line. */
+  hasEOL: boolean
+}
+
+const textContentCache = new WeakMap<PDFDocumentProxy, Map<number, Promise<TextContent>>>()
+
+/**
+ * Text content of a page, cached per document. The text layer and the search
+ * index share it, so text item indices are identical in both.
+ */
+export function getTextContent(pdf: PDFDocumentProxy, pageNumber: number): Promise<TextContent> {
+  let pages = textContentCache.get(pdf)
+  if (!pages) {
+    pages = new Map()
+    textContentCache.set(pdf, pages)
+  }
+  let content = pages.get(pageNumber)
+  if (!content) {
+    content = pdf.getPage(pageNumber).then((page) => page.getTextContent())
+    pages.set(pageNumber, content)
+  }
+  return content
+}
+
+/** Text runs in the same order as the text layer's elements (marked content is skipped). */
+export async function getTextRuns(pdf: PDFDocumentProxy, pageNumber: number): Promise<TextRun[]> {
+  const content = await getTextContent(pdf, pageNumber)
+  return content.items
+    .filter((item): item is TextItem => 'str' in item)
+    .map((item) => ({ str: item.str, hasEOL: item.hasEOL }))
+}
+
+export interface TextLayerHandle {
+  /** One element per text run; index-aligned with {@link getTextRuns}. */
+  textDivs: HTMLElement[]
+  /** Text of each run. */
+  runs: string[]
+  /** Re-layouts the layer for a new scale (the container's --scale-factor must match). */
+  update: (scale: number) => void
+}
+
+export interface TextLayerJob {
+  /** Resolves when the layer is rendered, or with `null` if it was cancelled. */
+  ready: Promise<TextLayerHandle | null>
+  cancel: () => void
+}
+
+/**
+ * Renders the transparent, selectable text layer of a page into `container`.
+ * The container needs the `textLayer` class and a `--scale-factor` CSS variable.
+ */
+export function renderTextLayer(
+  pdf: PDFDocumentProxy,
+  pageNumber: number,
+  container: HTMLElement,
+  scale: number,
+): TextLayerJob {
+  let cancelled = false
+  let cancelLayer: (() => void) | null = null
+
+  const ready = (async () => {
+    const [pdfjs, page, content] = await Promise.all([
+      loadPdfJs(),
+      pdf.getPage(pageNumber),
+      getTextContent(pdf, pageNumber),
+    ])
+    if (cancelled) return null
+
+    const layer = new pdfjs.TextLayer({
+      textContentSource: content,
+      container,
+      viewport: page.getViewport({ scale }),
+    })
+    cancelLayer = () => layer.cancel()
+
+    try {
+      await layer.render()
+    } catch (error) {
+      if (cancelled || (error as Error | undefined)?.name === 'AbortException') return null
+      throw error
+    }
+    if (cancelled) return null
+
+    // Lets selections that end below the last line work like in the pdf.js viewer
+    const endOfContent = document.createElement('div')
+    endOfContent.className = 'endOfContent'
+    container.append(endOfContent)
+
+    return {
+      textDivs: layer.textDivs,
+      runs: layer.textContentItemsStr,
+      update: (nextScale: number) =>
+        layer.update({ viewport: page.getViewport({ scale: nextScale }) }),
+    }
+  })()
+
+  return {
+    ready,
+    cancel: () => {
+      cancelled = true
+      cancelLayer?.()
+    },
   }
 }

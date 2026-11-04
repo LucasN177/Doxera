@@ -1,5 +1,13 @@
 import type { PDFDocumentProxy } from 'pdfjs-dist'
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from 'react'
 import { useElementSize } from '@/hooks/useElementSize'
 import {
   computePageLayout,
@@ -11,6 +19,7 @@ import { computeFitScale } from '@/lib/zoom'
 import { useViewerStore } from '@/stores/viewerStore'
 import type { OpenDocument } from '@/types/document'
 import { PageCanvas } from './PageCanvas'
+import { TextLayerView } from './TextLayerView'
 
 const PADDING = 24
 const GAP = 16
@@ -109,6 +118,12 @@ export function DocumentViewer({ document, pdf }: DocumentViewerProps) {
     if (!element || !navigation || handledNavigation.current === navigation.id) return
     handledNavigation.current = navigation.id
     const index = Math.min(layout.tops.length - 1, Math.max(0, navigation.page - 1))
+    if (navigation.onlyIfHidden) {
+      const top = layout.tops[index]
+      const bottom = top + layout.heights[index]
+      const visible = bottom > element.scrollTop && top < element.scrollTop + element.clientHeight
+      if (visible) return
+    }
     element.scrollTo({ top: layout.tops[index] - PADDING / 2 })
   }, [navigation, layout])
 
@@ -131,17 +146,21 @@ export function DocumentViewer({ document, pdf }: DocumentViewerProps) {
     pages.push(
       <div
         key={index}
-        className="absolute left-1/2 -translate-x-1/2 bg-white shadow-md ring-1 ring-black/5"
-        style={{
-          top: layout.tops[index],
-          width: layout.widths[index],
-          height: layout.heights[index],
-        }}
+        className="pdf-page absolute left-1/2 -translate-x-1/2 bg-white shadow-md ring-1 ring-black/5"
+        style={
+          {
+            top: layout.tops[index],
+            width: layout.widths[index],
+            height: layout.heights[index],
+            '--scale-factor': scale,
+          } as CSSProperties
+        }
         data-page-number={index + 1}
-        role="img"
+        role="group"
         aria-label={`Seite ${index + 1}`}
       >
         <PageCanvas pdf={pdf} pageNumber={index + 1} scale={scale} />
+        <TextLayerView pdf={pdf} pageNumber={index + 1} scale={scale} />
       </div>,
     )
   }

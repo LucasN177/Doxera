@@ -1,0 +1,112 @@
+/*
+ * Text layer styles, adapted from pdf.js (web/pdf_viewer.css, Apache-2.0).
+ * The layer sits above the page canvas: its text is transparent but selectable,
+ * and search matches are highlighted inside it.
+ */
+
+.pdf-page {
+  --user-unit: 1;
+  --total-scale-factor: calc(var(--scale-factor) * var(--user-unit));
+  --scale-round-x: 1px;
+  --scale-round-y: 1px;
+}
+
+.textLayer {
+  color-scheme: only light;
+  position: absolute;
+  text-align: initial;
+  inset: 0;
+  overflow: clip;
+  opacity: 1;
+  line-height: 1;
+  letter-spacing: normal;
+  word-spacing: normal;
+  text-size-adjust: none;
+  forced-color-adjust: none;
+  transform-origin: 0 0;
+  caret-color: CanvasText;
+  z-index: 0;
+
+  --min-font-size: 1;
+  --text-scale-factor: calc(var(--total-scale-factor) * var(--min-font-size));
+  --min-font-size-inv: calc(1 / var(--min-font-size));
+
+  &[data-main-rotation='90'] {
+    transform: rotate(90deg) translateY(-100%);
+  }
+  &[data-main-rotation='180'] {
+    transform: rotate(180deg) translate(-100%, -100%);
+  }
+  &[data-main-rotation='270'] {
+    transform: rotate(270deg) translateX(-100%);
+  }
+
+  :is(span, br) {
+    color: transparent;
+    position: absolute;
+    white-space: pre;
+    cursor: text;
+    transform-origin: 0% 0%;
+    user-select: text;
+  }
+
+  > :not(.markedContent),
+  .markedContent span:not(.markedContent) {
+    z-index: 1;
+    --font-height: 0;
+    font-size: calc(var(--text-scale-factor) * var(--font-height));
+    --scale-x: 1;
+    --rotate: 0deg;
+    transform: rotate(var(--rotate)) scaleX(var(--scale-x)) scale(var(--min-font-size-inv));
+  }
+
+  .markedContent {
+    display: contents;
+  }
+
+  span[role='img'] {
+    user-select: none;
+    cursor: default;
+  }
+
+  /* Search matches */
+  .highlight {
+    position: initial;
+    margin: -1px;
+    padding: 1px;
+    border-radius: 3px;
+    background-color: rgb(250 204 21 / 0.45);
+
+    &.selected {
+      background-color: rgb(249 115 22 / 0.6);
+      outline: 2px solid rgb(234 88 12 / 0.8);
+    }
+
+    @media (forced-colors: active) {
+      background-color: transparent;
+      outline: 1px solid Highlight;
+    }
+  }
+
+  ::selection {
+    background: color-mix(in srgb, AccentColor, transparent 60%);
+    color: transparent;
+  }
+
+  br::selection {
+    background: transparent;
+  }
+
+  .endOfContent {
+    display: block;
+    position: absolute;
+    inset: 100% 0 0;
+    z-index: 0;
+    cursor: default;
+    user-select: none;
+  }
+
+  &.selecting .endOfContent {
+    top: 0;
+  }
+}

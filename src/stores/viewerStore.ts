@@ -7,6 +7,12 @@ interface NavigationRequest {
   page: number
   /** Unique per request, so navigating to the same page twice still scrolls. */
   id: number
+  /** Only scroll if the page is not visible at all (used when revealing search results). */
+  onlyIfHidden: boolean
+}
+
+export interface GoToPageOptions {
+  onlyIfHidden?: boolean
 }
 
 interface ViewerState {
@@ -24,7 +30,7 @@ interface ViewerState {
   zoomOut: () => void
   /** Called by the viewer when a fit mode resolves to a concrete scale. */
   applyFitScale: (scale: number) => void
-  goToPage: (page: number) => void
+  goToPage: (page: number, options?: GoToPageOptions) => void
   /** Called by the viewer while scrolling; does not trigger navigation. */
   setCurrentPage: (page: number) => void
   toggleSidebar: () => void
@@ -51,7 +57,8 @@ export const useViewerStore = create<ViewerState>()((set, get) => ({
   applyFitScale: (scale) => {
     if (get().zoomMode !== 'custom' && Math.abs(get().scale - scale) > 0.0001) set({ scale })
   },
-  goToPage: (page) => set({ currentPage: page, navigation: { page, id: ++navigationId } }),
+  goToPage: (page, { onlyIfHidden = false } = {}) =>
+    set({ currentPage: page, navigation: { page, id: ++navigationId, onlyIfHidden } }),
   setCurrentPage: (currentPage) => {
     if (get().currentPage !== currentPage) set({ currentPage })
   },
