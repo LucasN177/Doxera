@@ -87,7 +87,7 @@ Automate repetitive document-related tasks.
 - [x] Compress PDF documents (images scaled to 150 or 96 dpi for their displayed size, font subsetting, or lossless)
 - [x] Convert PDFs to images (PNG or JPEG, 72–300 dpi, with all edits; ZIP or share sheet)
 - [x] Convert images to PDFs (A4, Letter or image size; open as new PDF or insert as pages; HEIC supported)
-- [ ] Export extracted data to CSV, Excel and JSON
+- [x] Export extracted data to CSV, Excel and JSON (text, tables with real numbers, comments)
 - [ ] Create reusable processing workflows
 - [ ] Automate document classification and extraction
 - [ ] Process invoices and extract relevant information
@@ -235,7 +235,7 @@ The main objectives are:
 - ✅ **Phase 3 – Annotations:** shapes, lines, arrows, text boxes, freehand drawing, text highlighting, comments, images, signatures and watermarks – all exported into the PDF
 - ✅ **Phase 4 – Real editing:** permanent redaction, editing existing text and moving, resizing or removing existing images with MuPDF.js
 - ✅ **Phase 5 – OCR:** scanned pages become searchable PDFs; text export with headings, paragraphs, lists and tables (Markdown, text, CSV)
-- 🚧 **Phase 6 – Processing:** converting PDFs to images and images to PDFs and compression are done; data export, batch processing and workflows are next
+- 🚧 **Phase 6 – Processing:** converting, compression and data export (Excel, JSON, CSV) are done; batch processing and workflows are next
 - 🔜 **Next phase:** AI features
 
 The full roadmap is in the [implementation plan](docs/IMPLEMENTATION_PLAN.md).

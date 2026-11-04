@@ -254,7 +254,7 @@ erkennbare Lücke dazwischen und verbundene Zellen werden nicht getrennt.
 | --- | ------------------ | ------------------------------------------------------------------------------------------ | ------ |
 | V1  | Konvertieren       | Seiten → Bilder (PNG/JPEG, dpi, mit allen Bearbeitungen); Bilder → PDF (neu oder einfügen) | ✅     |
 | V2  | Komprimieren       | Bilder herunterrechnen und neu komprimieren (MuPDF), Größe vorher/nachher                  | ✅     |
-| V3  | Datenexport        | Text, Tabellen, Kommentare als CSV, JSON und Excel (eigener XLSX-Schreiber mit fflate)     | offen  |
+| V3  | Datenexport        | Text, Tabellen, Kommentare als CSV, JSON und Excel (eigener XLSX-Schreiber mit fflate)     | ✅     |
 | V4  | Stapelverarbeitung | Mehrere Dateien mit einer Aktion (OCR, Komprimieren, Konvertieren, Export) → ZIP           | offen  |
 | V5  | Workflows          | Schrittketten speichern (IndexedDB) und auf Dateien anwenden                               | offen  |
 
@@ -273,6 +273,15 @@ wenn es mindestens 10 % kleiner wird; Transparenz (SMask) bleibt, 1-Bit-Scans un
 unverändert. Danach Schrift-Subsets und Neuschreiben mit Objekt-Streams. Verlustfrei schreibt nur neu.
 Eine größere Datei wird nie ausgegeben. Hinweis: MuPDF liefert Puffer als Ansicht auf den
 WebAssembly-Speicher – Längen und Daten sofort kopieren, bevor weiterer Speicher angefordert wird.
+
+**Datenexport (V3):** Quelle sind die strukturierten Seiten (O2/O3) und die Notizen. JSON enthält
+Dokument-Infos, Blöcke je Seite, Tabellen (Kopf + Zeilen) und Kommentare (ISO-Zeitstempel). Excel
+schreibt ein eigener kleiner XLSX-Schreiber (Office Open XML, Inline-Strings, Stile für fette Kopfzeile,
+Tausendertrennung, Dezimalstellen, € und %; fixierte Kopfzeile; Blattnamen nach Excel-Regeln) über
+fflate – ohne SheetJS, dessen npm-Paket veraltet ist. Zahlen in Tabellenzellen werden erkannt (deutsche
+und englische Schreibweise, €, %); Datumsangaben, Einheiten und Codes mit führender Null bleiben Text.
+Mehrdeutig ist „1.234“ (als Tausender gelesen). CSV: je Teil eine Datei (Semikolon, UTF-8 mit BOM),
+mehrere als ZIP. Die XLSX-Ausgabe wurde zusätzlich mit ExcelJS gegengelesen.
 
 ### Phase 7 – KI-Funktionen
 

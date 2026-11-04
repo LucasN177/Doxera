@@ -6,6 +6,7 @@ import { SignatureDialog } from '@/features/annotations/SignatureDialog'
 import { WatermarkDialog } from '@/features/annotations/WatermarkDialog'
 import { OcrDialog } from '@/features/ocr/OcrDialog'
 import { CompressDialog } from '@/features/convert/CompressDialog'
+import { DataExportDialog } from '@/features/data/DataExportDialog'
 import { ExportImagesDialog } from '@/features/convert/ExportImagesDialog'
 import { ImagesToPdfDialog } from '@/features/convert/ImagesToPdfDialog'
 import { TextExportDialog } from '@/features/text/TextExportDialog'
@@ -62,6 +63,7 @@ export function AppLayout() {
               <TextExportDialog />
               <ExportImagesDialog />
               <CompressDialog />
+              <DataExportDialog />
               <CropDialog />
             </>
           ) : (

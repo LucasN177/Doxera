@@ -1,4 +1,4 @@
-import { FileArchive, FileImage, Images, Wrench } from 'lucide-react'
+import { FileArchive, FileImage, FileSpreadsheet, Images, Wrench } from 'lucide-react'
 import { DropdownMenu } from 'radix-ui'
 import { IconButton } from '@/components/layout/IconButton'
 import { useUiStore } from '@/stores/uiStore'
@@ -36,6 +36,13 @@ export function ToolsMenu() {
           </DropdownMenu.Item>
           <DropdownMenu.Item className={item} onSelect={() => void pickImagesForPdf()}>
             <Images /> Bilder zu PDF / als Seiten einfügen …
+          </DropdownMenu.Item>
+          <DropdownMenu.Separator className="bg-border -mx-1 my-1 h-px" />
+          <DropdownMenu.Item
+            className={item}
+            onSelect={() => useUiStore.getState().setDataExportOpen(true)}
+          >
+            <FileSpreadsheet /> Daten exportieren (Excel, JSON, CSV) …
           </DropdownMenu.Item>
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
