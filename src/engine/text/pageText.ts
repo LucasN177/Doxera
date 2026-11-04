@@ -71,6 +71,11 @@ export function pageTextLines(
       bottom: line.rect.b.y * size.height,
       size: line.fontSize,
       bold: line.bold,
+      segments: line.segments?.map((segment) => ({
+        text: segment.text,
+        left: segment.x0 * size.width,
+        right: segment.x1 * size.width,
+      })),
     })
   }
 

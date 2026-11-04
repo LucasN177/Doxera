@@ -15,6 +15,8 @@ export interface EditableLine {
   font: NonNullable<TextAnnotation['font']>
   bold: boolean
   italic: boolean
+  /** Parts separated by wide gaps (e.g. table cells), as x fractions of the page. */
+  segments?: Array<{ text: string; x0: number; x1: number }>
 }
 
 function toHex(color: readonly number[]): string {
@@ -74,6 +76,11 @@ export function toEditableLines(raw: RawPageText, rotate = 0): EditableLine[] {
       fontSize: Math.round(line.size * 10) / 10,
       color: toHex(line.color),
       ...classifyFont(line.fontName),
+      segments: (line.segments ?? []).map((segment) => {
+        const along = (t: number) =>
+          stored(line.origin[0] + line.direction[0] * t, line.origin[1] + line.direction[1] * t).x
+        return { text: segment.text, x0: along(segment.start), x1: along(segment.end) }
+      }),
     })
   }
   return lines

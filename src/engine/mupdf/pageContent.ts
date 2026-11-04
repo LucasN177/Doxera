@@ -17,7 +17,21 @@ export interface RawTextLine {
   fontName: string
   /** Fill color as RGB 0–1 (or gray / CMYK). */
   color: number[]
+  /**
+   * Parts of the line separated by wide gaps (e.g. table cells), with their
+   * start and end along the writing direction, measured from `origin`.
+   */
+  segments: RawSegment[]
 }
+
+export interface RawSegment {
+  text: string
+  start: number
+  end: number
+}
+
+/** A gap wider than this (times the font size) separates segments, e.g. table cells. */
+const SEGMENT_GAP = 1
 
 /** An image drawn on the page, in MuPDF page space. */
 export interface RawImage {
@@ -133,6 +147,7 @@ export function extractPageContent(document: Mupdf.PDFDocument, index: number): 
     const lines: RawTextLine[] = []
     const blocks: ImageBlock[] = []
     let current: RawTextLine | null = null
+    let pendingSpace = false
     try {
       text.walk({
         onImageBlock(bbox, transform, image) {
@@ -153,13 +168,34 @@ export function extractPageContent(document: Mupdf.PDFDocument, index: number): 
             size: 0,
             fontName: '',
             color: [0, 0, 0],
+            segments: [],
           }
+          pendingSpace = false
         },
         onChar(char, origin, font, size, quad, color) {
           const line = current
           if (!line) return
           if (!line.text) line.origin = [origin[0], origin[1]]
           line.text += char
+          // Split into segments at wide gaps, measured along the writing direction
+          if (!char.trim()) {
+            pendingSpace = true
+          } else {
+            const [dx, dy] = line.direction
+            const along = [0, 2, 4, 6].map(
+              (i) => (quad[i] - line.origin[0]) * dx + (quad[i + 1] - line.origin[1]) * dy,
+            )
+            const start = Math.min(...along)
+            const end = Math.max(...along)
+            const segment = line.segments.at(-1)
+            if (!segment || start - segment.end > size * SEGMENT_GAP) {
+              line.segments.push({ text: char, start, end })
+            } else {
+              segment.text += pendingSpace ? ` ${char}` : char
+              segment.end = Math.max(segment.end, end)
+            }
+            pendingSpace = false
+          }
           // Style of the first visible character
           if (!line.fontName && char.trim()) {
             line.fontName = font.getName()

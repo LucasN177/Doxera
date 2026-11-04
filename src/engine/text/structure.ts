@@ -1,3 +1,5 @@
+import { findTables, tableToMarkdown, tableToTsv, type DetectedTable } from './tables'
+
 /** A line of text in reading order, positions in points on the (unrotated) page, y down. */
 export interface TextLine {
   text: string
@@ -8,6 +10,14 @@ export interface TextLine {
   /** Font size in points (for recognized text: estimated from the line height). */
   size: number
   bold: boolean
+  /** Parts separated by wide gaps (table cells), left/right in points; the whole line if missing. */
+  segments?: TextSegment[]
+}
+
+export interface TextSegment {
+  text: string
+  left: number
+  right: number
 }
 
 export interface ListItem {
@@ -20,6 +30,7 @@ export type TextBlock =
   | { type: 'heading'; level: 1 | 2 | 3; text: string }
   | { type: 'paragraph'; text: string }
   | { type: 'list'; ordered: boolean; items: ListItem[] }
+  | { type: 'table'; rows: string[][] }
 
 const LIST_MARKER = /^([•▪◦·●○■□‣⁃*\-–—]|\(?\d{1,3}[.)]|\(?[a-zA-Z]\))\s+(.*)$/
 
@@ -54,7 +65,8 @@ function headingLevel(line: TextLine, body: number, standsAlone: boolean): 0 | 1
   if (ratio >= 1.4) return 2
   if (ratio >= 1.25) return 3
   const words = line.text.split(/\s+/).length
-  const short = words <= 10 && !/[.,;:!?]$/.test(line.text)
+  // Not "Label: value" lines such as "Summe netto: 6.538,80 €"
+  const short = words <= 10 && !/[.,;:!?]$/.test(line.text) && !/:\s+\S/.test(line.text)
   // Short bold lines, e.g. "Leistungsumfang"
   if (line.bold && ratio >= 0.95 && short) return 3
   if (standsAlone && ratio >= 1.1 && short) return 3
@@ -93,8 +105,23 @@ export function structureLines(lines: readonly TextLine[], body: number): TextBl
   const blocks: TextBlock[] = []
   let previous: { line: TextLine; kind: 'heading' | 'paragraph' | 'item'; level: number } | null =
     null
+  // Tables take the place of their first line in reading order
+  const tableOf = new Map<number, DetectedTable>()
+  for (const table of findTables(lines)) {
+    for (const index of table.lines) tableOf.set(index, table)
+  }
+  const placed = new Set<DetectedTable>()
 
   for (const [index, raw] of lines.entries()) {
+    const table = tableOf.get(index)
+    if (table) {
+      if (!placed.has(table)) {
+        placed.add(table)
+        blocks.push({ type: 'table', rows: table.rows })
+      }
+      previous = null
+      continue
+    }
     const text = raw.text.replace(/\s+/g, ' ').trim()
     if (!text) continue
     const line = { ...raw, text }
@@ -172,6 +199,7 @@ export function toMarkdown(pages: readonly TextBlock[][]): string {
     .map((block) => {
       if (block.type === 'heading') return `${'#'.repeat(block.level)} ${block.text}`
       if (block.type === 'paragraph') return escapeMarkdown(block.text)
+      if (block.type === 'table') return tableToMarkdown(block.rows)
       return block.items
         .map((item, index) => `${block.ordered ? `${index + 1}.` : '-'} ${item.text}`)
         .join('\n')
@@ -187,7 +215,9 @@ export function toPlainText(pages: readonly TextBlock[][]): string {
         .map((block) =>
           block.type === 'list'
             ? block.items.map((item) => `${item.marker} ${item.text}`).join('\n')
-            : block.text,
+            : block.type === 'table'
+              ? tableToTsv(block.rows)
+              : block.text,
         )
         .join('\n\n'),
     )

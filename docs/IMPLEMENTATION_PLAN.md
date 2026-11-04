@@ -198,7 +198,7 @@ in Form-XObjects), nur in Vierteldrehungen (nicht geschert oder gespiegelt).
 | E3  | Text bearbeiten     | Vorhandenen Text auswählen, Inhalt/Größe/Farbe ändern (alter Text entfernt, neu gesetzt) | ✅     |
 | E4  | Elemente bearbeiten | Vorhandene Bilder auswählen, verschieben, skalieren, entfernen                           | ✅     |
 
-### Phase 5 – OCR
+### Phase 5 – OCR ✅
 
 - Tesseract.js im Worker, Sprachdaten lazy laden
 - Erkennung mit Textpositionen, Überschriften/Absätze
@@ -224,13 +224,22 @@ aufeinander folgenden Zeilen gleicher Größe (Silbentrennung wird aufgelöst); 
 zeichen und Nummern. Export als Markdown oder Text (Kopieren, Download bzw. Teilen auf iOS). OCR und
 Textexport liegen im Menü „Text“ der Werkzeugleiste, das auch auf dem Smartphone sichtbar ist.
 
+**Tabellen (O3):** MuPDF-Zeilen werden an Lücken über eine Schriftgröße in Segmente (Zellen) geteilt.
+Zeilen gleicher Höhe bilden Reihen (auch wenn die PDF ihre Zellen spaltenweise speichert). Mindestens
+drei nahe aufeinanderfolgende Reihen mit zwei oder mehr Zellen, deren Zellen in Spalten übereinander
+liegen (Spalten aus den Reihen mit der häufigsten Zellenzahl, überlappende Bereiche zusammengefasst),
+ergeben eine Tabelle; eine einzelne Zelle direkt darunter setzt die Zelle darüber fort. Tabellen
+erscheinen im Markdown als Tabelle, im Text tabulatorgetrennt und einzeln als CSV (Semikolon,
+UTF-8 mit BOM für Excel) oder zum Kopieren in eine Tabellenkalkulation. Grenzen: Zellen ohne
+erkennbare Lücke dazwischen und verbundene Zellen werden nicht getrennt.
+
 **Milestones Phase 5:**
 
 | #   | Milestone       | Inhalt                                                                        | Status |
 | --- | --------------- | ----------------------------------------------------------------------------- | ------ |
 | O1  | Texterkennung   | Seiten erkennen (Sprachen wählbar), unsichtbare Textebene → durchsuchbare PDF | ✅     |
 | O2  | Struktur & Text | Überschriften/Absätze erkennen, erkannten Text als Text/Markdown exportieren  | ✅     |
-| O3  | Tabellen        | Tabellen aus Scans heuristisch erkennen, als CSV exportieren                  | offen  |
+| O3  | Tabellen        | Tabellen aus Scans heuristisch erkennen, als CSV exportieren                  | ✅     |
 
 ### Phase 6 – Verarbeitung & Automatisierung
 

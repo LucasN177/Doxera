@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { toMarkdown, toPlainText, type TextBlock } from '@/engine/text/structure'
+import { tableToCsv, tableToTsv } from '@/engine/text/tables'
 import { saveFile } from '@/lib/download'
 import { cn } from '@/lib/utils'
 import { useDocumentStore } from '@/stores/documentStore'
@@ -18,7 +19,7 @@ import { useUiStore } from '@/stores/uiStore'
 import { useViewerStore } from '@/stores/viewerStore'
 import { collectText } from './collectText'
 
-type Format = 'markdown' | 'text'
+type Format = 'markdown' | 'text' | 'tables'
 type Target = 'all' | 'selected' | 'current'
 
 export function TextExportDialog() {
@@ -40,7 +41,12 @@ function TextExportContent({ onDone }: { onDone: () => void }) {
   const selectedIds = useViewerStore((state) => state.selectedIds)
   const [format, setFormat] = useState<Format>('markdown')
   const [target, setTarget] = useState<Target>(selectedIds.length > 1 ? 'selected' : 'all')
-  const [result, setResult] = useState<{ key: string; pages: TextBlock[][] } | null>(null)
+  const [result, setResult] = useState<{
+    key: string
+    pages: TextBlock[][]
+    /** Page number of each entry in `pages`. */
+    numbers: number[]
+  } | null>(null)
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null)
   const [failed, setFailed] = useState(false)
 
@@ -61,7 +67,10 @@ function TextExportContent({ onDone }: { onDone: () => void }) {
     collectText(pageIds, (done, total) => !cancelled && setProgress({ done, total }))
       .then((pages) => {
         if (cancelled) return
-        setResult({ key, pages })
+        const numbers = (useDocumentStore.getState().document?.pages ?? []).flatMap(
+          (page, index) => (pageIds.has(page.id) ? [index + 1] : []),
+        )
+        setResult({ key, pages, numbers })
         setFailed(false)
       })
       .catch((error: unknown) => {
@@ -76,6 +85,13 @@ function TextExportContent({ onDone }: { onDone: () => void }) {
   const pages = result?.key === key ? result.pages : null
   const text = pages ? (format === 'markdown' ? toMarkdown(pages) : toPlainText(pages)) : ''
   const empty = pages !== null && !text.trim()
+  const tables = (pages ?? []).flatMap((blocks, index) =>
+    blocks.flatMap((block) =>
+      block.type === 'table'
+        ? [{ rows: block.rows, page: result?.numbers[index] ?? index + 1 }]
+        : [],
+    ),
+  )
   const fileName = `${baseName(document?.name ?? '')}.${format === 'markdown' ? 'md' : 'txt'}`
 
   const copy = async () => {
@@ -105,8 +121,8 @@ function TextExportContent({ onDone }: { onDone: () => void }) {
       <DialogHeader>
         <DialogTitle>Text exportieren</DialogTitle>
         <DialogDescription>
-          Der Text des Dokuments mit erkannten Überschriften, Absätzen und Listen. Geschwärzte
-          Zeilen werden ausgelassen.
+          Der Text des Dokuments mit erkannten Überschriften, Absätzen, Listen und Tabellen.
+          Geschwärzte Zeilen werden ausgelassen.
         </DialogDescription>
       </DialogHeader>
 
@@ -116,6 +132,7 @@ function TextExportContent({ onDone }: { onDone: () => void }) {
             [
               ['markdown', 'Markdown'],
               ['text', 'Nur Text'],
+              ['tables', 'Tabellen (CSV)'],
             ] as const
           ).map(([value, label]) => (
             <Button
@@ -179,6 +196,8 @@ function TextExportContent({ onDone }: { onDone: () => void }) {
             <ScanText /> Texterkennung (OCR) …
           </Button>
         </div>
+      ) : format === 'tables' ? (
+        <TablesView tables={tables} name={baseName(document?.name ?? '')} />
       ) : (
         <textarea
           readOnly
@@ -189,7 +208,7 @@ function TextExportContent({ onDone }: { onDone: () => void }) {
         />
       )}
 
-      <DialogFooter className="gap-2">
+      <DialogFooter className={cn('gap-2', format === 'tables' && 'hidden')}>
         <Button variant="outline" onClick={() => void copy()} disabled={!text.trim()}>
           <Copy /> Kopieren
         </Button>
@@ -198,5 +217,93 @@ function TextExportContent({ onDone }: { onDone: () => void }) {
         </Button>
       </DialogFooter>
     </DialogContent>
+  )
+}
+
+/** Rows shown per table in the preview. */
+const PREVIEW_ROWS = 8
+
+function TablesView({
+  tables,
+  name,
+}: {
+  tables: Array<{ rows: string[][]; page: number }>
+  name: string
+}) {
+  if (tables.length === 0) {
+    return (
+      <p className="text-muted-foreground py-8 text-center text-sm">
+        Auf diesen Seiten wurden keine Tabellen erkannt. Erkannt werden Zeilen, deren Inhalte in
+        mindestens zwei Spalten untereinander stehen (ab drei Zeilen).
+      </p>
+    )
+  }
+
+  const copy = async (rows: string[][]) => {
+    try {
+      await navigator.clipboard.writeText(tableToTsv(rows))
+      toast.success('Tabelle kopiert', {
+        description: 'Lässt sich direkt in eine Tabellenkalkulation einfügen.',
+      })
+    } catch {
+      toast.error('Die Tabelle konnte nicht kopiert werden.')
+    }
+  }
+
+  const save = async (rows: string[][], index: number) => {
+    // BOM: Excel then reads the file as UTF-8 (umlauts, €)
+    const file = new File(['\uFEFF', tableToCsv(rows)], `${name}-tabelle-${index + 1}.csv`, {
+      type: 'text/csv;charset=utf-8',
+    })
+    try {
+      await saveFile(file)
+    } catch (error) {
+      console.error('Speichern fehlgeschlagen', error)
+      toast.error('Die Datei konnte nicht gespeichert werden.')
+    }
+  }
+
+  return (
+    <ol className="space-y-4">
+      {tables.map(({ rows, page }, index) => (
+        <li key={index} className="space-y-2 rounded-md border p-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="flex-1 text-sm font-medium">
+              Tabelle {index + 1}
+              <span className="text-muted-foreground font-normal">
+                {' '}
+                · Seite {page} · {rows.length} × {rows[0]?.length ?? 0}
+              </span>
+            </p>
+            <Button size="sm" variant="outline" onClick={() => void copy(rows)}>
+              <Copy /> Kopieren
+            </Button>
+            <Button size="sm" onClick={() => void save(rows, index)}>
+              <Download /> CSV
+            </Button>
+          </div>
+          <div className="max-w-full overflow-x-auto">
+            <table className="w-full border-collapse text-xs">
+              <tbody>
+                {rows.slice(0, PREVIEW_ROWS).map((cells, r) => (
+                  <tr key={r} className={cn(r === 0 && 'bg-muted/60 font-medium')}>
+                    {cells.map((cell, c) => (
+                      <td key={c} className="border px-2 py-1 align-top whitespace-nowrap">
+                        {cell}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {rows.length > PREVIEW_ROWS && (
+            <p className="text-muted-foreground text-xs">
+              … {rows.length - PREVIEW_ROWS} weitere Zeilen
+            </p>
+          )}
+        </li>
+      ))}
+    </ol>
   )
 }

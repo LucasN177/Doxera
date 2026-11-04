@@ -122,3 +122,43 @@ describe('editing existing images', () => {
     expect(after.lines.map((line) => line.text)).toEqual(['New caption'])
   })
 })
+
+describe('tables in a real PDF', () => {
+  it('reads a table stored column by column into rows and columns', async () => {
+    const { pageTextLines } = await import('@/engine/text/pageText')
+    const { structureLines, bodyFontSize } = await import('@/engine/text/structure')
+    const pdf = await PDFDocument.create()
+    const font = await pdf.embedFont(StandardFonts.Helvetica)
+    const page = pdf.addPage([600, 800])
+    page.drawText('Preisliste', { x: 50, y: 740, size: 18, font })
+    const columns = [
+      ['Produkt', 'Apfel', 'Birne', 'Kirsche'],
+      ['Menge', '10', '4', '250'],
+      ['Preis', '2,50 €', '1,80 €', '7,00 €'],
+    ]
+    columns.forEach((column, c) =>
+      column.forEach((value, r) =>
+        page.drawText(value, { x: 50 + c * 150, y: 700 - r * 18, size: 11, font }),
+      ),
+    )
+    const document = new mupdf.PDFDocument(await pdf.save())
+    const content = extractPageContent(document, 0)
+    document.destroy()
+    const lines = pageTextLines(
+      toEditableLines(content),
+      { id: 'p', sourceId: 's', sourceIndex: 0, rotation: 0 },
+      { width: 600, height: 800 },
+    )
+    const blocks = structureLines(lines, bodyFontSize(lines))
+    expect(blocks[0]).toMatchObject({ type: 'heading', text: 'Preisliste' })
+    expect(blocks[1]).toEqual({
+      type: 'table',
+      rows: [
+        ['Produkt', 'Menge', 'Preis'],
+        ['Apfel', '10', '2,50 €'],
+        ['Birne', '4', '1,80 €'],
+        ['Kirsche', '250', '7,00 €'],
+      ],
+    })
+  })
+})

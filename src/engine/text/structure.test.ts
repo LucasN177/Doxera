@@ -130,3 +130,18 @@ describe('headings in recognized text', () => {
     expect(structureLines(lines, 11).map((block) => block.type)).toEqual(['paragraph'])
   })
 })
+
+describe('label lines', () => {
+  it('keeps bold "label: value" lines as text', () => {
+    const lines = stack([
+      { text: 'Die Leistungen im Überblick.' },
+      { text: 'Summe netto: 6.538,80 €', bold: true, gapBefore: 12 },
+      { text: 'Zahlbar innerhalb von 14 Tagen.', gapBefore: 12 },
+    ])
+    expect(structureLines(lines, 11).map((block) => block.type)).toEqual([
+      'paragraph',
+      'paragraph',
+      'paragraph',
+    ])
+  })
+})
