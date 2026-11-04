@@ -4,6 +4,9 @@ import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
+import { viteStaticCopy } from 'vite-plugin-static-copy'
+
+const PDFJS = 'node_modules/pdfjs-dist'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -12,6 +15,14 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
+    // pdf.js loads CMaps, standard fonts and WASM decoders at runtime from /pdfjs/
+    viteStaticCopy({
+      targets: ['cmaps', 'standard_fonts', 'wasm', 'iccs'].map((dir) => ({
+        src: `${PDFJS}/${dir}`,
+        dest: 'pdfjs',
+        rename: { stripBase: 2 }, // drop node_modules/pdfjs-dist/
+      })),
+    }),
     VitePWA({
       // Users are asked before a new version is activated (see ReloadPrompt)
       registerType: 'prompt',
@@ -44,7 +55,11 @@ export default defineConfig({
       },
       workbox: {
         // Precache the whole app shell incl. future workers/WASM for full offline use
-        globPatterns: ['**/*.{js,mjs,css,html,ico,png,svg,webp,woff2,wasm}'],
+        globPatterns: [
+          '**/*.{js,mjs,css,html,ico,png,svg,webp,woff2,wasm}',
+          // pdf.js runtime resources, needed to render all PDFs offline
+          'pdfjs/**/*.{bcmap,pfb,ttf,icc}',
+        ],
         // pdf.js worker, MuPDF and Tesseract assets are large
         maximumFileSizeToCacheInBytes: 30 * 1024 * 1024,
         cleanupOutdatedCaches: true,

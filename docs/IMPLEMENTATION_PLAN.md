@@ -82,7 +82,7 @@ mit pdf-lib bzw. MuPDF auf die Originaldatei angewendet. Vorteile: Undo/Redo, ve
 
 ## 4. Phasen
 
-### Phase 0 – Projekt-Setup ✅ (dieser Schritt)
+### Phase 0 – Projekt-Setup ✅
 
 - Vite + React + TypeScript, Tailwind v4, shadcn/ui-Konfiguration, Pfad-Alias `@/`
 - oxlint, Prettier, Vitest + Testing Library
@@ -100,6 +100,17 @@ mit pdf-lib bzw. MuPDF auf die Originaldatei angewendet. Vorteile: Undo/Redo, ve
 - IndexedDB: zuletzt geöffnete Dokumente lokal speichern/löschen
 - Download/Export des Dokuments
 - **Ergebnis:** benutzbarer, lokaler PDF-Viewer auf GitHub Pages
+
+**Milestones Phase 1:**
+
+| #   | Milestone                | Inhalt                                                                                                   | Status |
+| --- | ------------------------ | -------------------------------------------------------------------------------------------------------- | ------ |
+| M1  | App-Shell & Datei öffnen | Layout (Toolbar, Sidebar, Arbeitsfläche), Leerzustand, Datei-Dialog, Drag & Drop, Dokument-Store, Fehler | ✅     |
+| M2  | Seitenanzeige            | pdf.js im Worker, virtualisiertes Rendering (nur sichtbare Seiten), HiDPI, Zoom/Fit-Modi, Navigation     | ✅     |
+| M3  | Thumbnail-Sidebar        | Lazy gerenderte Vorschauen, aktive Seite hervorheben, Klick springt zur Seite                            | ✅     |
+| M4  | Text-Layer & Suche       | Text markieren/kopieren, Volltextsuche mit Treffer-Navigation und Hervorhebung                           | offen  |
+| M5  | Lokale Bibliothek        | IndexedDB-Speicherung, „Zuletzt geöffnet“ im Leerzustand, Dokumente lokal löschen                        | offen  |
+| M6  | Export & Feinschliff     | Download, Tastaturkürzel, Dark Mode, Lade-/Fehlerzustände, Performance mit großen PDFs                   | offen  |
 
 ### Phase 2 – Seitenverwaltung
 
