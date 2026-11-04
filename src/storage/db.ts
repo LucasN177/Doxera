@@ -30,21 +30,42 @@ interface DoxeraDB extends DBSchema {
     key: string
     value: StoredFile
   }
+  /** Saved signatures (PNG with transparent background). */
+  signatures: {
+    key: string
+    value: StoredSignature
+    indexes: { createdAt: number }
+  }
+}
+
+export interface StoredSignature {
+  id: string
+  data: ArrayBuffer
+  width: number
+  height: number
+  createdAt: number
 }
 
 export type DoxeraDatabase = IDBPDatabase<DoxeraDB>
 
 const DB_NAME = 'doxera'
-const DB_VERSION = 1
+const DB_VERSION = 2
 
 let dbPromise: Promise<DoxeraDatabase> | null = null
 
 export function getDb(): Promise<DoxeraDatabase> {
   dbPromise ??= openDB<DoxeraDB>(DB_NAME, DB_VERSION, {
-    upgrade(db) {
-      const documents = db.createObjectStore('documents', { keyPath: 'id' })
-      documents.createIndex('lastOpenedAt', 'lastOpenedAt')
-      db.createObjectStore('files', { keyPath: 'id' })
+    upgrade(db, oldVersion) {
+      // Each step only adds what's new, so existing data survives upgrades
+      if (oldVersion < 1) {
+        const documents = db.createObjectStore('documents', { keyPath: 'id' })
+        documents.createIndex('lastOpenedAt', 'lastOpenedAt')
+        db.createObjectStore('files', { keyPath: 'id' })
+      }
+      if (oldVersion < 2) {
+        const signatures = db.createObjectStore('signatures', { keyPath: 'id' })
+        signatures.createIndex('createdAt', 'createdAt')
+      }
     },
     // Another tab wants to delete or upgrade the database: release our connection
     blocking(_currentVersion, _blockedVersion, event) {

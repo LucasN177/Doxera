@@ -74,6 +74,38 @@ export interface NoteAnnotation extends AnnotationBase {
   updatedAt: number
 }
 
+/** Picture or signature placed on the page. */
+export interface ImageAnnotation extends AnnotationBase {
+  /** `color` is unused for images. */
+  type: 'image'
+  /** Opposite corners of the image box. */
+  a: PagePoint
+  b: PagePoint
+  /** Image data in the document's asset store. */
+  assetId: string
+  /** Quarter turns the page was displayed with when inserting; the image is upright then. */
+  turns: number
+  /** Inserted as signature (only affects labels). */
+  signature?: boolean
+}
+
+/** An image file used by image annotations, shared between pages and undo steps. */
+export interface ImageAsset {
+  id: string
+  mimeType: 'image/png' | 'image/jpeg'
+  data: Uint8Array
+  /** Pixel size. */
+  width: number
+  height: number
+  /** Object URL for display. */
+  url: string
+}
+
 export type Annotation =
-  ShapeAnnotation | LineAnnotation | TextAnnotation | MarkupAnnotation | NoteAnnotation
+  | ShapeAnnotation
+  | LineAnnotation
+  | TextAnnotation
+  | MarkupAnnotation
+  | NoteAnnotation
+  | ImageAnnotation
 export type AnnotationType = Annotation['type']

@@ -30,10 +30,10 @@ Comprehensive tools for viewing and editing existing PDF documents.
 - [ ] Move and resize existing elements
 - [ ] Select, move and remove images
 - [x] Add shapes, lines, arrows and text boxes (select, move, resize, recolor)
-- [ ] Add images
+- [x] Add images (PNG, JPEG, WebP, HEIC …; move and resize with fixed proportions)
 - [x] Highlight, underline and strike through text (from a text selection)
 - [x] Add comments and notes (sticky notes with a comment list; exported as standard PDF comments)
-- [ ] Insert signatures
+- [x] Insert signatures (draw, type or upload; saved locally for reuse)
 - [ ] Add watermarks
 - [ ] Permanently redact sensitive information
 
@@ -231,7 +231,7 @@ The main objectives are:
 
 - ✅ **Phase 1 – Viewer:** viewing, search, local library, export, offline support, dark mode, iPhone/iPad support
 - ✅ **Phase 2 – Page management:** rotate, delete, duplicate, reorder, merge, extract, split and crop pages, with a page overview that also works on smartphones
-- 🚧 **Phase 3 – Annotations:** shapes, lines, arrows, text boxes, text highlighting and comments are done; images, signatures and watermarks are next
+- 🚧 **Phase 3 – Annotations:** shapes, lines, arrows, text boxes, text highlighting, comments, images and signatures are done; freehand drawing and watermarks are next
 - 🔜 **Next phases:** text editing (Phase 4), then OCR, automation and AI features
 
 The full roadmap is in the [implementation plan](docs/IMPLEMENTATION_PLAN.md).

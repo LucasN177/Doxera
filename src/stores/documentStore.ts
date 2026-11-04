@@ -3,6 +3,7 @@ import { create } from 'zustand'
 import { insertPages, pagesFromSource } from '@/engine/document/pageOps'
 import { closePdf, getPageSizes, openPdf, PdfLoadError } from '@/engine/render/pdfjs'
 import { hasPdfSignature, looksLikePdf } from '@/lib/file'
+import type { ImageAsset } from '@/types/annotations'
 import type { OpenDocument, PageRef, PdfSource } from '@/types/document'
 
 export type OpenResult = { ok: true } | { ok: false; cancelled?: boolean; message: string }
@@ -30,6 +31,8 @@ interface DocumentState {
   sources: ReadonlyMap<string, PdfSource>
   /** pdf.js handle of the opened file (the primary source). */
   pdf: PDFDocumentProxy | null
+  /** Images used by image annotations (pictures, signatures). */
+  assets: ReadonlyMap<string, ImageAsset>
   history: History
 
   /**
@@ -48,6 +51,8 @@ interface DocumentState {
   edit: (change: (pages: PageRef[]) => PageRef[]) => boolean
   undo: () => void
   redo: () => void
+  /** Registers an image for image annotations (not an undo step; assets stay for the session). */
+  addAsset: (asset: Omit<ImageAsset, 'url'>) => ImageAsset
   /** Adds the pages of other PDF files at `index` (one undoable step). */
   insertFiles: (files: File[], index: number) => Promise<InsertResult>
 }
@@ -81,6 +86,7 @@ function errorMessage(error: unknown): string {
 export const useDocumentStore = create<DocumentState>()((set, get) => {
   const releaseAll = () => {
     for (const source of get().sources.values()) void closePdf(source.pdf)
+    for (const asset of get().assets.values()) URL.revokeObjectURL(asset.url)
   }
 
   /** Reads, validates and parses a PDF, then makes it the open document. */
@@ -104,6 +110,7 @@ export const useDocumentStore = create<DocumentState>()((set, get) => {
         loading: false,
         pdf: source.pdf,
         sources: new Map([[source.id, source]]),
+        assets: new Map(),
         history: EMPTY_HISTORY,
         document: {
           id: crypto.randomUUID(),
@@ -133,6 +140,7 @@ export const useDocumentStore = create<DocumentState>()((set, get) => {
     document: null,
     sources: new Map(),
     pdf: null,
+    assets: new Map(),
     history: EMPTY_HISTORY,
 
     openFile: async (file) => {
@@ -147,7 +155,14 @@ export const useDocumentStore = create<DocumentState>()((set, get) => {
     close: () => {
       loadToken++
       releaseAll()
-      set({ loading: false, document: null, pdf: null, sources: new Map(), history: EMPTY_HISTORY })
+      set({
+        loading: false,
+        document: null,
+        pdf: null,
+        sources: new Map(),
+        assets: new Map(),
+        history: EMPTY_HISTORY,
+      })
     },
 
     edit: (change) => {
@@ -181,6 +196,13 @@ export const useDocumentStore = create<DocumentState>()((set, get) => {
       const [next, ...future] = history.future
       if (!document || !next) return
       setPages(next, { past: [...history.past, document.pages], future })
+    },
+
+    addAsset: (input) => {
+      const url = URL.createObjectURL(new Blob([input.data.slice()], { type: input.mimeType }))
+      const asset: ImageAsset = { ...input, url }
+      set({ assets: new Map(get().assets).set(asset.id, asset) })
+      return asset
     },
 
     insertFiles: async (files, index) => {

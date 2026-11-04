@@ -1,4 +1,4 @@
-import type { PDFFont } from 'pdf-lib'
+import type { PDFFont, PDFImage } from 'pdf-lib'
 import type { PageRef } from '@/types/document'
 import { addNoteAnnotations, drawAnnotations } from './drawAnnotations'
 
@@ -10,6 +10,13 @@ export interface SourceData {
 export interface BuildOptions {
   /** Document title written to the PDF metadata. */
   title?: string
+  /** Image data for image annotations, by asset id. */
+  assets?: ReadonlyMap<string, ImageData>
+}
+
+export interface ImageData {
+  mimeType: 'image/png' | 'image/jpeg'
+  data: Uint8Array
 }
 
 /**
@@ -22,7 +29,7 @@ export interface BuildOptions {
 export async function buildPdf(
   pages: readonly PageRef[],
   sources: ReadonlyMap<string, SourceData>,
-  { title }: BuildOptions = {},
+  { title, assets = new Map() }: BuildOptions = {},
 ): Promise<Uint8Array> {
   if (pages.length === 0) throw new Error('Ein PDF braucht mindestens eine Seite.')
 
@@ -48,6 +55,22 @@ export async function buildPdf(
     copied.set(sourceId, new Map(indices.map((sourceIndex, position) => [sourceIndex, position])))
   }
 
+  // Embed every image once, even if used on several pages
+  const images = new Map<string, PDFImage>()
+  for (const ref of pages) {
+    for (const annotation of ref.annotations ?? []) {
+      if (annotation.type !== 'image' || images.has(annotation.assetId)) continue
+      const asset = assets.get(annotation.assetId)
+      if (!asset) continue
+      images.set(
+        annotation.assetId,
+        asset.mimeType === 'image/png'
+          ? await output.embedPng(asset.data)
+          : await output.embedJpg(asset.data),
+      )
+    }
+  }
+
   const used = new Set<object>()
   for (const ref of pages) {
     const position = copied.get(ref.sourceId)!.get(ref.sourceIndex)!
@@ -66,7 +89,7 @@ export async function buildPdf(
     const box = page.getCropBox()
     if (ref.annotations?.length) {
       font ??= await output.embedFont(StandardFonts.Helvetica)
-      drawAnnotations(lib, page, ref.annotations, box, font)
+      drawAnnotations(lib, page, ref.annotations, box, font, images)
       const notes = ref.annotations.filter((annotation) => annotation.type === 'note')
       if (notes.length > 0) addNoteAnnotations(lib, page, notes, box)
     }

@@ -1,11 +1,13 @@
 import {
   Check,
   Circle,
+  ImagePlus,
   MessageSquareText,
   Minus,
   MousePointer2,
   MoveUpRight,
   PaintBucket,
+  Signature,
   Square,
   StickyNote,
   Trash2,
@@ -13,10 +15,13 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { useEffect } from 'react'
+import { toast } from 'sonner'
 import { IconButton } from '@/components/layout/IconButton'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { isTwoPoint, removeAnnotation } from '@/engine/document/annotations'
+import { pickFiles } from '@/lib/file'
+import { prepareImage } from '@/lib/images'
 import { cn } from '@/lib/utils'
 import {
   ANNOTATION_COLORS,
@@ -25,6 +30,7 @@ import {
 } from '@/stores/annotationStore'
 import { useDocumentStore } from '@/stores/documentStore'
 import { useUiStore } from '@/stores/uiStore'
+import { insertImage } from './insertImage'
 
 const TOOLS: Array<{ tool: AnnotationTool; label: string; icon: LucideIcon; key: string }> = [
   { tool: 'select', label: 'Auswählen und verschieben', icon: MousePointer2, key: 'V' },
@@ -35,6 +41,18 @@ const TOOLS: Array<{ tool: AnnotationTool; label: string; icon: LucideIcon; key:
   { tool: 'text', label: 'Text', icon: Type, key: 'T' },
   { tool: 'note', label: 'Notiz / Kommentar', icon: StickyNote, key: 'K' },
 ]
+
+/** Picks an image file and places it on the current page. */
+async function pickAndInsertImage() {
+  const [file] = await pickFiles('image/*')
+  if (!file) return
+  try {
+    insertImage(await prepareImage(file))
+  } catch (error) {
+    console.error('Bild konnte nicht eingefügt werden', error)
+    toast.error(`„${file.name}“ konnte nicht als Bild gelesen werden.`)
+  }
+}
 const STROKE_WIDTHS = [1, 2, 3, 5, 8]
 const FONT_SIZES = [8, 10, 12, 14, 18, 24, 32, 48]
 const COLOR_NAMES: Record<string, string> = {
@@ -158,6 +176,16 @@ export function AnnotationBar() {
           </IconButton>
         ))}
       </div>
+
+      <IconButton label="Bild einfügen" onClick={() => void pickAndInsertImage()}>
+        <ImagePlus />
+      </IconButton>
+      <IconButton
+        label="Signatur einfügen"
+        onClick={() => useUiStore.getState().setSignatureOpen(true)}
+      >
+        <Signature />
+      </IconButton>
 
       <Separator orientation="vertical" className="mx-1 data-[orientation=vertical]:h-6" />
 

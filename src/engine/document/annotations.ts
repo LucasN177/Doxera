@@ -1,5 +1,6 @@
 import type {
   Annotation,
+  ImageAnnotation,
   LineAnnotation,
   MarkupAnnotation,
   PagePoint,
@@ -209,4 +210,39 @@ export function replaceAnnotation(
 
 export function removeAnnotation(pages: readonly PageRef[], pageId: string, id: string) {
   return updatePage(pages, pageId, (list) => list.filter((item) => item.id !== id))
+}
+
+/** Annotations with two corner points that can be moved and resized. */
+export function hasCorners(
+  annotation: Annotation,
+): annotation is ShapeAnnotation | LineAnnotation | ImageAnnotation {
+  return isTwoPoint(annotation) || annotation.type === 'image'
+}
+
+/**
+ * Where to draw an image in PDF terms: bottom-left corner (fractions of the
+ * unrotated page), size in points and counter-clockwise rotation. The image is
+ * laid out upright in the orientation it was inserted in.
+ */
+export function imagePlacement(image: ImageAnnotation, size: { width: number; height: number }) {
+  const turns = mod4(image.turns)
+  const frameWidth = turns % 2 === 0 ? size.width : size.height
+  const frameHeight = turns % 2 === 0 ? size.height : size.width
+  const a = toDisplay(image.a, turns)
+  const b = toDisplay(image.b, turns)
+  const x0 = Math.min(a.x, b.x)
+  const x1 = Math.max(a.x, b.x)
+  const y0 = Math.min(a.y, b.y)
+  const y1 = Math.max(a.y, b.y)
+  return {
+    origin: toStored({ x: x0, y: y1 }, turns),
+    width: (x1 - x0) * frameWidth,
+    height: (y1 - y0) * frameHeight,
+    rotate: turns * 90,
+  }
+}
+
+/** Clockwise rotation (degrees) of an image's content on a page displayed with `turns`. */
+export function imageDisplayAngle(image: ImageAnnotation, turns: number): number {
+  return mod4(turns - image.turns) * 90
 }

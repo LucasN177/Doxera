@@ -1,6 +1,7 @@
 import { PDFArray, PDFDict, PDFDocument, PDFHexString, PDFName } from 'pdf-lib'
-import type { Annotation, TextAnnotation } from '@/types/annotations'
+import type { Annotation, ImageAnnotation, TextAnnotation } from '@/types/annotations'
 import type { PageRef } from '@/types/document'
+import { imagePlacement } from './annotations'
 import { buildPdf } from './buildPdf'
 import { arrowHead, hexToRgb, textBaselines, toPdf } from './drawAnnotations'
 
@@ -127,5 +128,69 @@ describe('buildPdf with notes', () => {
     expect(note.lookup(PDFName.of('Contents'), PDFHexString).decodeText()).toBe('Bitte prüfen ✓')
     const rect = note.lookup(PDFName.of('Rect'), PDFArray).asRectangle()
     expect(rect).toMatchObject({ x: 300, y: 580, width: 20, height: 20 })
+  })
+})
+
+// 1×1 transparent PNG
+const PNG = Uint8Array.from(
+  atob(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+  ),
+  (c) => c.charCodeAt(0),
+)
+
+describe('images', () => {
+  const image = (turns: number): ImageAnnotation => ({
+    id: 'i',
+    type: 'image',
+    color: '#000',
+    a: { x: 0.1, y: 0.1 },
+    b: { x: 0.5, y: 0.3 },
+    assetId: 'asset',
+    turns,
+  })
+
+  it('places an upright image by its bottom-left corner', () => {
+    const placement = imagePlacement(image(0), { width: 600, height: 800 })
+    expect(placement.origin).toEqual({ x: 0.1, y: 0.3 })
+    expect(placement.width).toBeCloseTo(240)
+    expect(placement.height).toBeCloseTo(160)
+    expect(placement.rotate).toBe(0)
+  })
+
+  it('counter-rotates images inserted on a rotated page', () => {
+    // Inserted while the page was shown turned a quarter clockwise
+    const placement = imagePlacement(
+      { ...image(1), a: { x: 0.1, y: 0.1 }, b: { x: 0.3, y: 0.5 } },
+      { width: 600, height: 800 },
+    )
+    expect(placement.rotate).toBe(90)
+    // Box was 0.4 of the displayed width (800pt) and 0.2 of its height (600pt)
+    expect(placement.width).toBeCloseTo(320)
+    expect(placement.height).toBeCloseTo(120)
+  })
+
+  it('embeds each image once and draws it on every page that uses it', async () => {
+    const source = await PDFDocument.create()
+    source.addPage([600, 800])
+    source.addPage([600, 800])
+    const data = new Uint8Array(await source.save())
+    const pages: PageRef[] = [0, 1].map((sourceIndex) => ({
+      id: `p${sourceIndex}`,
+      sourceId: 's',
+      sourceIndex,
+      rotation: 0,
+      annotations: [image(0)],
+    }))
+    const result = await buildPdf(pages, new Map([['s', { data }]]), {
+      assets: new Map([['asset', { mimeType: 'image/png' as const, data: PNG }]]),
+    })
+    const doc = await PDFDocument.load(result)
+    const xObjects = (pageIndex: number) =>
+      doc.getPage(pageIndex).node.Resources()?.lookup(PDFName.of('XObject'), PDFDict)?.values()
+    const first = xObjects(0)
+    expect(first).toHaveLength(1)
+    // Both pages point at the same embedded image object
+    expect(xObjects(1)?.[0]).toBe(first?.[0])
   })
 })

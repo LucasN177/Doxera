@@ -2,6 +2,7 @@ import { Loader2 } from 'lucide-react'
 import { AnnotationBar } from '@/features/annotations/AnnotationBar'
 import { CommentsPanel } from '@/features/annotations/CommentsPanel'
 import { NotePopover } from '@/features/annotations/NotePopover'
+import { SignatureDialog } from '@/features/annotations/SignatureDialog'
 import { SelectionMenu } from '@/features/annotations/SelectionMenu'
 import { CropDialog } from '@/features/pages/CropDialog'
 import { PageOverview } from '@/features/pages/PageOverview'
@@ -46,6 +47,7 @@ export function AppLayout() {
                   <SearchBar />
                   <SelectionMenu />
                   <NotePopover />
+                  <SignatureDialog />
                 </>
               )}
               <SplitDialog />

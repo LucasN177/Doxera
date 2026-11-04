@@ -90,7 +90,10 @@ export function useExportDocument() {
 
       const progress = toast.loading('PDF wird erstellt …')
       try {
-        const data = await buildPdf(selected, state.sources, { title: baseName(name) })
+        const data = await buildPdf(selected, state.sources, {
+          title: baseName(name),
+          assets: state.assets,
+        })
         toast.dismiss(progress)
         await deliver(createPdfFile(data, name), mode, true)
       } catch (error) {
@@ -116,7 +119,10 @@ export function useExportDocument() {
         const files: File[] = []
         for (const [index, part] of parts.entries()) {
           toast.loading(`PDF ${index + 1} von ${parts.length} wird erstellt …`, { id: progress })
-          const data = await buildPdf(part.pages, state.sources, { title: baseName(part.name) })
+          const data = await buildPdf(part.pages, state.sources, {
+            title: baseName(part.name),
+            assets: state.assets,
+          })
           files.push(createPdfFile(data, part.name))
         }
 

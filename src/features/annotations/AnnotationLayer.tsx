@@ -2,6 +2,8 @@ import { MessageSquareText } from 'lucide-react'
 import { useEffect, useRef, useState, type PointerEvent } from 'react'
 import {
   addAnnotation,
+  hasCorners,
+  imageDisplayAngle,
   isMarkup,
   isTwoPoint,
   MARKUP_OPACITY,
@@ -26,7 +28,13 @@ import {
   type AnnotationTool,
 } from '@/stores/annotationStore'
 import { useDocumentStore } from '@/stores/documentStore'
-import type { Annotation, NoteAnnotation, PagePoint, TextAnnotation } from '@/types/annotations'
+import type {
+  Annotation,
+  ImageAnnotation,
+  NoteAnnotation,
+  PagePoint,
+  TextAnnotation,
+} from '@/types/annotations'
 import type { PageRef, ResolvedPage } from '@/types/document'
 
 type Handle = 'a' | 'b' | 'nw' | 'ne' | 'sw' | 'se'
@@ -201,7 +209,7 @@ export function AnnotationLayer({ page, scale, interactive }: AnnotationLayerPro
         ),
       )
     } else if (current.kind === 'resize') {
-      setDraft(resize(current.original, current.handle, point, turns))
+      setDraft(resize(current.original, current.handle, point, turns, width / height))
     }
   }
 
@@ -425,7 +433,7 @@ function NoteIcon({
 }
 
 function isTiny(annotation: Annotation, turns: number): boolean {
-  if (!isTwoPoint(annotation)) return false
+  if (!hasCorners(annotation)) return false
   const a = toDisplay(annotation.a, turns)
   const b = toDisplay(annotation.b, turns)
   return Math.abs(a.x - b.x) < MIN_SIZE && Math.abs(a.y - b.y) < MIN_SIZE
@@ -436,8 +444,11 @@ function resize(
   handle: Handle,
   point: PagePoint,
   turns: number,
+  /** Displayed page width / height, to keep image proportions in pixels. */
+  aspect: number,
 ): Annotation {
-  if (!isTwoPoint(annotation)) return annotation
+  if (!hasCorners(annotation)) return annotation
+  if (annotation.type === 'image') return resizeImage(annotation, handle, point, turns, aspect)
   if (annotation.type === 'line' || annotation.type === 'arrow') {
     const moved = toStored(point, turns)
     return handle === 'a' ? { ...annotation, a: moved } : { ...annotation, b: moved }
@@ -456,6 +467,39 @@ function resize(
     ...annotation,
     a: toStored({ x: x0, y: y0 }, turns),
     b: toStored({ x: x1, y: y1 }, turns),
+  }
+}
+
+/** Resizes an image from a corner while keeping its proportions. */
+function resizeImage(
+  image: ImageAnnotation,
+  handle: Handle,
+  point: PagePoint,
+  turns: number,
+  aspect: number,
+): ImageAnnotation {
+  const a = toDisplay(image.a, turns)
+  const b = toDisplay(image.b, turns)
+  const x0 = Math.min(a.x, b.x)
+  const y0 = Math.min(a.y, b.y)
+  const x1 = Math.max(a.x, b.x)
+  const y1 = Math.max(a.y, b.y)
+  // The corner opposite the handle stays fixed
+  const fixed = {
+    x: handle.includes('w') ? x1 : x0,
+    y: handle.includes('n') ? y1 : y0,
+  }
+  const ratio = ((x1 - x0) * aspect) / Math.max(1e-6, y1 - y0) // width / height in pixels
+  const width = Math.max(0.02, Math.abs(point.x - fixed.x))
+  const height = (width * aspect) / ratio
+  const corner = {
+    x: handle.includes('w') ? fixed.x - width : fixed.x + width,
+    y: handle.includes('n') ? fixed.y - height : fixed.y + height,
+  }
+  return {
+    ...image,
+    a: toStored({ x: Math.min(fixed.x, corner.x), y: Math.min(fixed.y, corner.y) }, turns),
+    b: toStored({ x: Math.max(fixed.x, corner.x), y: Math.max(fixed.y, corner.y) }, turns),
   }
 }
 
@@ -539,6 +583,35 @@ interface ShapeProps {
 
 export function AnnotationShape({ annotation, px, scale, turns, storedSize }: ShapeProps) {
   const { color } = annotation
+  const assetUrl = useDocumentStore((state) =>
+    annotation.type === 'image' ? state.assets.get(annotation.assetId)?.url : undefined,
+  )
+
+  if (annotation.type === 'image') {
+    const a = px(annotation.a)
+    const b = px(annotation.b)
+    const x = Math.min(a.x, b.x)
+    const y = Math.min(a.y, b.y)
+    const w = Math.abs(a.x - b.x)
+    const h = Math.abs(a.y - b.y)
+    const angle = imageDisplayAngle(annotation, turns)
+    // Turned a quarter: the picture's own width runs along the box height
+    const quarter = angle % 180 !== 0
+    const iw = quarter ? h : w
+    const ih = quarter ? w : h
+    if (!assetUrl) return <rect x={x} y={y} width={w} height={h} fill="#e5e7eb" />
+    return (
+      <image
+        href={assetUrl}
+        x={x + (w - iw) / 2}
+        y={y + (h - ih) / 2}
+        width={iw}
+        height={ih}
+        preserveAspectRatio="none"
+        transform={`rotate(${angle} ${x + w / 2} ${y + h / 2})`}
+      />
+    )
+  }
 
   if (annotation.type === 'text') {
     const anchor = px(annotation.at)
@@ -658,7 +731,7 @@ function SelectionFrame({
       { handle: 'a', ...px(annotation.a) },
       { handle: 'b', ...px(annotation.b) },
     ]
-  } else if (annotation.type !== 'text') {
+  } else if (hasCorners(annotation)) {
     handles = [
       { handle: 'nw', x: box.x, y: box.y },
       { handle: 'ne', x: box.x + box.width, y: box.y },

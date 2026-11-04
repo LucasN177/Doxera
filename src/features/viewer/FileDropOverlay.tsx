@@ -1,7 +1,11 @@
 import { FileDown } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
+import { insertImage } from '@/features/annotations/insertImage'
 import { useOpenDocument } from '@/hooks/useOpenDocument'
+import { looksLikePdf } from '@/lib/file'
+import { looksLikeImage, prepareImage } from '@/lib/images'
+import { useDocumentStore } from '@/stores/documentStore'
 
 function hasFiles(event: DragEvent): boolean {
   return event.dataTransfer?.types.includes('Files') ?? false
@@ -39,8 +43,17 @@ export function FileDropOverlay() {
 
       const files = Array.from(event.dataTransfer?.files ?? [])
       if (files.length === 0) return
+      const [first] = files
+      // Pictures dropped onto an open document are placed on the current page
+      if (useDocumentStore.getState().document && looksLikeImage(first) && !looksLikePdf(first)) {
+        if (files.length > 1) toast.info('Es wird nur das erste Bild eingefügt.')
+        void prepareImage(first)
+          .then((image) => insertImage(image))
+          .catch(() => toast.error(`„${first.name}“ konnte nicht als Bild gelesen werden.`))
+        return
+      }
       if (files.length > 1) toast.info('Es wird nur die erste Datei geöffnet.')
-      void open(files[0])
+      void open(first)
     }
 
     window.addEventListener('dragenter', onDragEnter)
@@ -56,12 +69,17 @@ export function FileDropOverlay() {
   }, [open])
 
   if (!dragging) return null
+  const hasDocument = useDocumentStore.getState().document !== null
 
   return (
     <div className="bg-primary/10 pointer-events-none fixed inset-0 z-50 flex items-center justify-center p-6 backdrop-blur-[2px]">
       <div className="border-primary bg-background/95 flex flex-col items-center gap-3 rounded-xl border-2 border-dashed px-12 py-10 shadow-lg">
         <FileDown className="text-primary size-10" aria-hidden />
-        <p className="text-lg font-medium">PDF hier ablegen zum Öffnen</p>
+        <p className="text-lg font-medium">
+          {hasDocument
+            ? 'PDF zum Öffnen oder Bild zum Einfügen ablegen'
+            : 'PDF hier ablegen zum Öffnen'}
+        </p>
       </div>
     </div>
   )

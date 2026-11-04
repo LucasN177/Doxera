@@ -154,7 +154,7 @@ Seiteninhalt ein, sodass sie in jedem PDF-Programm gleich aussehen.
 | A1  | Formen & Text            | Rechteck, Ellipse, Linie, Pfeil, Textfeld; auswählen, verschieben, Größe, Farbe, Export | ✅     |
 | A2  | Text markieren           | Hervorheben, Unterstreichen, Durchstreichen auf Basis der Textauswahl                   | ✅     |
 | A3  | Kommentare & Notizen     | Notizzettel mit Text, Liste aller Kommentare                                            | ✅     |
-| A4  | Bilder & Signaturen      | Bilder einfügen; Signatur zeichnen, tippen oder laden, lokal speichern                  | offen  |
+| A4  | Bilder & Signaturen      | Bilder einfügen; Signatur zeichnen, tippen oder laden, lokal speichern                  | ✅     |
 | A5  | Freihand & Wasserzeichen | Freihandzeichnen; Text-/Bild-Wasserzeichen für alle Seiten                              | offen  |
 
 ### Phase 4 – Echtes Editieren (MuPDF.js)

@@ -1,6 +1,7 @@
-import type { PDFFont, PDFPage } from 'pdf-lib'
+import type { PDFFont, PDFImage, PDFPage } from 'pdf-lib'
 import type { Annotation, NoteAnnotation, PagePoint, TextAnnotation } from '@/types/annotations'
 import {
+  imagePlacement,
   isMarkup,
   MARKUP_OPACITY,
   markupPieces,
@@ -62,12 +63,28 @@ export function drawAnnotations(
   annotations: readonly Annotation[],
   box: PageBox,
   font: PDFFont,
+  images: ReadonlyMap<string, PDFImage> = new Map(),
 ) {
   const { rgb, degrees, LineCapStyle, BlendMode } = lib
 
   for (const annotation of annotations) {
     // Notes become real PDF comments, see addNoteAnnotations
     if (annotation.type === 'note') continue
+
+    if (annotation.type === 'image') {
+      const image = images.get(annotation.assetId)
+      if (!image) continue
+      const placement = imagePlacement(annotation, box)
+      const { x, y } = toPdf(placement.origin, box)
+      page.drawImage(image, {
+        x,
+        y,
+        width: placement.width,
+        height: placement.height,
+        rotate: degrees(placement.rotate),
+      })
+      continue
+    }
     const color = rgb(...hexToRgb(annotation.color))
 
     if (isMarkup(annotation)) {

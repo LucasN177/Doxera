@@ -13,6 +13,8 @@ interface UiState {
   /** Comment list next to the document. */
   commentsOpen: boolean
   setCommentsOpen: (open: boolean) => void
+  signatureOpen: boolean
+  setSignatureOpen: (open: boolean) => void
 }
 
 /** Transient UI state that isn't tied to a document. */
@@ -25,4 +27,6 @@ export const useUiStore = create<UiState>()((set) => ({
   closePageDialog: () => set({ pageDialog: null }),
   commentsOpen: false,
   setCommentsOpen: (commentsOpen) => set({ commentsOpen }),
+  signatureOpen: false,
+  setSignatureOpen: (signatureOpen) => set({ signatureOpen }),
 }))
