@@ -6,7 +6,7 @@ import {
   type EditableLine,
 } from '@/engine/document/contentEditing'
 import { useDocumentStore } from '@/stores/documentStore'
-import type { ResolvedPage } from '@/types/document'
+import type { PageRef, ResolvedPage } from '@/types/document'
 
 export interface EditableContent {
   lines: EditableLine[]
@@ -16,8 +16,11 @@ export interface EditableContent {
 /** Content per source page; sources never change, so results stay valid. */
 const cache = new Map<string, Promise<EditableContent>>()
 
-function loadContent(page: ResolvedPage): Promise<EditableContent> | null {
-  const { sourceId, sourceIndex } = page.ref
+/** Text lines and images of a source page (read once with MuPDF, then cached). */
+export function loadPageContent(
+  ref: Pick<PageRef, 'sourceId' | 'sourceIndex'>,
+): Promise<EditableContent> | null {
+  const { sourceId, sourceIndex } = ref
   const key = `${sourceId}:${sourceIndex}`
   const cached = cache.get(key)
   if (cached) return cached
@@ -47,7 +50,7 @@ export function useEditableContent(page: ResolvedPage, enabled: boolean): Conten
   useEffect(() => {
     if (!enabled) return
     let cancelled = false
-    const content = loadContent(page)
+    const content = loadPageContent(page.ref)
     if (!content) return
     content.then(
       (value) => !cancelled && setState({ key, value: { status: 'ready', content: value } }),

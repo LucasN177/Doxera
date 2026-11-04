@@ -4,7 +4,7 @@ import { createWorker, OEM } from 'tesseract.js'
 import { degrees, PDFDocument } from 'pdf-lib'
 import { extractPageContent } from '@/engine/mupdf/pageContent'
 import type { OcrPage } from '@/types/ocr'
-import { fromTesseract, ocrText, type TesseractPage } from './result'
+import { fromTesseract, isWord, ocrText, type TesseractPage } from './result'
 import { buildOcrPdf } from './textLayer'
 
 /** One line with two words in the upper left of the (displayed) page. */
@@ -108,4 +108,13 @@ describe('Tesseract', () => {
       await worker.terminate()
     }
   }, 60_000)
+})
+
+describe('isWord', () => {
+  it('drops noise but keeps sure symbols', () => {
+    expect(isWord('Miete', 90)).toBe(true)
+    expect(isWord('®', 45)).toBe(false)
+    expect(isWord('§', 88)).toBe(true)
+    expect(isWord('Text', 10)).toBe(false)
+  })
 })

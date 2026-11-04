@@ -7,7 +7,6 @@ import {
   MessageSquareText,
   PanelLeft,
   PenLine,
-  ScanText,
   Redo2,
   Search,
   Share,
@@ -17,6 +16,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { ThemeToggle } from '@/features/settings/ThemeToggle'
+import { TextMenu } from '@/features/text/TextMenu'
 import { PageNavigation } from '@/features/viewer/PageNavigation'
 import { ZoomControls } from '@/features/viewer/ZoomControls'
 import { useComments } from '@/hooks/useComments'
@@ -171,13 +171,7 @@ export function Toolbar() {
               </IconButton>
             </>
           )}
-          <IconButton
-            label="Texterkennung (OCR)"
-            className="max-sm:hidden"
-            onClick={() => useUiStore.getState().setOcrOpen(true)}
-          >
-            <ScanText />
-          </IconButton>
+          <TextMenu />
           <IconButton
             label={savesViaShareSheet ? 'Sichern oder teilen' : 'Herunterladen'}
             shortcut={formatShortcut('mod+S')}

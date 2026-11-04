@@ -75,7 +75,7 @@ Extract information from scanned documents and image-based PDFs.
 - [x] Optical Character Recognition (OCR), entirely in the browser
 - [x] Convert scanned documents into searchable PDFs (invisible text layer: search, select, copy)
 - [x] Detect text positions and document structure (blocks, paragraphs, lines, words)
-- [ ] Recognize headings and paragraphs
+- [x] Recognize headings, paragraphs and lists; export the text as Markdown or plain text (redacted lines are left out)
 - [ ] Extract tables from scanned documents
 - [x] Support multiple languages (German, English, French, Spanish, Italian – shipped with Doxera)
 
@@ -234,7 +234,7 @@ The main objectives are:
 - ✅ **Phase 2 – Page management:** rotate, delete, duplicate, reorder, merge, extract, split and crop pages, with a page overview that also works on smartphones
 - ✅ **Phase 3 – Annotations:** shapes, lines, arrows, text boxes, freehand drawing, text highlighting, comments, images, signatures and watermarks – all exported into the PDF
 - ✅ **Phase 4 – Real editing:** permanent redaction, editing existing text and moving, resizing or removing existing images with MuPDF.js
-- 🚧 **Phase 5 – OCR:** scanned pages become searchable PDFs; recognizing headings and paragraphs and extracting tables are next
+- 🚧 **Phase 5 – OCR:** scanned pages become searchable PDFs; text export with headings, paragraphs and lists is done; extracting tables is next
 - 🔜 **Next phases:** automation and AI features
 
 The full roadmap is in the [implementation plan](docs/IMPLEMENTATION_PLAN.md).

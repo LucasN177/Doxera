@@ -215,12 +215,21 @@ Scanbreite gestreckt) in eine neue Quelldatei geschrieben, auf die die Seiten da
 Undo-Schritt). Suche, Markieren, Kopieren, Text-Bearbeitung und Export funktionieren damit ohne
 Sonderfälle. Grenze: Zeichen außerhalb von WinAnsi (Standardschrift Helvetica) werden zu „?“.
 
+**Struktur & Textexport (O2):** Für jede Seite – digital oder per OCR erkannt – liefert MuPDF die
+Zeilen (Position, Größe, fett). Bearbeitete Zeilen und Textfelder werden eingesetzt; Zeilen außerhalb
+des Zuschnitts oder unter einer Schwärzung fallen ganz weg. Heuristik: Grundschriftgröße als nach
+Zeichen gewichteter Median; Überschrift ab 1,25× (Ebene nach Verhältnis), kurze fette Zeilen sowie
+kurze, leicht größere, frei stehende Zeilen (für Scans ohne Fett-Information); Absätze aus eng
+aufeinander folgenden Zeilen gleicher Größe (Silbentrennung wird aufgelöst); Listen an Aufzählungs-
+zeichen und Nummern. Export als Markdown oder Text (Kopieren, Download bzw. Teilen auf iOS). OCR und
+Textexport liegen im Menü „Text“ der Werkzeugleiste, das auch auf dem Smartphone sichtbar ist.
+
 **Milestones Phase 5:**
 
 | #   | Milestone       | Inhalt                                                                        | Status |
 | --- | --------------- | ----------------------------------------------------------------------------- | ------ |
 | O1  | Texterkennung   | Seiten erkennen (Sprachen wählbar), unsichtbare Textebene → durchsuchbare PDF | ✅     |
-| O2  | Struktur & Text | Überschriften/Absätze erkennen, erkannten Text als Text/Markdown exportieren  | offen  |
+| O2  | Struktur & Text | Überschriften/Absätze erkennen, erkannten Text als Text/Markdown exportieren  | ✅     |
 | O3  | Tabellen        | Tabellen aus Scans heuristisch erkennen, als CSV exportieren                  | offen  |
 
 ### Phase 6 – Verarbeitung & Automatisierung

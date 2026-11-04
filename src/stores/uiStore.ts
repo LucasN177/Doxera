@@ -20,6 +20,9 @@ interface UiState {
   /** Text recognition (OCR) dialog. */
   ocrOpen: boolean
   setOcrOpen: (open: boolean) => void
+  /** Text export (Markdown / plain text) dialog. */
+  textExportOpen: boolean
+  setTextExportOpen: (open: boolean) => void
 }
 
 /** Transient UI state that isn't tied to a document. */
@@ -38,4 +41,6 @@ export const useUiStore = create<UiState>()((set) => ({
   setWatermarkOpen: (watermarkOpen) => set({ watermarkOpen }),
   ocrOpen: false,
   setOcrOpen: (ocrOpen) => set({ ocrOpen }),
+  textExportOpen: false,
+  setTextExportOpen: (textExportOpen) => set({ textExportOpen }),
 }))

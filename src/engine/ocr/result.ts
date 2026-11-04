@@ -24,8 +24,18 @@ export interface TesseractPage {
 }
 
 /**
+ * Whether a recognized word is kept: noise from specks or lines in a scan
+ * shows up as very unsure words or as unsure lone symbols (e.g. "®").
+ */
+export function isWord(text: string, confidence: number): boolean {
+  const trimmed = text.trim()
+  if (!trimmed || confidence < 20) return false
+  return /[\p{L}\p{N}]/u.test(trimmed) || confidence >= 70
+}
+
+/**
  * Converts a Tesseract.js result (pixels of the recognized image) into page
- * fractions. Empty words, lines and paragraphs are dropped.
+ * fractions. Noise, empty lines and empty paragraphs are dropped.
  */
 export function fromTesseract(page: TesseractPage, width: number, height: number): OcrPage {
   const box = ({ x0, y0, x1, y1 }: TesseractBox): OcrBox => [
@@ -40,7 +50,7 @@ export function fromTesseract(page: TesseractPage, width: number, height: number
     const paragraphs = block.paragraphs.flatMap((paragraph) => {
       const lines = paragraph.lines.flatMap((line) => {
         const words = line.words
-          .filter((word) => word.text.trim())
+          .filter((word) => isWord(word.text, word.confidence))
           .map((word) => {
             sum += word.confidence
             count++
