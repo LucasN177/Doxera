@@ -1,7 +1,9 @@
 import {
   Download,
+  FileText,
   FolderOpen,
   Keyboard,
+  LayoutGrid,
   PanelLeft,
   Redo2,
   Search,
@@ -18,6 +20,7 @@ import { useExportDocument } from '@/hooks/useExportDocument'
 import { useOpenDocument } from '@/hooks/useOpenDocument'
 import { formatFileSize } from '@/lib/file'
 import { formatShortcut } from '@/lib/platform'
+import { cn } from '@/lib/utils'
 import { useDocumentStore } from '@/stores/documentStore'
 import { useSearchStore } from '@/stores/searchStore'
 import { useUiStore } from '@/stores/uiStore'
@@ -34,6 +37,9 @@ export function Toolbar() {
   const { undo, redo } = useDocumentStore.getState()
   const sidebarOpen = useViewerStore((state) => state.sidebarOpen)
   const toggleSidebar = useViewerStore((state) => state.toggleSidebar)
+  const viewMode = useViewerStore((state) => state.viewMode)
+  const setViewMode = useViewerStore((state) => state.setViewMode)
+  const grid = viewMode === 'grid'
   const { openFromPicker } = useOpenDocument()
   const openSearch = useSearchStore((state) => state.openSearch)
   const openShortcuts = useUiStore((state) => state.openShortcuts)
@@ -44,7 +50,7 @@ export function Toolbar() {
       <IconButton
         label={sidebarOpen ? 'Seitenleiste ausblenden' : 'Seitenleiste einblenden'}
         aria-pressed={sidebarOpen}
-        disabled={!document}
+        disabled={!document || grid}
         className="max-sm:hidden"
         onClick={toggleSidebar}
       >
@@ -79,7 +85,8 @@ export function Toolbar() {
       )}
 
       {document && (
-        <div className="flex items-center max-sm:hidden">
+        // On phones undo/redo only show in the page overview, where pages are edited
+        <div className={cn('flex items-center', !grid && 'max-sm:hidden')}>
           <IconButton
             label="Rückgängig"
             shortcut={formatShortcut('mod+Z')}
@@ -103,13 +110,32 @@ export function Toolbar() {
 
       {document && (
         <>
-          <PageNavigation pageCount={document.pages.length} />
-          <Separator orientation="vertical" className={`${separator} max-lg:hidden`} />
-          <ZoomControls />
-          <Separator orientation="vertical" className={separator} />
-          <IconButton label="Suchen" shortcut={formatShortcut('mod+F')} onClick={openSearch}>
-            <Search />
+          <IconButton
+            label={grid ? 'Zur Dokumentansicht' : 'Seitenübersicht'}
+            shortcut="G"
+            aria-pressed={grid}
+            className={cn(grid && 'bg-accent text-accent-foreground')}
+            onClick={() => setViewMode(grid ? 'document' : 'grid')}
+          >
+            {grid ? <FileText /> : <LayoutGrid />}
           </IconButton>
+          {grid ? (
+            <span className="text-muted-foreground px-1 text-sm whitespace-nowrap">
+              {document.pages.length === 1 ? '1 Seite' : `${document.pages.length} Seiten`}
+            </span>
+          ) : (
+            <>
+              <PageNavigation pageCount={document.pages.length} />
+              <Separator orientation="vertical" className={`${separator} max-lg:hidden`} />
+              <ZoomControls />
+            </>
+          )}
+          <Separator orientation="vertical" className={separator} />
+          {!grid && (
+            <IconButton label="Suchen" shortcut={formatShortcut('mod+F')} onClick={openSearch}>
+              <Search />
+            </IconButton>
+          )}
           <IconButton
             label={savesViaShareSheet ? 'Sichern oder teilen' : 'Herunterladen'}
             shortcut={formatShortcut('mod+S')}

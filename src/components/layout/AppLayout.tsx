@@ -1,5 +1,6 @@
 import { Loader2 } from 'lucide-react'
 import { CropDialog } from '@/features/pages/CropDialog'
+import { PageOverview } from '@/features/pages/PageOverview'
 import { SplitDialog } from '@/features/pages/SplitDialog'
 import { ThumbnailSidebar } from '@/features/pages/ThumbnailSidebar'
 import { SearchBar } from '@/features/search/SearchBar'
@@ -15,18 +16,27 @@ export function AppLayout() {
   const pdf = useDocumentStore((state) => state.pdf)
   const loading = useDocumentStore((state) => state.loading)
   const sidebarOpen = useViewerStore((state) => state.sidebarOpen)
+  const viewMode = useViewerStore((state) => state.viewMode)
   useSearchShortcuts()
 
   return (
     <div className="bg-background text-foreground flex h-svh flex-col">
       <Toolbar />
       <div className="flex min-h-0 flex-1">
-        {document && pdf && sidebarOpen && <ThumbnailSidebar key={document.id} />}
+        {document && pdf && sidebarOpen && viewMode === 'document' && (
+          <ThumbnailSidebar key={document.id} />
+        )}
         <main className="bg-muted relative min-w-0 flex-1">
           {document && pdf ? (
             <>
-              <DocumentViewer key={document.id} />
-              <SearchBar />
+              {viewMode === 'grid' ? (
+                <PageOverview key={document.id} />
+              ) : (
+                <>
+                  <DocumentViewer key={document.id} />
+                  <SearchBar />
+                </>
+              )}
               <SplitDialog />
               <CropDialog />
             </>

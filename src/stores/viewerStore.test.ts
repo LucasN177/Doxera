@@ -1,5 +1,5 @@
 import { useDocumentStore } from './documentStore'
-import { useViewerStore } from './viewerStore'
+import { GRID_SIZE_MAX, GRID_SIZE_MIN, useViewerStore } from './viewerStore'
 
 describe('viewerStore', () => {
   beforeEach(() => {
@@ -79,5 +79,40 @@ describe('viewerStore selection', () => {
     const document = useDocumentStore.getState().document!
     useDocumentStore.setState({ document: { ...document, pages: [page('a'), page('b')] } })
     expect(useViewerStore.getState().selectedIds).toEqual(['a'])
+  })
+})
+
+describe('viewerStore page overview', () => {
+  it('returns to the current page when leaving the overview', () => {
+    const { setViewMode, setCurrentPage } = useViewerStore.getState()
+    setViewMode('grid')
+    setCurrentPage(4)
+    setViewMode('document')
+    expect(useViewerStore.getState()).toMatchObject({
+      viewMode: 'document',
+      navigation: { page: 4 },
+    })
+  })
+
+  it('limits the thumbnail size', () => {
+    useViewerStore.getState().setGridSize(10)
+    expect(useViewerStore.getState().gridSize).toBe(GRID_SIZE_MIN)
+    useViewerStore.getState().setGridSize(10_000)
+    expect(useViewerStore.getState().gridSize).toBe(GRID_SIZE_MAX)
+  })
+
+  it('switches back to the document view when another document is opened', () => {
+    useViewerStore.getState().setViewMode('grid')
+    useDocumentStore.setState({
+      document: {
+        id: 'overview-doc',
+        name: 'x.pdf',
+        size: 1,
+        data: new Uint8Array(),
+        primarySourceId: 's',
+        pages: [{ id: 'p', sourceId: 's', sourceIndex: 0, rotation: 0 }],
+      },
+    })
+    expect(useViewerStore.getState().viewMode).toBe('document')
   })
 })

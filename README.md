@@ -48,6 +48,7 @@ Tools for organizing and restructuring PDF documents.
 - [x] Duplicate pages
 - [x] Preview pages using thumbnails
 - [x] Drag-and-drop page organization (mouse, touch and keyboard)
+- [x] Page overview grid for organizing pages, also on smartphones
 - [x] Undo and redo for all page changes
 
 ### 🧠 AI-Powered Document Intelligence
@@ -228,8 +229,8 @@ The main objectives are:
 **Version 0.1.0** – Doxera is under active development.
 
 - ✅ **Phase 1 – Viewer:** viewing, search, local library, export, offline support, dark mode, iPhone/iPad support
-- 🚧 **Phase 2 – Page management:** rotate, delete, duplicate, reorder, merge, extract, split and crop pages are done; a page overview for smartphones is next
-- 🔜 **Next phases:** annotations & signatures, text editing, OCR, automation and AI features
+- ✅ **Phase 2 – Page management:** rotate, delete, duplicate, reorder, merge, extract, split and crop pages, with a page overview that also works on smartphones
+- 🔜 **Next phases:** annotations & signatures (Phase 3), text editing (Phase 4), then OCR, automation and AI features
 
 The full roadmap is in the [implementation plan](docs/IMPLEMENTATION_PLAN.md).
 

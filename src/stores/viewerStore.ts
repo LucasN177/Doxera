@@ -23,6 +23,10 @@ interface ViewerState {
   currentPage: number
   navigation: NavigationRequest | null
   sidebarOpen: boolean
+  /** 'document': continuous page view; 'grid': page overview for organizing pages. */
+  viewMode: ViewMode
+  /** Thumbnail width in the page overview, in CSS pixels. */
+  gridSize: number
   /** Ids of the selected pages (PageRef ids), in selection order. */
   selectedIds: string[]
   /** Page from which Shift+click extends the selection. */
@@ -38,6 +42,8 @@ interface ViewerState {
   /** Called by the viewer while scrolling; does not trigger navigation. */
   setCurrentPage: (page: number) => void
   toggleSidebar: () => void
+  setViewMode: (mode: ViewMode) => void
+  setGridSize: (size: number) => void
   /**
    * Updates the page selection like a file manager: 'single' selects only this
    * page, 'toggle' adds/removes it (Ctrl/⌘+click), 'range' selects from the
@@ -55,6 +61,11 @@ interface ViewerState {
 
 let navigationId = 0
 
+export type ViewMode = 'document' | 'grid'
+
+export const GRID_SIZE_MIN = 90
+export const GRID_SIZE_MAX = 280
+
 const initialState = {
   zoomMode: 'fit-width' as ZoomMode,
   scale: 1,
@@ -62,11 +73,14 @@ const initialState = {
   navigation: null,
   selectedIds: [] as string[],
   selectionAnchor: null as string | null,
+  viewMode: 'document' as ViewMode,
 }
 
 export const useViewerStore = create<ViewerState>()((set, get) => ({
   ...initialState,
   sidebarOpen: true,
+  // Smaller thumbnails on phones so a few columns fit
+  gridSize: typeof window !== 'undefined' && window.innerWidth < 640 ? 104 : 150,
 
   setZoom: (scale) => set({ zoomMode: 'custom', scale: clampZoom(scale) }),
   setZoomMode: (zoomMode) => set({ zoomMode }),
@@ -81,6 +95,14 @@ export const useViewerStore = create<ViewerState>()((set, get) => ({
     if (get().currentPage !== currentPage) set({ currentPage })
   },
   toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
+  setViewMode: (viewMode) => {
+    if (get().viewMode === viewMode) return
+    set({ viewMode })
+    // The document view is re-created when coming back: return to the current page
+    if (viewMode === 'document') get().goToPage(get().currentPage)
+  },
+  setGridSize: (size) =>
+    set({ gridSize: Math.round(Math.min(GRID_SIZE_MAX, Math.max(GRID_SIZE_MIN, size))) }),
   selectPage: (id, mode, orderedIds) => {
     const { selectedIds, selectionAnchor } = get()
     if (mode === 'toggle') {

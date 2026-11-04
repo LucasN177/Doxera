@@ -10,6 +10,7 @@ import {
   X,
 } from 'lucide-react'
 import { IconButton } from '@/components/layout/IconButton'
+import { cn } from '@/lib/utils'
 import { useUiStore } from '@/stores/uiStore'
 import { useViewerStore } from '@/stores/viewerStore'
 import type { usePageActions } from './usePageActions'
@@ -17,13 +18,79 @@ import type { usePageActions } from './usePageActions'
 interface PageActionBarProps {
   actions: ReturnType<typeof usePageActions>
   selectedCount: number
+  /** 'sidebar': compact 4×2 grid; 'toolbar': one row (page overview). */
+  variant?: 'sidebar' | 'toolbar'
 }
 
-/** Edit buttons above the thumbnails; they act on the selection or the current page. */
-export function PageActionBar({ actions, selectedCount }: PageActionBarProps) {
+/** Edit buttons for pages; they act on the selection or the current page. */
+export function PageActionBar({ actions, selectedCount, variant = 'sidebar' }: PageActionBarProps) {
   const target = selectedCount > 1 ? `${selectedCount} Seiten` : 'Seite'
   const clearSelection = useViewerStore((state) => state.clearSelection)
   const openPageDialog = useUiStore((state) => state.openPageDialog)
+  const toolbar = variant === 'toolbar'
+
+  const buttons = (
+    <>
+      <IconButton label={`${target} nach links drehen`} onClick={() => actions.rotate(-90)}>
+        <RotateCcw />
+      </IconButton>
+      <IconButton label={`${target} nach rechts drehen`} onClick={() => actions.rotate(90)}>
+        <RotateCw />
+      </IconButton>
+      <IconButton label={`${target} duplizieren`} onClick={actions.duplicate}>
+        <Copy />
+      </IconButton>
+      <IconButton label={`${target} löschen`} shortcut="Entf" onClick={actions.remove}>
+        <Trash2 />
+      </IconButton>
+      <IconButton label="PDF einfügen" onClick={() => void actions.insertPdf()}>
+        <FilePlus2 />
+      </IconButton>
+      <IconButton label={`${target} als neue PDF speichern`} onClick={actions.extract}>
+        <FileOutput />
+      </IconButton>
+      <IconButton label={`${target} zuschneiden`} onClick={() => openPageDialog('crop')}>
+        <Crop />
+      </IconButton>
+      <IconButton label="PDF aufteilen" onClick={() => openPageDialog('split')}>
+        <Scissors />
+      </IconButton>
+    </>
+  )
+
+  const selection = selectedCount > 0 && (
+    <div
+      className={cn(
+        'text-muted-foreground flex items-center justify-between gap-2 text-xs',
+        !toolbar && 'px-1 pt-1',
+      )}
+    >
+      <span aria-live="polite" className="whitespace-nowrap">
+        {selectedCount === 1 ? '1 Seite ausgewählt' : `${selectedCount} Seiten ausgewählt`}
+      </span>
+      <button
+        type="button"
+        className="hover:text-foreground flex items-center gap-0.5 rounded px-1"
+        onClick={clearSelection}
+      >
+        <X className="size-3" aria-hidden />
+        Aufheben
+      </button>
+    </div>
+  )
+
+  if (toolbar) {
+    return (
+      <div
+        className="flex flex-wrap items-center gap-x-3 gap-y-1"
+        role="toolbar"
+        aria-label="Seiten bearbeiten"
+      >
+        <div className="flex items-center">{buttons}</div>
+        {selection}
+      </div>
+    )
+  }
 
   return (
     <div
@@ -31,47 +98,8 @@ export function PageActionBar({ actions, selectedCount }: PageActionBarProps) {
       role="toolbar"
       aria-label="Seiten bearbeiten"
     >
-      <div className="grid grid-cols-4 justify-items-center gap-y-0.5">
-        <IconButton label={`${target} nach links drehen`} onClick={() => actions.rotate(-90)}>
-          <RotateCcw />
-        </IconButton>
-        <IconButton label={`${target} nach rechts drehen`} onClick={() => actions.rotate(90)}>
-          <RotateCw />
-        </IconButton>
-        <IconButton label={`${target} duplizieren`} onClick={actions.duplicate}>
-          <Copy />
-        </IconButton>
-        <IconButton label={`${target} löschen`} shortcut="Entf" onClick={actions.remove}>
-          <Trash2 />
-        </IconButton>
-        <IconButton label="PDF einfügen" onClick={() => void actions.insertPdf()}>
-          <FilePlus2 />
-        </IconButton>
-        <IconButton label={`${target} als neue PDF speichern`} onClick={actions.extract}>
-          <FileOutput />
-        </IconButton>
-        <IconButton label={`${target} zuschneiden`} onClick={() => openPageDialog('crop')}>
-          <Crop />
-        </IconButton>
-        <IconButton label="PDF aufteilen" onClick={() => openPageDialog('split')}>
-          <Scissors />
-        </IconButton>
-      </div>
-      {selectedCount > 0 && (
-        <div className="text-muted-foreground flex items-center justify-between px-1 pt-1 text-xs">
-          <span aria-live="polite">
-            {selectedCount === 1 ? '1 Seite ausgewählt' : `${selectedCount} Seiten ausgewählt`}
-          </span>
-          <button
-            type="button"
-            className="hover:text-foreground flex items-center gap-0.5 rounded px-1"
-            onClick={clearSelection}
-          >
-            <X className="size-3" aria-hidden />
-            Aufheben
-          </button>
-        </div>
-      )}
+      <div className="grid grid-cols-4 justify-items-center gap-y-0.5">{buttons}</div>
+      {selection}
     </div>
   )
 }

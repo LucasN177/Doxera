@@ -112,7 +112,7 @@ mit pdf-lib bzw. MuPDF auf die Originaldatei angewendet. Vorteile: Undo/Redo, ve
 | M5  | Lokale Bibliothek        | IndexedDB-Speicherung, „Zuletzt geöffnet“ im Leerzustand, Dokumente lokal löschen                        | ✅     |
 | M6  | Export & Feinschliff     | Download, Tastaturkürzel, Dark Mode, Lade-/Fehlerzustände, Performance mit großen PDFs                   | ✅     |
 
-### Phase 2 – Seitenverwaltung
+### Phase 2 – Seitenverwaltung ✅
 
 - Löschen, Drehen, Duplizieren, Umsortieren (Drag & Drop) von Seiten
 - Merge mehrerer PDFs, Split, Seiten extrahieren
@@ -133,7 +133,7 @@ Undo/Redo speichert Schnappschüsse der Liste.
 | P3  | Umsortieren          | Drag & Drop in der Seitenleiste (Maus, Touch, Tastatur), auch mehrere Seiten        | ✅     |
 | P4  | Zusammenführen       | PDFs einfügen, Auswahl als neue PDF exportieren (Extrahieren)                       | ✅     |
 | P5  | Teilen & Zuschneiden | PDF aufteilen (alle N Seiten / an Auswahl), Seiten zuschneiden                      | ✅     |
-| P6  | Seitenübersicht      | Rasteransicht aller Seiten zum Organisieren, auch auf dem Smartphone                | offen  |
+| P6  | Seitenübersicht      | Rasteransicht aller Seiten zum Organisieren, auch auf dem Smartphone                | ✅     |
 
 ### Phase 3 – Annotationen & Ergänzungen
 

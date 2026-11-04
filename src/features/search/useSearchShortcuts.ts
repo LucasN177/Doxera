@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useDocumentStore } from '@/stores/documentStore'
 import { useSearchStore } from '@/stores/searchStore'
+import { useViewerStore } from '@/stores/viewerStore'
 
 /**
  * Ctrl/Cmd+F opens the document search instead of the browser's find bar
@@ -17,6 +18,8 @@ export function useSearchShortcuts() {
 
       if (mod && key === 'f') {
         event.preventDefault()
+        // Search lives in the document view
+        useViewerStore.getState().setViewMode('document')
         search.openSearch()
       } else if (search.open && (event.key === 'F3' || (mod && key === 'g'))) {
         event.preventDefault()

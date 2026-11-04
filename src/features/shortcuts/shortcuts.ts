@@ -42,6 +42,7 @@ export const SHORTCUT_GROUPS: Array<{
       { keys: ['mod+0'], label: 'Seitenbreite' },
       { keys: ['mod+Mausrad'], label: 'Zoomen' },
       { keys: ['F4'], label: 'Seitenleiste ein-/ausblenden' },
+      { keys: ['G'], label: 'Seitenübersicht ein-/ausblenden' },
       { keys: ['?'], label: 'Diese Übersicht' },
     ],
   },

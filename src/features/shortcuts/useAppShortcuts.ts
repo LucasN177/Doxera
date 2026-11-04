@@ -105,6 +105,11 @@ export function useAppShortcuts() {
           event.preventDefault()
           viewer.toggleSidebar()
           break
+        case 'g':
+        case 'G':
+          event.preventDefault()
+          viewer.setViewMode(viewer.viewMode === 'grid' ? 'document' : 'grid')
+          break
       }
     }
 
