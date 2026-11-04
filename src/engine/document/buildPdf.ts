@@ -1,6 +1,6 @@
 import type { PDFFont } from 'pdf-lib'
 import type { PageRef } from '@/types/document'
-import { drawAnnotations } from './drawAnnotations'
+import { addNoteAnnotations, drawAnnotations } from './drawAnnotations'
 
 /** What the builder needs from a source: its original bytes. */
 export interface SourceData {
@@ -67,6 +67,8 @@ export async function buildPdf(
     if (ref.annotations?.length) {
       font ??= await output.embedFont(StandardFonts.Helvetica)
       drawAnnotations(lib, page, ref.annotations, box, font)
+      const notes = ref.annotations.filter((annotation) => annotation.type === 'note')
+      if (notes.length > 0) addNoteAnnotations(lib, page, notes, box)
     }
     if (ref.crop) {
       const { top, right, bottom, left } = ref.crop

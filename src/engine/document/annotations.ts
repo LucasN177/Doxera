@@ -60,7 +60,9 @@ export function moveAnnotation(
     const display = toDisplay(point, turns)
     return toStored({ x: display.x + dx, y: display.y + dy }, turns)
   }
-  if (annotation.type === 'text') return { ...annotation, at: shift(annotation.at) }
+  if (annotation.type === 'text' || annotation.type === 'note') {
+    return { ...annotation, at: shift(annotation.at) }
+  }
   if (isMarkup(annotation)) {
     return {
       ...annotation,

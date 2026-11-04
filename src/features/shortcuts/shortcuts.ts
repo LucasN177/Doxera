@@ -42,6 +42,7 @@ export const SHORTCUT_GROUPS: Array<{
       { keys: ['R', 'E'], label: 'Rechteck / Ellipse' },
       { keys: ['L', 'P'], label: 'Linie / Pfeil' },
       { keys: ['T'], label: 'Text' },
+      { keys: ['K'], label: 'Notiz / Kommentar' },
       { keys: ['Entf'], label: 'Ausgewähltes Element löschen' },
       { keys: ['Esc'], label: 'Auswahl aufheben, dann Modus beenden' },
     ],

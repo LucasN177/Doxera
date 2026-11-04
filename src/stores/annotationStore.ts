@@ -3,7 +3,7 @@ import { isTwoPoint, replaceAnnotation } from '@/engine/document/annotations'
 import type { Annotation } from '@/types/annotations'
 import { useDocumentStore } from './documentStore'
 
-export type AnnotationTool = 'select' | 'rect' | 'ellipse' | 'line' | 'arrow' | 'text'
+export type AnnotationTool = 'select' | 'rect' | 'ellipse' | 'line' | 'arrow' | 'text' | 'note'
 
 export interface AnnotationStyle {
   color: string
@@ -18,6 +18,9 @@ export interface AnnotationRef {
   pageId: string
   id: string
 }
+
+/** Default color of new notes (classic sticky-note yellow). */
+export const NOTE_DEFAULT_COLOR = '#facc15'
 
 export const ANNOTATION_COLORS = [
   '#e11d48', // red
@@ -37,6 +40,8 @@ interface AnnotationState {
   selected: AnnotationRef | null
   /** Color for highlighting / underlining selected text. */
   markupColor: string
+  /** Note whose popup is open; `isNew` focuses the text right away. */
+  openNote: (AnnotationRef & { isNew?: boolean }) | null
   /** Text annotation whose text is being edited. */
   editing: AnnotationRef | null
 
@@ -47,6 +52,7 @@ interface AnnotationState {
   select: (ref: AnnotationRef | null) => void
   setEditing: (ref: AnnotationRef | null) => void
   setMarkupColor: (color: string) => void
+  setOpenNote: (note: (AnnotationRef & { isNew?: boolean }) | null) => void
 }
 
 const DEFAULT_STYLE: AnnotationStyle = {
@@ -78,6 +84,7 @@ export const useAnnotationStore = create<AnnotationState>()((set, get) => ({
   selected: null,
   editing: null,
   markupColor: '#facc15',
+  openNote: null,
 
   setActive: (active) =>
     set(active ? { active } : { active, tool: 'select', selected: null, editing: null }),
@@ -98,11 +105,18 @@ export const useAnnotationStore = create<AnnotationState>()((set, get) => ({
   select: (selected) => set({ selected, editing: null }),
   setEditing: (editing) => set({ editing, selected: editing }),
   setMarkupColor: (markupColor) => set({ markupColor }),
+  setOpenNote: (openNote) => set({ openNote }),
 }))
 
 // Selections refer to pages of one document
 useDocumentStore.subscribe((state, previous) => {
   if (state.document?.id !== previous.document?.id) {
-    useAnnotationStore.setState({ active: false, tool: 'select', selected: null, editing: null })
+    useAnnotationStore.setState({
+      active: false,
+      tool: 'select',
+      selected: null,
+      editing: null,
+      openNote: null,
+    })
   }
 })

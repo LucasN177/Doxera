@@ -1,4 +1,4 @@
-import { PDFDict, PDFDocument, PDFName } from 'pdf-lib'
+import { PDFArray, PDFDict, PDFDocument, PDFHexString, PDFName } from 'pdf-lib'
 import type { Annotation, TextAnnotation } from '@/types/annotations'
 import type { PageRef } from '@/types/document'
 import { buildPdf } from './buildPdf'
@@ -94,5 +94,38 @@ describe('buildPdf with annotations', () => {
     expect(result.length).toBeGreaterThan(before + 500)
     const fonts = doc.getPage(0).node.Resources()?.lookup(PDFName.of('Font'), PDFDict)
     expect(fonts?.keys().length).toBeGreaterThan(0)
+  })
+})
+
+describe('buildPdf with notes', () => {
+  it('writes notes as standard PDF text annotations', async () => {
+    const source = await PDFDocument.create()
+    source.addPage([600, 800])
+    const data = new Uint8Array(await source.save())
+    const page: PageRef = {
+      id: 'p',
+      sourceId: 's',
+      sourceIndex: 0,
+      rotation: 0,
+      annotations: [
+        {
+          id: 'n',
+          type: 'note',
+          color: '#facc15',
+          at: { x: 0.5, y: 0.25 },
+          text: 'Bitte prüfen ✓',
+          createdAt: 0,
+          updatedAt: 0,
+        },
+      ],
+    }
+    const doc = await PDFDocument.load(await buildPdf([page], new Map([['s', { data }]])))
+    const annots = doc.getPage(0).node.Annots()
+    expect(annots?.size()).toBe(1)
+    const note = annots!.lookup(0, PDFDict)
+    expect(note.get(PDFName.of('Subtype'))).toBe(PDFName.of('Text'))
+    expect(note.lookup(PDFName.of('Contents'), PDFHexString).decodeText()).toBe('Bitte prüfen ✓')
+    const rect = note.lookup(PDFName.of('Rect'), PDFArray).asRectangle()
+    expect(rect).toMatchObject({ x: 300, y: 580, width: 20, height: 20 })
   })
 })

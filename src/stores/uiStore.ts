@@ -10,6 +10,9 @@ interface UiState {
   pageDialog: PageDialog | null
   openPageDialog: (dialog: PageDialog) => void
   closePageDialog: () => void
+  /** Comment list next to the document. */
+  commentsOpen: boolean
+  setCommentsOpen: (open: boolean) => void
 }
 
 /** Transient UI state that isn't tied to a document. */
@@ -20,4 +23,6 @@ export const useUiStore = create<UiState>()((set) => ({
   pageDialog: null,
   openPageDialog: (pageDialog) => set({ pageDialog }),
   closePageDialog: () => set({ pageDialog: null }),
+  commentsOpen: false,
+  setCommentsOpen: (commentsOpen) => set({ commentsOpen }),
 }))

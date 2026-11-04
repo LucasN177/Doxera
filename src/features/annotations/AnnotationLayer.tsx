@@ -1,3 +1,4 @@
+import { MessageSquareText } from 'lucide-react'
 import { useEffect, useRef, useState, type PointerEvent } from 'react'
 import {
   addAnnotation,
@@ -17,10 +18,15 @@ import {
   toStored,
   unrotatedSize,
 } from '@/engine/document/annotations'
-import { arrowHead } from '@/engine/document/drawAnnotations'
-import { useAnnotationStore, type AnnotationTool } from '@/stores/annotationStore'
+import { arrowHead, NOTE_ICON_SIZE } from '@/engine/document/drawAnnotations'
+import { cn } from '@/lib/utils'
+import {
+  NOTE_DEFAULT_COLOR,
+  useAnnotationStore,
+  type AnnotationTool,
+} from '@/stores/annotationStore'
 import { useDocumentStore } from '@/stores/documentStore'
-import type { Annotation, PagePoint, TextAnnotation } from '@/types/annotations'
+import type { Annotation, NoteAnnotation, PagePoint, TextAnnotation } from '@/types/annotations'
 import type { PageRef, ResolvedPage } from '@/types/document'
 
 type Handle = 'a' | 'b' | 'nw' | 'ne' | 'sw' | 'se'
@@ -38,6 +44,10 @@ interface Box {
 }
 
 const NO_ANNOTATIONS: Annotation[] = []
+/** Note icon size on screen (it doesn't scale with the zoom, like in PDF viewers). */
+const NOTE_ICON_PX = 24
+/** Current time; called from event handlers only. */
+const timestamp = () => Date.now()
 /** Created shapes smaller than this (fraction of the page) count as accidental clicks. */
 const MIN_SIZE = 0.005
 
@@ -107,6 +117,26 @@ export function AnnotationLayer({ page, scale, interactive }: AnnotationLayerPro
     const id = crypto.randomUUID()
     const { color, strokeWidth, filled, fontSize } = useAnnotationStore.getState().style
 
+    if (tool === 'note') {
+      // Center the icon on the click
+      const point = pointFrom(event)
+      const offset = NOTE_ICON_PX / 2
+      const note: NoteAnnotation = {
+        id,
+        type: 'note',
+        color: NOTE_DEFAULT_COLOR,
+        at: toStored({ x: point.x - offset / width, y: point.y - offset / height }, turns),
+        text: '',
+        createdAt: timestamp(),
+        updatedAt: timestamp(),
+      }
+      commit((pages) => addAnnotation(pages, pageId, note))
+      const store = useAnnotationStore.getState()
+      store.setTool('select')
+      store.setOpenNote({ pageId, id, isNew: true })
+      return
+    }
+
     if (tool === 'text') {
       const text: TextAnnotation = { id, type: 'text', color, at, text: '', fontSize, turns }
       setDraft(text)
@@ -121,7 +151,7 @@ export function AnnotationLayer({ page, scale, interactive }: AnnotationLayerPro
         ? { id, type: tool, color, a: at, b: at, strokeWidth, filled }
         : {
             id,
-            type: tool as Exclude<AnnotationTool, 'select' | 'text' | 'rect' | 'ellipse'>,
+            type: tool as Exclude<AnnotationTool, 'select' | 'text' | 'note' | 'rect' | 'ellipse'>,
             color,
             a: at,
             b: at,
@@ -133,7 +163,7 @@ export function AnnotationLayer({ page, scale, interactive }: AnnotationLayerPro
 
   // --- Moving & resizing -----------------------------------------------------
 
-  const startMove = (annotation: Annotation) => (event: PointerEvent<SVGElement>) => {
+  const startMove = (annotation: Annotation) => (event: PointerEvent<Element>) => {
     if (!active || tool !== 'select' || event.button !== 0) return
     event.preventDefault()
     event.stopPropagation()
@@ -159,6 +189,9 @@ export function AnnotationLayer({ page, scale, interactive }: AnnotationLayerPro
     if (current.kind === 'create' && isTwoPoint(current.original)) {
       setDraft({ ...current.original, b: toStored(point, turns) })
     } else if (current.kind === 'move') {
+      // Small jitter isn't a move (lets a tap on a note open it)
+      const distance = Math.hypot(point.x - current.start.x, point.y - current.start.y)
+      if (distance < 0.004 && !draft) return
       setDraft(
         moveAnnotation(
           current.original,
@@ -178,6 +211,10 @@ export function AnnotationLayer({ page, scale, interactive }: AnnotationLayerPro
     if (!current) return
     const result = draft
     setDraft(null)
+    if (current.kind === 'move' && current.original.type === 'note' && !result) {
+      useAnnotationStore.getState().setOpenNote({ pageId, id: current.original.id })
+      return
+    }
     if (!result || result === current.original) return
 
     if (current.kind === 'create') {
@@ -244,7 +281,7 @@ export function AnnotationLayer({ page, scale, interactive }: AnnotationLayerPro
         aria-hidden={!active}
       >
         {shown.map((annotation) => {
-          if (annotation.id === editingHere) return null
+          if (annotation.id === editingHere || annotation.type === 'note') return null
           const box = boundingBox(annotation, px, scale, turns)
           return (
             <g key={annotation.id} data-annotation>
@@ -279,6 +316,28 @@ export function AnnotationLayer({ page, scale, interactive }: AnnotationLayerPro
           )
         })}
       </svg>
+      {shown.map((annotation) =>
+        annotation.type === 'note' ? (
+          <NoteIcon
+            key={annotation.id}
+            note={annotation}
+            position={px(annotation.at)}
+            size={interactive ? NOTE_ICON_PX : Math.max(3, NOTE_ICON_SIZE * scale)}
+            interactive={interactive}
+            selected={annotation.id === selectedHere}
+            noteKey={`${pageId}:${annotation.id}`}
+            // In annotation mode notes can be dragged; a tap still opens them
+            onPointerDown={active && tool === 'select' ? startMove(annotation) : undefined}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            onOpen={
+              active
+                ? undefined
+                : () => useAnnotationStore.getState().setOpenNote({ pageId, id: annotation.id })
+            }
+          />
+        ) : null,
+      )}
       {editingText && (
         <TextEditor
           key={editingText.id}
@@ -296,6 +355,74 @@ export function AnnotationLayer({ page, scale, interactive }: AnnotationLayerPro
 // ---------------------------------------------------------------------------
 // Geometry helpers
 // ---------------------------------------------------------------------------
+
+function NoteIcon({
+  note,
+  position,
+  size,
+  interactive,
+  selected,
+  noteKey,
+  onPointerDown,
+  onPointerMove,
+  onPointerUp,
+  onOpen,
+}: {
+  note: NoteAnnotation
+  position: { x: number; y: number }
+  size: number
+  interactive: boolean
+  selected: boolean
+  noteKey: string
+  onPointerDown?: (event: PointerEvent<Element>) => void
+  onPointerMove: (event: PointerEvent) => void
+  onPointerUp: () => void
+  onOpen?: () => void
+}) {
+  const preview = note.text.trim() || 'Leere Notiz'
+  if (!interactive) {
+    return (
+      <span
+        className="absolute rounded-[2px] shadow-sm"
+        style={{
+          left: position.x,
+          top: position.y,
+          width: size,
+          height: size,
+          backgroundColor: note.color,
+        }}
+      />
+    )
+  }
+  return (
+    <button
+      type="button"
+      data-annotation
+      data-note-id={noteKey}
+      title={preview}
+      aria-label={`Notiz: ${preview}`}
+      className={cn(
+        'absolute flex items-center justify-center rounded-md border border-black/25 text-black/70 shadow-md transition-transform hover:scale-110',
+        selected && 'ring-primary ring-2 ring-offset-1',
+      )}
+      style={{
+        left: position.x,
+        top: position.y,
+        width: size,
+        height: size,
+        backgroundColor: note.color,
+        touchAction: onPointerDown ? 'none' : undefined,
+        cursor: onPointerDown ? 'move' : 'pointer',
+      }}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onClick={onOpen}
+    >
+      <MessageSquareText className="size-3.5" aria-hidden />
+    </button>
+  )
+}
 
 function isTiny(annotation: Annotation, turns: number): boolean {
   if (!isTwoPoint(annotation)) return false
@@ -362,6 +489,10 @@ function boundingBox(
       width: Math.max(...xs) - Math.min(...xs),
       height: Math.max(...ys) - Math.min(...ys),
     }
+  }
+  if (annotation.type === 'note') {
+    const at = px(annotation.at)
+    return { x: at.x, y: at.y, width: NOTE_ICON_PX, height: NOTE_ICON_PX }
   }
   if (isMarkup(annotation)) {
     const corners = annotation.rects.flatMap((rect) => [px(rect.a), px(rect.b)])
@@ -430,6 +561,8 @@ export function AnnotationShape({ annotation, px, scale, turns, storedSize }: Sh
       </g>
     )
   }
+
+  if (annotation.type === 'note') return null
 
   if (isMarkup(annotation)) {
     return (

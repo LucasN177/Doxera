@@ -63,5 +63,17 @@ export interface MarkupAnnotation extends AnnotationBase {
 
 export type MarkupType = MarkupAnnotation['type']
 
-export type Annotation = ShapeAnnotation | LineAnnotation | TextAnnotation | MarkupAnnotation
+/** Sticky note / comment: an icon on the page with a text that opens on click. */
+export interface NoteAnnotation extends AnnotationBase {
+  type: 'note'
+  /** Top-left corner of the note icon. */
+  at: PagePoint
+  text: string
+  /** Unix timestamps in milliseconds. */
+  createdAt: number
+  updatedAt: number
+}
+
+export type Annotation =
+  ShapeAnnotation | LineAnnotation | TextAnnotation | MarkupAnnotation | NoteAnnotation
 export type AnnotationType = Annotation['type']

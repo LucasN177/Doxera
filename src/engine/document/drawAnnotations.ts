@@ -1,5 +1,5 @@
 import type { PDFFont, PDFPage } from 'pdf-lib'
-import type { Annotation, PagePoint, TextAnnotation } from '@/types/annotations'
+import type { Annotation, NoteAnnotation, PagePoint, TextAnnotation } from '@/types/annotations'
 import {
   isMarkup,
   MARKUP_OPACITY,
@@ -66,6 +66,8 @@ export function drawAnnotations(
   const { rgb, degrees, LineCapStyle, BlendMode } = lib
 
   for (const annotation of annotations) {
+    // Notes become real PDF comments, see addNoteAnnotations
+    if (annotation.type === 'note') continue
     const color = rgb(...hexToRgb(annotation.color))
 
     if (isMarkup(annotation)) {
@@ -128,6 +130,42 @@ export function drawAnnotations(
     }
 
     if (annotation.type === 'text') drawText(page, annotation, box, font, color, degrees)
+  }
+}
+
+/** Size of the note icon in PDF points. */
+export const NOTE_ICON_SIZE = 20
+
+/**
+ * Adds notes as standard PDF text annotations ("sticky notes"), so other PDF
+ * programs show them as comments that open on click. The icon doesn't scale or
+ * rotate with the page, like in Doxera.
+ */
+export function addNoteAnnotations(
+  lib: PdfLib,
+  page: PDFPage,
+  notes: readonly NoteAnnotation[],
+  box: PageBox,
+) {
+  const { PDFHexString, PDFString } = lib
+  const context = page.doc.context
+  for (const note of notes) {
+    const { x, y } = toPdf(note.at, box)
+    const annotation = context.obj({
+      Type: 'Annot',
+      Subtype: 'Text',
+      Rect: [x, y - NOTE_ICON_SIZE, x + NOTE_ICON_SIZE, y],
+      Contents: PDFHexString.fromText(note.text),
+      T: PDFHexString.fromText('Doxera'),
+      M: PDFString.fromDate(new Date(note.updatedAt)),
+      CreationDate: PDFString.fromDate(new Date(note.createdAt)),
+      Name: 'Comment',
+      C: hexToRgb(note.color),
+      // Print | NoZoom | NoRotate
+      F: 4 | 8 | 16,
+      Open: false,
+    })
+    page.node.addAnnot(context.register(annotation))
   }
 }
 

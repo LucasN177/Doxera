@@ -4,6 +4,7 @@ import {
   FolderOpen,
   Keyboard,
   LayoutGrid,
+  MessageSquareText,
   PanelLeft,
   PenLine,
   Redo2,
@@ -17,6 +18,7 @@ import { Separator } from '@/components/ui/separator'
 import { ThemeToggle } from '@/features/settings/ThemeToggle'
 import { PageNavigation } from '@/features/viewer/PageNavigation'
 import { ZoomControls } from '@/features/viewer/ZoomControls'
+import { useComments } from '@/hooks/useComments'
 import { useExportDocument } from '@/hooks/useExportDocument'
 import { useOpenDocument } from '@/hooks/useOpenDocument'
 import { formatFileSize } from '@/lib/file'
@@ -43,6 +45,8 @@ export function Toolbar() {
   const setViewMode = useViewerStore((state) => state.setViewMode)
   const grid = viewMode === 'grid'
   const annotating = useAnnotationStore((state) => state.active)
+  const commentsOpen = useUiStore((state) => state.commentsOpen)
+  const commentCount = useComments().length
   const setAnnotating = useAnnotationStore((state) => state.setActive)
   const { openFromPicker } = useOpenDocument()
   const openSearch = useSearchStore((state) => state.openSearch)
@@ -144,6 +148,22 @@ export function Toolbar() {
                 onClick={() => setAnnotating(!annotating)}
               >
                 <PenLine />
+              </IconButton>
+              <IconButton
+                label={commentsOpen ? 'Kommentare ausblenden' : `Kommentare (${commentCount})`}
+                aria-pressed={commentsOpen}
+                className={cn(
+                  'relative max-sm:hidden',
+                  commentsOpen && 'bg-accent text-accent-foreground',
+                )}
+                onClick={() => useUiStore.getState().setCommentsOpen(!commentsOpen)}
+              >
+                <MessageSquareText />
+                {commentCount > 0 && (
+                  <span className="bg-primary text-primary-foreground absolute -top-0.5 -right-0.5 min-w-4 rounded-full px-1 text-[10px] leading-4 tabular-nums">
+                    {commentCount}
+                  </span>
+                )}
               </IconButton>
               <IconButton label="Suchen" shortcut={formatShortcut('mod+F')} onClick={openSearch}>
                 <Search />

@@ -1,5 +1,7 @@
 import { Loader2 } from 'lucide-react'
 import { AnnotationBar } from '@/features/annotations/AnnotationBar'
+import { CommentsPanel } from '@/features/annotations/CommentsPanel'
+import { NotePopover } from '@/features/annotations/NotePopover'
 import { SelectionMenu } from '@/features/annotations/SelectionMenu'
 import { CropDialog } from '@/features/pages/CropDialog'
 import { PageOverview } from '@/features/pages/PageOverview'
@@ -11,6 +13,7 @@ import { DocumentViewer } from '@/features/viewer/DocumentViewer'
 import { EmptyState } from '@/features/viewer/EmptyState'
 import { useAnnotationStore } from '@/stores/annotationStore'
 import { useDocumentStore } from '@/stores/documentStore'
+import { useUiStore } from '@/stores/uiStore'
 import { useViewerStore } from '@/stores/viewerStore'
 import { Toolbar } from './Toolbar'
 
@@ -21,6 +24,7 @@ export function AppLayout() {
   const sidebarOpen = useViewerStore((state) => state.sidebarOpen)
   const viewMode = useViewerStore((state) => state.viewMode)
   const annotating = useAnnotationStore((state) => state.active)
+  const commentsOpen = useUiStore((state) => state.commentsOpen)
   useSearchShortcuts()
 
   return (
@@ -41,6 +45,7 @@ export function AppLayout() {
                   <DocumentViewer key={document.id} />
                   <SearchBar />
                   <SelectionMenu />
+                  <NotePopover />
                 </>
               )}
               <SplitDialog />
@@ -61,6 +66,7 @@ export function AppLayout() {
             </div>
           )}
         </main>
+        {document && commentsOpen && viewMode === 'document' && <CommentsPanel />}
       </div>
     </div>
   )

@@ -1,13 +1,13 @@
-import { Copy, Highlighter, Strikethrough, Underline } from 'lucide-react'
+import { Copy, Highlighter, MessageSquarePlus, Strikethrough, Underline } from 'lucide-react'
 import { useEffect, useState, type MouseEvent } from 'react'
 import { toast } from 'sonner'
 import { IconButton } from '@/components/layout/IconButton'
-import { addAnnotation } from '@/engine/document/annotations'
+import { addAnnotation, toDisplay, toStored } from '@/engine/document/annotations'
 import { useResolvedPages } from '@/hooks/useResolvedPages'
 import { cn } from '@/lib/utils'
-import { useAnnotationStore } from '@/stores/annotationStore'
+import { NOTE_DEFAULT_COLOR, useAnnotationStore } from '@/stores/annotationStore'
 import { useDocumentStore } from '@/stores/documentStore'
-import type { MarkupType } from '@/types/annotations'
+import type { MarkupType, NoteAnnotation } from '@/types/annotations'
 import { isPdfTextSelection, markupsFromSelection } from './selectionMarkup'
 
 const MARKUP_COLORS = [
@@ -108,6 +108,46 @@ export function SelectionMenu() {
     setPosition(null)
   }
 
+  /** Highlights the selection and attaches a note right after its first line. */
+  const comment = () => {
+    const selection = document.getSelection()
+    if (!selection) return
+    const markups = markupsFromSelection(selection, pages, 'highlight', color)
+    const first = markups[0]
+    const page = pages.find((candidate) => candidate.ref.id === first?.pageId)
+    if (!first || !page) return
+
+    const line = first.annotation.rects[0]
+    const a = toDisplay(line.a, page.turns)
+    const b = toDisplay(line.b, page.turns)
+    const now = Date.now()
+    const note: NoteAnnotation = {
+      id: crypto.randomUUID(),
+      type: 'note',
+      color: NOTE_DEFAULT_COLOR,
+      at: toStored(
+        { x: Math.min(Math.max(a.x, b.x) + 0.008, 0.96), y: Math.min(a.y, b.y) },
+        page.turns,
+      ),
+      text: '',
+      createdAt: now,
+      updatedAt: now,
+    }
+    useDocumentStore.getState().edit((list) =>
+      addAnnotation(
+        markups.reduce(
+          (acc, { pageId, annotation }) => addAnnotation(acc, pageId, annotation),
+          list,
+        ),
+        first.pageId,
+        note,
+      ),
+    )
+    selection.removeAllRanges()
+    setPosition(null)
+    useAnnotationStore.getState().setOpenNote({ pageId: first.pageId, id: note.id, isNew: true })
+  }
+
   const copy = async () => {
     const text = document.getSelection()?.toString() ?? ''
     try {
@@ -153,6 +193,9 @@ export function SelectionMenu() {
       </IconButton>
       <IconButton label="Durchstreichen" onClick={() => mark('strikeout')}>
         <Strikethrough />
+      </IconButton>
+      <IconButton label="Kommentieren" onClick={comment}>
+        <MessageSquarePlus />
       </IconButton>
       <IconButton label="Kopieren" onClick={() => void copy()}>
         <Copy />

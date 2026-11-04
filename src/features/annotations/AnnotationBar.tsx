@@ -1,11 +1,13 @@
 import {
   Check,
   Circle,
+  MessageSquareText,
   Minus,
   MousePointer2,
   MoveUpRight,
   PaintBucket,
   Square,
+  StickyNote,
   Trash2,
   Type,
   type LucideIcon,
@@ -22,6 +24,7 @@ import {
   type AnnotationTool,
 } from '@/stores/annotationStore'
 import { useDocumentStore } from '@/stores/documentStore'
+import { useUiStore } from '@/stores/uiStore'
 
 const TOOLS: Array<{ tool: AnnotationTool; label: string; icon: LucideIcon; key: string }> = [
   { tool: 'select', label: 'Auswählen und verschieben', icon: MousePointer2, key: 'V' },
@@ -30,6 +33,7 @@ const TOOLS: Array<{ tool: AnnotationTool; label: string; icon: LucideIcon; key:
   { tool: 'line', label: 'Linie', icon: Minus, key: 'L' },
   { tool: 'arrow', label: 'Pfeil', icon: MoveUpRight, key: 'P' },
   { tool: 'text', label: 'Text', icon: Type, key: 'T' },
+  { tool: 'note', label: 'Notiz / Kommentar', icon: StickyNote, key: 'K' },
 ]
 const STROKE_WIDTHS = [1, 2, 3, 5, 8]
 const FONT_SIZES = [8, 10, 12, 14, 18, 24, 32, 48]
@@ -235,13 +239,24 @@ export function AnnotationBar() {
         </IconButton>
       )}
 
+      {/* The toolbar hides its comments button on phones */}
+      <IconButton
+        label="Kommentare"
+        className="sm:hidden"
+        onClick={() => useUiStore.getState().setCommentsOpen(true)}
+      >
+        <MessageSquareText />
+      </IconButton>
+
       <div className="flex-1" />
       <span className="text-muted-foreground px-2 text-xs whitespace-nowrap max-lg:hidden">
         {tool === 'select'
           ? 'Element anklicken zum Bearbeiten, Doppelklick auf Text zum Ändern'
           : tool === 'text'
             ? 'Auf die Seite klicken und schreiben'
-            : 'Auf der Seite ziehen zum Zeichnen'}
+            : tool === 'note'
+              ? 'Auf die Seite klicken, um eine Notiz zu setzen'
+              : 'Auf der Seite ziehen zum Zeichnen'}
       </span>
       <Button size="sm" onClick={() => setActive(false)}>
         Fertig
