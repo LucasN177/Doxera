@@ -226,3 +226,16 @@ export function renderTextLayer(
     },
   }
 }
+
+/** Renders a small preview image of a page, e.g. for the document library. */
+export async function renderThumbnail(
+  pdf: PDFDocumentProxy,
+  pageNumber: number,
+  width: number,
+): Promise<string> {
+  const page = await pdf.getPage(pageNumber)
+  const scale = width / page.getViewport({ scale: 1 }).width
+  const canvas = await renderPage(page, scale).promise
+  if (!canvas) throw new Error('Thumbnail rendering was cancelled')
+  return canvas.toDataURL('image/webp', 0.8)
+}

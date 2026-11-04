@@ -1,27 +1,31 @@
 import { FileUp, ShieldCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { RecentDocuments } from '@/features/library/RecentDocuments'
 import { useOpenDocument } from '@/hooks/useOpenDocument'
 
 export function EmptyState() {
   const { openFromPicker } = useOpenDocument()
 
   return (
-    <div className="flex h-full items-center justify-center p-6">
-      <div className="border-border bg-background flex w-full max-w-md flex-col items-center gap-4 rounded-xl border-2 border-dashed p-10 text-center">
-        <div className="bg-primary/10 text-primary rounded-full p-4">
-          <FileUp className="size-8" aria-hidden />
-        </div>
-        <div className="space-y-1">
-          <h2 className="text-lg font-semibold">PDF öffnen</h2>
-          <p className="text-muted-foreground text-sm">
-            Ziehe eine PDF-Datei hierher oder wähle eine Datei aus.
+    <div className="h-full overflow-y-auto">
+      <div className="flex min-h-full flex-col items-center justify-center gap-10 px-6 py-10">
+        <div className="border-border bg-background flex w-full max-w-md flex-col items-center gap-4 rounded-xl border-2 border-dashed p-10 text-center">
+          <div className="bg-primary/10 text-primary rounded-full p-4">
+            <FileUp className="size-8" aria-hidden />
+          </div>
+          <div className="space-y-1">
+            <h2 className="text-lg font-semibold">PDF öffnen</h2>
+            <p className="text-muted-foreground text-sm">
+              Ziehe eine PDF-Datei hierher oder wähle eine Datei aus.
+            </p>
+          </div>
+          <Button onClick={() => void openFromPicker()}>Datei auswählen</Button>
+          <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
+            <ShieldCheck className="size-3.5 shrink-0" aria-hidden />
+            Deine Dokumente werden ausschließlich lokal in deinem Browser verarbeitet.
           </p>
         </div>
-        <Button onClick={() => void openFromPicker()}>Datei auswählen</Button>
-        <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
-          <ShieldCheck className="size-3.5 shrink-0" aria-hidden />
-          Deine Dokumente werden ausschließlich lokal in deinem Browser verarbeitet.
-        </p>
+        <RecentDocuments />
       </div>
     </div>
   )

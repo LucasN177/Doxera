@@ -109,7 +109,7 @@ mit pdf-lib bzw. MuPDF auf die Originaldatei angewendet. Vorteile: Undo/Redo, ve
 | M2  | Seitenanzeige            | pdf.js im Worker, virtualisiertes Rendering (nur sichtbare Seiten), HiDPI, Zoom/Fit-Modi, Navigation     | ✅     |
 | M3  | Thumbnail-Sidebar        | Lazy gerenderte Vorschauen, aktive Seite hervorheben, Klick springt zur Seite                            | ✅     |
 | M4  | Text-Layer & Suche       | Text markieren/kopieren, Volltextsuche mit Treffer-Navigation und Hervorhebung                           | ✅     |
-| M5  | Lokale Bibliothek        | IndexedDB-Speicherung, „Zuletzt geöffnet“ im Leerzustand, Dokumente lokal löschen                        | offen  |
+| M5  | Lokale Bibliothek        | IndexedDB-Speicherung, „Zuletzt geöffnet“ im Leerzustand, Dokumente lokal löschen                        | ✅     |
 | M6  | Export & Feinschliff     | Download, Tastaturkürzel, Dark Mode, Lade-/Fehlerzustände, Performance mit großen PDFs                   | offen  |
 
 ### Phase 2 – Seitenverwaltung

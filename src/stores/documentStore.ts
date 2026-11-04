@@ -17,6 +17,8 @@ interface DocumentState {
    * document stays open and a user-facing message is returned.
    */
   openFile: (file: File) => Promise<OpenResult>
+  /** Like {@link openFile}, for bytes that are already in memory (e.g. from the library). */
+  openData: (name: string, data: Uint8Array) => Promise<OpenResult>
   close: () => void
 }
 
@@ -24,11 +26,55 @@ interface DocumentState {
 let loadToken = 0
 
 const GENERIC_ERROR = 'Die PDF konnte nicht geöffnet werden.'
+const CANCELLED: OpenResult = { ok: false, cancelled: true, message: 'Abgebrochen' }
 
 export const useDocumentStore = create<DocumentState>()((set, get) => {
   const releaseCurrent = () => {
     const current = get().pdf
     if (current) void closePdf(current)
+  }
+
+  /** Reads, validates and parses a PDF, then makes it the open document. */
+  const load = async (name: string, read: () => Promise<Uint8Array>): Promise<OpenResult> => {
+    const token = ++loadToken
+    const isStale = () => token !== loadToken
+    set({ loading: true })
+
+    let pdf: PDFDocumentProxy | null = null
+    try {
+      const data = await read()
+      if (!hasPdfSignature(data)) {
+        throw new PdfLoadError('invalid', `„${name}“ ist keine gültige PDF-Datei.`)
+      }
+
+      pdf = await openPdf(data)
+      const pageSizes = await getPageSizes(pdf)
+
+      if (isStale()) {
+        void closePdf(pdf)
+        return CANCELLED
+      }
+
+      releaseCurrent()
+      set({
+        loading: false,
+        pdf,
+        document: {
+          id: crypto.randomUUID(),
+          name,
+          size: data.byteLength,
+          data,
+          pageCount: pdf.numPages,
+          pageSizes,
+        },
+      })
+      return { ok: true }
+    } catch (error) {
+      if (pdf) void closePdf(pdf)
+      if (isStale()) return CANCELLED
+      set({ loading: false })
+      return { ok: false, message: error instanceof PdfLoadError ? error.message : GENERIC_ERROR }
+    }
   }
 
   return {
@@ -40,47 +86,10 @@ export const useDocumentStore = create<DocumentState>()((set, get) => {
       if (!looksLikePdf(file)) {
         return { ok: false, message: `„${file.name}“ ist keine PDF-Datei.` }
       }
-
-      const token = ++loadToken
-      const isStale = () => token !== loadToken
-      set({ loading: true })
-
-      let pdf: PDFDocumentProxy | null = null
-      try {
-        const data = new Uint8Array(await file.arrayBuffer())
-        if (!hasPdfSignature(data)) {
-          throw new PdfLoadError('invalid', `„${file.name}“ ist keine gültige PDF-Datei.`)
-        }
-
-        pdf = await openPdf(data)
-        const pageSizes = await getPageSizes(pdf)
-
-        if (isStale()) {
-          void closePdf(pdf)
-          return { ok: false, cancelled: true, message: 'Abgebrochen' }
-        }
-
-        releaseCurrent()
-        set({
-          loading: false,
-          pdf,
-          document: {
-            id: crypto.randomUUID(),
-            name: file.name,
-            size: file.size,
-            data,
-            pageCount: pdf.numPages,
-            pageSizes,
-          },
-        })
-        return { ok: true }
-      } catch (error) {
-        if (pdf) void closePdf(pdf)
-        if (isStale()) return { ok: false, cancelled: true, message: 'Abgebrochen' }
-        set({ loading: false })
-        return { ok: false, message: error instanceof PdfLoadError ? error.message : GENERIC_ERROR }
-      }
+      return load(file.name, async () => new Uint8Array(await file.arrayBuffer()))
     },
+
+    openData: (name, data) => load(name, async () => data),
 
     close: () => {
       loadToken++
