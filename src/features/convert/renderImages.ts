@@ -63,40 +63,58 @@ export async function renderPagesAsImages({
     pdf = await openPdf(data)
   }
 
-  const files: File[] = []
-  const digits = String(document.pages.length).length
   try {
-    for (const [index, number] of numbers.entries()) {
-      if (signal.aborted) throw new DOMException('Abgebrochen', 'AbortError')
-      const page = await pdf.getPage(index + 1)
-      const base = page.getViewport({ scale: 1 })
-      const preferred = dpi / 72
-      const pixels = base.width * base.height * preferred * preferred
-      // Within the canvas limit of iPhone/iPad
-      const scale =
-        pixels <= MAX_CANVAS_PIXELS ? preferred : preferred * Math.sqrt(MAX_CANVAS_PIXELS / pixels)
-      const viewport = page.getViewport({ scale })
-      const canvas = window.document.createElement('canvas')
-      canvas.width = Math.floor(viewport.width)
-      canvas.height = Math.floor(viewport.height)
-      const context = canvas.getContext('2d')!
-      // JPEG has no transparency: white like paper
-      context.fillStyle = '#ffffff'
-      context.fillRect(0, 0, canvas.width, canvas.height)
-      await page.render({ canvas, viewport }).promise
-      const blob = await canvasToBlob(canvas, format)
-      canvas.width = 0 // free memory right away (iOS)
-      const extension = format === 'png' ? 'png' : 'jpg'
-      const label = String(number).padStart(digits, '0')
-      files.push(
-        new File([blob], `${baseName(document.name)}-seite-${label}.${extension}`, {
-          type: blob.type,
-        }),
-      )
-      onProgress(index + 1, numbers.length)
-    }
+    return await renderPdfPages(
+      pdf,
+      numbers.map((number, index) => ({ index, number })),
+      { format, dpi, name: baseName(document.name), digits: String(document.pages.length).length },
+      onProgress,
+      signal,
+    )
   } finally {
     if (!unchanged) void closePdf(pdf)
+  }
+}
+
+/**
+ * Renders pages of an opened PDF as image files named
+ * "<name>-seite-<number>.png|jpg".
+ *
+ * @param pages 0-based page index in `pdf` and the page number for the file name.
+ */
+export async function renderPdfPages(
+  pdf: PDFDocumentProxy,
+  pages: ReadonlyArray<{ index: number; number: number }>,
+  options: { format: ImageFormat; dpi: number; name: string; digits: number },
+  onProgress: (done: number, total: number) => void,
+  signal: AbortSignal,
+): Promise<File[]> {
+  const { format, dpi, name, digits } = options
+  const files: File[] = []
+  for (const [done, { index, number }] of pages.entries()) {
+    if (signal.aborted) throw new DOMException('Abgebrochen', 'AbortError')
+    const page = await pdf.getPage(index + 1)
+    const base = page.getViewport({ scale: 1 })
+    const preferred = dpi / 72
+    const pixels = base.width * base.height * preferred * preferred
+    // Within the canvas limit of iPhone/iPad
+    const scale =
+      pixels <= MAX_CANVAS_PIXELS ? preferred : preferred * Math.sqrt(MAX_CANVAS_PIXELS / pixels)
+    const viewport = page.getViewport({ scale })
+    const canvas = window.document.createElement('canvas')
+    canvas.width = Math.floor(viewport.width)
+    canvas.height = Math.floor(viewport.height)
+    const context = canvas.getContext('2d')!
+    // JPEG has no transparency: white like paper
+    context.fillStyle = '#ffffff'
+    context.fillRect(0, 0, canvas.width, canvas.height)
+    await page.render({ canvas, viewport }).promise
+    const blob = await canvasToBlob(canvas, format)
+    canvas.width = 0 // free memory right away (iOS)
+    const extension = format === 'png' ? 'png' : 'jpg'
+    const label = String(number).padStart(digits, '0')
+    files.push(new File([blob], `${name}-seite-${label}.${extension}`, { type: blob.type }))
+    onProgress(done + 1, pages.length)
   }
   return files
 }

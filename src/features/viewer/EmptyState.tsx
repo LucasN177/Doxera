@@ -1,5 +1,6 @@
-import { FileUp, Images, ShieldCheck } from 'lucide-react'
+import { FileUp, Images, Layers, ShieldCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { pickBatchFiles } from '@/features/batch/pickBatchFiles'
 import { pickImagesForPdf } from '@/features/convert/pickImages'
 import { RecentDocuments } from '@/features/library/RecentDocuments'
 import { useOpenDocument } from '@/hooks/useOpenDocument'
@@ -24,6 +25,9 @@ export function EmptyState() {
             <Button onClick={() => void openFromPicker()}>Datei auswählen</Button>
             <Button variant="outline" onClick={() => void pickImagesForPdf()}>
               <Images /> Bilder zu PDF
+            </Button>
+            <Button variant="outline" onClick={() => void pickBatchFiles()}>
+              <Layers /> Mehrere Dateien verarbeiten
             </Button>
           </div>
           <p className="text-muted-foreground flex items-center gap-1.5 text-xs">

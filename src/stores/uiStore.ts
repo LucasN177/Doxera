@@ -32,6 +32,9 @@ interface UiState {
   setCompressOpen: (open: boolean) => void
   dataExportOpen: boolean
   setDataExportOpen: (open: boolean) => void
+  /** Batch processing dialog with its files (null: closed). */
+  batchFiles: File[] | null
+  setBatchFiles: (files: File[] | null) => void
 }
 
 /** Transient UI state that isn't tied to a document. */
@@ -60,4 +63,6 @@ export const useUiStore = create<UiState>()((set) => ({
   setCompressOpen: (compressOpen) => set({ compressOpen }),
   dataExportOpen: false,
   setDataExportOpen: (dataExportOpen) => set({ dataExportOpen }),
+  batchFiles: null,
+  setBatchFiles: (batchFiles) => set({ batchFiles }),
 }))

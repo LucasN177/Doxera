@@ -255,7 +255,7 @@ erkennbare Lücke dazwischen und verbundene Zellen werden nicht getrennt.
 | V1  | Konvertieren       | Seiten → Bilder (PNG/JPEG, dpi, mit allen Bearbeitungen); Bilder → PDF (neu oder einfügen) | ✅     |
 | V2  | Komprimieren       | Bilder herunterrechnen und neu komprimieren (MuPDF), Größe vorher/nachher                  | ✅     |
 | V3  | Datenexport        | Text, Tabellen, Kommentare als CSV, JSON und Excel (eigener XLSX-Schreiber mit fflate)     | ✅     |
-| V4  | Stapelverarbeitung | Mehrere Dateien mit einer Aktion (OCR, Komprimieren, Konvertieren, Export) → ZIP           | offen  |
+| V4  | Stapelverarbeitung | Mehrere Dateien mit einer Aktion (OCR, Komprimieren, Konvertieren, Export) → ZIP           | ✅     |
 | V5  | Workflows          | Schrittketten speichern (IndexedDB) und auf Dateien anwenden                               | offen  |
 
 **Konvertieren (V1):** Für „Seiten als Bilder“ wird zuerst die exportierte PDF gebaut (Anmerkungen,
@@ -282,6 +282,15 @@ fflate – ohne SheetJS, dessen npm-Paket veraltet ist. Zahlen in Tabellenzellen
 und englische Schreibweise, €, %); Datumsangaben, Einheiten und Codes mit führender Null bleiben Text.
 Mehrdeutig ist „1.234“ (als Tausender gelesen). CSV: je Teil eine Datei (Semikolon, UTF-8 mit BOM),
 mehrere als ZIP. Die XLSX-Ausgabe wurde zusätzlich mit ExcelJS gegengelesen.
+
+**Stapelverarbeitung (V4):** Dialog mit Dateiliste (PDFs und Bilder; Bilder werden A4-PDFs) und einer
+Aktion: Komprimieren, Texterkennung, Als Bilder, Daten (Excel/JSON/CSV) oder Zusammenführen. Die Kerne
+der Einzelfunktionen arbeiten dafür dokumentunabhängig mit Datei-Bytes (`renderPdfPages`,
+`recognizePage`, `buildDataFiles`, MuPDF-Worker mit temporären Quell-IDs). Dateien laufen
+nacheinander (Speicher auf iOS), mit Status und Kurzergebnis je Datei und Abbrechen. Ergebnisse werden
+per Klick gespeichert (`saveFilesNow`: iOS-Teilen-Menü direkt im Tap, sonst Einzeldatei oder ZIP),
+Dateinamen eindeutig nummeriert. Unveränderte Kopien (bereits komprimiert, kein neuer Text) werden
+nicht ausgegeben. Seiten mit mittlerer OCR-Sicherheit unter 50 % gelten als ohne Text (Fotos).
 
 ### Phase 7 – KI-Funktionen
 

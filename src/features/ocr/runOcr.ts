@@ -1,8 +1,8 @@
-import { getTextContent } from '@/engine/render/pdfjs'
 import { useDocumentStore } from '@/stores/documentStore'
 import type { PageRef } from '@/types/document'
 import type { OcrPage } from '@/types/ocr'
 import type { OcrLanguage } from '@/engine/ocr/tesseract'
+import { recognizePage } from './recognizePage'
 
 export interface OcrProgress {
   /** 1-based number of the page being worked on, of `total`. */
@@ -57,7 +57,7 @@ export async function runOcr({
     if (ids.has(ref.id) && !targets.has(key(ref))) targets.set(key(ref), ref)
   }
 
-  const { recognize, renderForOcr, terminateOcr } = await import('@/engine/ocr/tesseract')
+  const { terminateOcr } = await import('@/engine/ocr/tesseract')
   const stop = () => void terminateOcr()
   signal.addEventListener('abort', stop)
   const results: Array<{ ref: PageRef; ocr: OcrPage; rotate: number }> = []
@@ -72,24 +72,14 @@ export async function runOcr({
       progress(index === 0 ? 'loading' : 'recognizing')
       const source = store.sources.get(ref.sourceId)
       if (!source) continue
-      if (skipPagesWithText) {
-        const content = await getTextContent(source.pdf, ref.sourceIndex + 1)
-        const hasText = content.items.some((item) => 'str' in item && item.str.trim())
-        if (hasText) {
-          skipped++
-          continue
-        }
-      }
-      const page = await source.pdf.getPage(ref.sourceIndex + 1)
-      const canvas = await renderForOcr(page)
-      aborted(signal)
-      const ocr = await recognize(canvas, languages, (value) => progress('recognizing', value))
-      canvas.width = 0 // free the memory right away (iOS keeps canvases around)
-      if (ocr.blocks.length === 0) {
-        empty++
-        continue
-      }
-      results.push({ ref, ocr, rotate: page.rotate })
+      const result = await recognizePage(source.pdf, ref.sourceIndex + 1, languages, {
+        skipPagesWithText,
+        onProgress: (value) => progress('recognizing', value),
+        signal,
+      })
+      if (result.status === 'skipped') skipped++
+      else if (result.status === 'empty') empty++
+      else results.push({ ref, ocr: result.ocr, rotate: result.rotate })
     }
     aborted(signal)
   } finally {

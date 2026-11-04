@@ -5,6 +5,7 @@ import { NotePopover } from '@/features/annotations/NotePopover'
 import { SignatureDialog } from '@/features/annotations/SignatureDialog'
 import { WatermarkDialog } from '@/features/annotations/WatermarkDialog'
 import { OcrDialog } from '@/features/ocr/OcrDialog'
+import { BatchDialog } from '@/features/batch/BatchDialog'
 import { CompressDialog } from '@/features/convert/CompressDialog'
 import { DataExportDialog } from '@/features/data/DataExportDialog'
 import { ExportImagesDialog } from '@/features/convert/ExportImagesDialog'
@@ -70,6 +71,7 @@ export function AppLayout() {
             <EmptyState />
           )}
           <ImagesToPdfDialog />
+          <BatchDialog />
           {loading && (
             <div
               role="status"

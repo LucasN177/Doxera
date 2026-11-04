@@ -10,14 +10,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import {
-  dataSummary,
-  toCsvFiles,
-  toJson,
-  toSheets,
-  type DataContent,
-  type DocumentData,
-} from '@/engine/export/dataExport'
+import { dataSummary, type DataContent, type DocumentData } from '@/engine/export/dataExport'
+import { buildDataFiles, type DataFormat } from '@/engine/export/dataFiles'
 import { deliverGeneratedFiles } from '@/lib/deliverFiles'
 import { cn } from '@/lib/utils'
 import { useDocumentStore } from '@/stores/documentStore'
@@ -25,7 +19,7 @@ import { useUiStore } from '@/stores/uiStore'
 import { useViewerStore } from '@/stores/viewerStore'
 import { collectData } from './collectData'
 
-type Format = 'xlsx' | 'json' | 'csv'
+type Format = DataFormat
 type Target = 'all' | 'selected' | 'current'
 
 const FORMATS = [
@@ -104,19 +98,7 @@ function DataExportContent({ onDone }: { onDone: () => void }) {
     const base = baseName(document.name)
     const toastId = toast.loading('Daten werden exportiert …')
     try {
-      let files: File[]
-      if (format === 'json') {
-        files = [new File([toJson(data, content)], `${base}.json`, { type: 'application/json' })]
-      } else if (format === 'xlsx') {
-        const { buildXlsx, XLSX_TYPE } = await import('@/engine/export/xlsx')
-        const workbook = buildXlsx(toSheets(data, content))
-        files = [new File([workbook.slice()], `${base}.xlsx`, { type: XLSX_TYPE })]
-      } else {
-        files = toCsvFiles(data, content, base).map(
-          // BOM: Excel then reads the files as UTF-8 (umlauts, €)
-          ({ name, text }) => new File(['\uFEFF', text], name, { type: 'text/csv;charset=utf-8' }),
-        )
-      }
+      const files = await buildDataFiles(data, content, format, base)
       onDone()
       await deliverGeneratedFiles(files, {
         archiveName: `${base} (Daten)`,

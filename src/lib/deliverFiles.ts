@@ -55,3 +55,35 @@ export async function deliverGeneratedFiles(
   downloadFile(zip)
   toast.success(`${files.length} ${many} als „${zip.name}“ heruntergeladen.`, { id: toastId })
 }
+
+/**
+ * Saves files right from a click: on iPhone/iPad straight into the share
+ * sheet (this needs the user's tap), elsewhere one file as download and
+ * several as a ZIP archive.
+ */
+export async function saveFilesNow(files: File[], archiveName: string) {
+  if (files.length === 0) return
+  if (isAppleMobile() && canShareFiles(files)) {
+    await shareFiles(files, archiveName)
+    return
+  }
+  if (files.length === 1) {
+    downloadFile(files[0])
+    return
+  }
+  downloadFile(await createZipFile(files, `${archiveName}.zip`))
+}
+
+/** Makes file names unique by numbering repeats: "a.pdf", "a (2).pdf". */
+export function uniqueFileNames(files: readonly File[]): File[] {
+  const used = new Set<string>()
+  return files.map((file) => {
+    const dot = file.name.lastIndexOf('.')
+    const stem = dot > 0 ? file.name.slice(0, dot) : file.name
+    const extension = dot > 0 ? file.name.slice(dot) : ''
+    let name = file.name
+    for (let n = 2; used.has(name.toLowerCase()); n++) name = `${stem} (${n})${extension}`
+    used.add(name.toLowerCase())
+    return name === file.name ? file : new File([file], name, { type: file.type })
+  })
+}
