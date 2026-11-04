@@ -1,3 +1,4 @@
+import { AppCredits } from '@/components/layout/AppCredits'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -8,6 +9,7 @@ export function App() {
   return (
     <TooltipProvider delayDuration={400}>
       <AppLayout />
+      <AppCredits />
       <FileDropOverlay />
       <Toaster position="bottom-center" richColors />
       <ReloadPrompt />

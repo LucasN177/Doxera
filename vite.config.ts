@@ -1,4 +1,5 @@
 /// <reference types="vitest/config" />
+import { readFileSync } from 'node:fs'
 import { fileURLToPath, URL } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
@@ -8,10 +9,17 @@ import { viteStaticCopy } from 'vite-plugin-static-copy'
 
 const PDFJS = 'node_modules/pdfjs-dist'
 
+const { version } = JSON.parse(
+  readFileSync(new URL('./package.json', import.meta.url), 'utf8'),
+) as { version: string }
+
 // https://vite.dev/config/
 export default defineConfig({
   // GitHub Pages serves the app from https://<user>.github.io/Doxera/
   base: process.env.GITHUB_PAGES ? '/Doxera/' : '/',
+  define: {
+    __APP_VERSION__: JSON.stringify(version),
+  },
   plugins: [
     react(),
     tailwindcss(),
