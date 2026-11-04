@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { insertImage } from '@/features/annotations/insertImage'
 import { useOpenDocument } from '@/hooks/useOpenDocument'
+import { addImagesForPdf } from '@/features/convert/pickImages'
 import { looksLikePdf } from '@/lib/file'
 import { looksLikeImage, prepareImage } from '@/lib/images'
 import { useDocumentStore } from '@/stores/documentStore'
@@ -44,9 +45,15 @@ export function FileDropOverlay() {
       const files = Array.from(event.dataTransfer?.files ?? [])
       if (files.length === 0) return
       const [first] = files
-      // Pictures dropped onto an open document are placed on the current page
-      if (useDocumentStore.getState().document && looksLikeImage(first) && !looksLikePdf(first)) {
-        if (files.length > 1) toast.info('Es wird nur das erste Bild eingefügt.')
+      const images = files.filter((file) => looksLikeImage(file) && !looksLikePdf(file))
+      const hasDocument = useDocumentStore.getState().document !== null
+      // Several pictures, or pictures without an open document: make pages of them
+      if (images.length > 0 && !files.some(looksLikePdf) && (!hasDocument || images.length > 1)) {
+        addImagesForPdf(images)
+        return
+      }
+      // A single picture dropped onto an open document is placed on the current page
+      if (hasDocument && looksLikeImage(first) && !looksLikePdf(first)) {
         void prepareImage(first)
           .then((image) => insertImage(image))
           .catch(() => toast.error(`„${first.name}“ konnte nicht als Bild gelesen werden.`))

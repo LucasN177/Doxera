@@ -248,6 +248,23 @@ erkennbare Lücke dazwischen und verbundene Zellen werden nicht getrennt.
 - Export extrahierter Daten als CSV, JSON, Excel (SheetJS o. ä.)
 - Wiederverwendbare Workflows/Templates (Schrittketten, in IndexedDB gespeichert)
 
+**Milestones Phase 6:**
+
+| #   | Milestone          | Inhalt                                                                                     | Status |
+| --- | ------------------ | ------------------------------------------------------------------------------------------ | ------ |
+| V1  | Konvertieren       | Seiten → Bilder (PNG/JPEG, dpi, mit allen Bearbeitungen); Bilder → PDF (neu oder einfügen) | ✅     |
+| V2  | Komprimieren       | Bilder herunterrechnen und neu komprimieren (MuPDF), Größe vorher/nachher                  | offen  |
+| V3  | Datenexport        | Text, Tabellen, Kommentare als CSV, JSON und Excel (eigener XLSX-Schreiber mit fflate)     | offen  |
+| V4  | Stapelverarbeitung | Mehrere Dateien mit einer Aktion (OCR, Komprimieren, Konvertieren, Export) → ZIP           | offen  |
+| V5  | Workflows          | Schrittketten speichern (IndexedDB) und auf Dateien anwenden                               | offen  |
+
+**Konvertieren (V1):** Für „Seiten als Bilder“ wird zuerst die exportierte PDF gebaut (Anmerkungen,
+Zuschnitt, Drehung, Text- und Bildänderungen, OCR-Text, Schwärzungen), dann rendert pdf.js jede Seite
+(Canvas-Grenze für iOS beachtet). Mehrere Dateien gehen gesammelt ins Teilen-Menü (iOS) oder als ZIP
+(`deliverGeneratedFiles`). „Bilder zu PDF“ nutzt `prepareImage` (HEIC, WebP …) und pdf-lib: A4 oder
+Letter (bei breiten Bildern quer, mit optionalem Rand) oder Seitengröße wie das Bild (96 dpi). Öffnen
+und Ablegen nehmen Bilder an; Einstieg auch über die Startseite und das Menü „Werkzeuge“.
+
 ### Phase 7 – KI-Funktionen
 
 - Provider-Abstraktion (`AiProvider`-Interface): externe APIs mit eigenem API-Key (Opt-in, Key nur lokal gespeichert), optional lokale Modelle (WebLLM / transformers.js)

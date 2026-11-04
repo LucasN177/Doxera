@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { ThemeToggle } from '@/features/settings/ThemeToggle'
 import { TextMenu } from '@/features/text/TextMenu'
+import { ToolsMenu } from '@/features/convert/ToolsMenu'
 import { PageNavigation } from '@/features/viewer/PageNavigation'
 import { ZoomControls } from '@/features/viewer/ZoomControls'
 import { useComments } from '@/hooks/useComments'
@@ -172,6 +173,7 @@ export function Toolbar() {
             </>
           )}
           <TextMenu />
+          <ToolsMenu />
           <IconButton
             label={savesViaShareSheet ? 'Sichern oder teilen' : 'Herunterladen'}
             shortcut={formatShortcut('mod+S')}

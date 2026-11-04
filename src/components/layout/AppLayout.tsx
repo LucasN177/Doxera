@@ -5,6 +5,8 @@ import { NotePopover } from '@/features/annotations/NotePopover'
 import { SignatureDialog } from '@/features/annotations/SignatureDialog'
 import { WatermarkDialog } from '@/features/annotations/WatermarkDialog'
 import { OcrDialog } from '@/features/ocr/OcrDialog'
+import { ExportImagesDialog } from '@/features/convert/ExportImagesDialog'
+import { ImagesToPdfDialog } from '@/features/convert/ImagesToPdfDialog'
 import { TextExportDialog } from '@/features/text/TextExportDialog'
 import { SelectionMenu } from '@/features/annotations/SelectionMenu'
 import { CropDialog } from '@/features/pages/CropDialog'
@@ -57,11 +59,13 @@ export function AppLayout() {
               <SplitDialog />
               <OcrDialog />
               <TextExportDialog />
+              <ExportImagesDialog />
               <CropDialog />
             </>
           ) : (
             <EmptyState />
           )}
+          <ImagesToPdfDialog />
           {loading && (
             <div
               role="status"

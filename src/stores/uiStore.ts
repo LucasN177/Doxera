@@ -23,6 +23,11 @@ interface UiState {
   /** Text export (Markdown / plain text) dialog. */
   textExportOpen: boolean
   setTextExportOpen: (open: boolean) => void
+  /** "Images to PDF" dialog, with the images picked so far (null: closed). */
+  imagesToPdf: File[] | null
+  setImagesToPdf: (files: File[] | null) => void
+  exportImagesOpen: boolean
+  setExportImagesOpen: (open: boolean) => void
 }
 
 /** Transient UI state that isn't tied to a document. */
@@ -43,4 +48,8 @@ export const useUiStore = create<UiState>()((set) => ({
   setOcrOpen: (ocrOpen) => set({ ocrOpen }),
   textExportOpen: false,
   setTextExportOpen: (textExportOpen) => set({ textExportOpen }),
+  imagesToPdf: null,
+  setImagesToPdf: (imagesToPdf) => set({ imagesToPdf }),
+  exportImagesOpen: false,
+  setExportImagesOpen: (exportImagesOpen) => set({ exportImagesOpen }),
 }))

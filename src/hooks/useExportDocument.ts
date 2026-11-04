@@ -1,17 +1,9 @@
 import { useCallback, useMemo } from 'react'
 import { toast } from 'sonner'
+import { deliverGeneratedFiles } from '@/lib/deliverFiles'
 import { buildPdf } from '@/engine/document/buildPdf'
 import { isUnmodified } from '@/engine/document/pageOps'
-import {
-  canShareFile,
-  canShareFiles,
-  createPdfFile,
-  createZipFile,
-  downloadFile,
-  isAppleMobile,
-  shareFile,
-  shareFiles,
-} from '@/lib/download'
+import { canShareFile, createPdfFile, downloadFile, isAppleMobile, shareFile } from '@/lib/download'
 import { getPrimarySource, useDocumentStore } from '@/stores/documentStore'
 import type { PageRef } from '@/types/document'
 
@@ -119,53 +111,31 @@ export function useExportDocument() {
    * share sheet on iPhone/iPad, otherwise one PDF is downloaded directly and
    * several are bundled into a ZIP archive.
    */
-  const exportParts = useCallback(
-    async (parts: ExportPart[], archiveName: string) => {
-      const state = useDocumentStore.getState()
-      if (parts.length === 0) return
-      const progress = toast.loading(`PDF 1 von ${parts.length} wird erstellt …`)
-      try {
-        const files: File[] = []
-        for (const [index, part] of parts.entries()) {
-          toast.loading(`PDF ${index + 1} von ${parts.length} wird erstellt …`, { id: progress })
-          const data = await buildPdf(part.pages, state.sources, {
-            title: baseName(part.name),
-            assets: state.assets,
-          })
-          files.push(createPdfFile(data, part.name))
-        }
-
-        if (appleMobile && canShareFiles(files)) {
-          toast.success(`${files.length} PDFs sind bereit.`, {
-            id: progress,
-            duration: 30_000,
-            action: {
-              label: 'Sichern',
-              onClick: () =>
-                void shareFiles(files, archiveName).catch((error: unknown) => {
-                  console.error('Teilen fehlgeschlagen', error)
-                  toast.error('Die Dateien konnten nicht geteilt werden.')
-                }),
-            },
-          })
-          return
-        }
-        if (files.length === 1) {
-          toast.dismiss(progress)
-          downloadFile(files[0])
-          return
-        }
-        toast.loading('ZIP-Archiv wird erstellt …', { id: progress })
-        const zip = await createZipFile(files, `${baseName(archiveName)}.zip`)
-        downloadFile(zip)
-        toast.success(`${files.length} PDFs als „${zip.name}“ heruntergeladen.`, { id: progress })
-      } catch (error) {
-        console.error('Export fehlgeschlagen', error)
-        toast.error('Die PDFs konnten nicht erstellt werden.', { id: progress })
+  const exportParts = useCallback(async (parts: ExportPart[], archiveName: string) => {
+    const state = useDocumentStore.getState()
+    if (parts.length === 0) return
+    const progress = toast.loading(`PDF 1 von ${parts.length} wird erstellt …`)
+    try {
+      const files: File[] = []
+      for (const [index, part] of parts.entries()) {
+        toast.loading(`PDF ${index + 1} von ${parts.length} wird erstellt …`, { id: progress })
+        const data = await buildPdf(part.pages, state.sources, {
+          title: baseName(part.name),
+          assets: state.assets,
+        })
+        files.push(createPdfFile(data, part.name))
       }
-    },
-    [appleMobile],
-  )
+
+      await deliverGeneratedFiles(files, {
+        archiveName: baseName(archiveName),
+        toastId: progress,
+        noun: ['PDF', 'PDFs'],
+      })
+    } catch (error) {
+      console.error('Export fehlgeschlagen', error)
+      toast.error('Die PDFs konnten nicht erstellt werden.', { id: progress })
+    }
+  }, [])
 
   return {
     canExport: document !== null,

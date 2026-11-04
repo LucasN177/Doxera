@@ -1,10 +1,13 @@
 import { useCallback } from 'react'
 import { toast } from 'sonner'
-import { pickFiles } from '@/lib/file'
+import { addImagesForPdf, IMAGE_ACCEPT } from '@/features/convert/pickImages'
+import { looksLikePdf, pickFiles } from '@/lib/file'
 import { useDocumentStore, type OpenResult } from '@/stores/documentStore'
 import { useLibraryStore } from '@/stores/libraryStore'
 
 const PDF_ACCEPT = 'application/pdf,.pdf'
+/** The picker also offers images: they are turned into a PDF. */
+const OPEN_ACCEPT = `${PDF_ACCEPT},${IMAGE_ACCEPT}`
 
 /** Stores the now open document in the local library, without blocking the UI. */
 function rememberOpenDocument() {
@@ -35,8 +38,14 @@ export function useOpenDocument() {
   const open = useCallback(async (file: File) => handle(await openFile(file)), [openFile, handle])
 
   const openFromPicker = useCallback(async () => {
-    const [file] = await pickFiles(PDF_ACCEPT)
-    if (file) await open(file)
+    const files = await pickFiles(OPEN_ACCEPT, true)
+    const pdf = files.find(looksLikePdf)
+    if (pdf) {
+      if (files.length > 1) toast.info('Es wird nur die erste PDF geöffnet.')
+      await open(pdf)
+    } else {
+      addImagesForPdf(files)
+    }
   }, [open])
 
   const openFromLibrary = useCallback(

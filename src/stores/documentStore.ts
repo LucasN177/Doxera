@@ -60,6 +60,8 @@ interface DocumentState {
    * that pages can refer to. Returns null if the document changed meanwhile.
    */
   addSource: (name: string, data: Uint8Array) => Promise<PdfSource | null>
+  /** Adds all pages of a generated PDF at `index` (one undoable step); returns the page count. */
+  insertData: (name: string, data: Uint8Array, index: number) => Promise<number>
 }
 
 /** Incremented on every open/close so stale async loads can be discarded. */
@@ -226,6 +228,14 @@ export const useDocumentStore = create<DocumentState>()((set, get) => {
       }
       set({ sources: new Map(get().sources).set(source.id, source) })
       return source
+    },
+
+    insertData: async (name, data, index) => {
+      const source = await get().addSource(name, data)
+      if (!source) return 0
+      const inserted = pagesFromSource(source)
+      get().edit((pages) => insertPages(pages, inserted, index))
+      return inserted.length
     },
 
     insertFiles: async (files, index) => {

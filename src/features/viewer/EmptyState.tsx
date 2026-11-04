@@ -1,5 +1,6 @@
-import { FileUp, ShieldCheck } from 'lucide-react'
+import { FileUp, Images, ShieldCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { pickImagesForPdf } from '@/features/convert/pickImages'
 import { RecentDocuments } from '@/features/library/RecentDocuments'
 import { useOpenDocument } from '@/hooks/useOpenDocument'
 
@@ -16,10 +17,15 @@ export function EmptyState() {
           <div className="space-y-1">
             <h2 className="text-lg font-semibold">PDF öffnen</h2>
             <p className="text-muted-foreground text-sm">
-              Ziehe eine PDF-Datei hierher oder wähle eine Datei aus.
+              Ziehe eine PDF-Datei oder Bilder hierher oder wähle eine Datei aus.
             </p>
           </div>
-          <Button onClick={() => void openFromPicker()}>Datei auswählen</Button>
+          <div className="flex flex-wrap justify-center gap-2">
+            <Button onClick={() => void openFromPicker()}>Datei auswählen</Button>
+            <Button variant="outline" onClick={() => void pickImagesForPdf()}>
+              <Images /> Bilder zu PDF
+            </Button>
+          </div>
           <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
             <ShieldCheck className="size-3.5 shrink-0" aria-hidden />
             Deine Dokumente werden ausschließlich lokal in deinem Browser verarbeitet.
