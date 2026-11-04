@@ -13,7 +13,7 @@ alle Kernfunktionen laufen clientseitig, Hosting als statische Seite auf GitHub 
 | **Kein Backend (v1)** | Reine SPA, statisch deploybar. Alle Abhängigkeiten (WASM, Worker, OCR-Sprachdaten) werden mit ausgeliefert oder lazy nachgeladen.                           |
 | **Modular**           | Klare Trennung von UI, PDF-Engine, Processing, AI und Storage über Interfaces. Spätere Backend-/Cloud-Erweiterungen dürfen die Module nicht umbauen müssen. |
 | **Performance**       | Rechenintensive Arbeit (Rendering, OCR, MuPDF, Batch) in Web Workers. Schwere Bibliotheken per Code-Splitting / dynamic `import()`.                         |
-| **Offline-fähig**     | PWA mit Service Worker, sobald die Kernfunktionen stehen.                                                                                                   |
+| **Offline-fähig**     | PWA mit Service Worker (Grundgerüst seit Phase 0), Offline-Nutzung wird mit jeder Phase erweitert.                                                          |
 
 ---
 
@@ -88,6 +88,7 @@ mit pdf-lib bzw. MuPDF auf die Originaldatei angewendet. Vorteile: Undo/Redo, ve
 - oxlint, Prettier, Vitest + Testing Library
 - Ordnerstruktur gemäß Architektur
 - GitHub-Actions-Workflow für CI und Deployment auf GitHub Pages
+- PWA-Grundgerüst: vite-plugin-pwa (Manifest, Service Worker, Precaching, Update-Hinweis), App-Icons
 
 ### Phase 1 – Viewer & Grundgerüst (MVP)
 
@@ -148,7 +149,7 @@ mit pdf-lib bzw. MuPDF auf die Originaldatei angewendet. Vorteile: Undo/Redo, ve
 
 ### Phase 8 – Privacy, Offline & Feinschliff
 
-- PWA (vite-plugin-pwa), vollständige Offline-Nutzung
+- PWA vervollständigen: Offline-Test aller Features, PDF-Dateizuordnung („Öffnen mit“) via `file_handlers` + Launch Queue API
 - Konfigurierbare Aufbewahrung/Löschung lokaler Dokumente
 - Barrierefreiheit, Tastaturkürzel, Dark Mode, i18n (DE/EN)
 - E2E-Tests mit Playwright, Performance-Optimierung großer PDFs
