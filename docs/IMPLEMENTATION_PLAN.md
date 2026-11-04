@@ -206,6 +206,23 @@ in Form-XObjects), nur in Vierteldrehungen (nicht geschert oder gespiegelt).
 - Tabellenerkennung aus Scans (zunächst heuristisch)
 - Mehrsprachigkeit
 
+**Umsetzung:** Tesseract.js (Worker, WebAssembly-Kern nur LSTM) und die Erkennungsdaten (`best_int`:
+Deutsch, Englisch, Französisch, Spanisch, Italienisch) liefert Doxera selbst unter `/tesseract/` aus –
+kein CDN. Sie werden erst bei der ersten Erkennung geladen und dann vom Service Worker gecacht. Seiten
+werden mit 300 dpi gerendert (innerhalb der Canvas-Grenze für iOS). Das Ergebnis (Blöcke, Absätze,
+Zeilen mit Grundlinie, Wörter) wird als unsichtbare Textebene (Render-Modus 3, jedes Wort auf
+Scanbreite gestreckt) in eine neue Quelldatei geschrieben, auf die die Seiten dann zeigen (ein
+Undo-Schritt). Suche, Markieren, Kopieren, Text-Bearbeitung und Export funktionieren damit ohne
+Sonderfälle. Grenze: Zeichen außerhalb von WinAnsi (Standardschrift Helvetica) werden zu „?“.
+
+**Milestones Phase 5:**
+
+| #   | Milestone       | Inhalt                                                                        | Status |
+| --- | --------------- | ----------------------------------------------------------------------------- | ------ |
+| O1  | Texterkennung   | Seiten erkennen (Sprachen wählbar), unsichtbare Textebene → durchsuchbare PDF | ✅     |
+| O2  | Struktur & Text | Überschriften/Absätze erkennen, erkannten Text als Text/Markdown exportieren  | offen  |
+| O3  | Tabellen        | Tabellen aus Scans heuristisch erkennen, als CSV exportieren                  | offen  |
+
 ### Phase 6 – Verarbeitung & Automatisierung
 
 - PDF komprimieren, PDF → Bilder, Bilder → PDF

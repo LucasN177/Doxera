@@ -12,6 +12,9 @@ const PDFJS = 'node_modules/pdfjs-dist'
 const { version } = JSON.parse(
   readFileSync(new URL('./package.json', import.meta.url), 'utf8'),
 ) as { version: string }
+const { version: tesseractVersion } = JSON.parse(
+  readFileSync(new URL('./node_modules/tesseract.js/package.json', import.meta.url), 'utf8'),
+) as { version: string }
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -30,6 +33,18 @@ export default defineConfig({
         dest: 'pdfjs',
         rename: { stripBase: 2 }, // drop node_modules/pdfjs-dist/
       })),
+    }),
+    // OCR: Tesseract worker, WebAssembly cores (LSTM only) and recognition data,
+    // served by Doxera itself so nothing is fetched from a CDN
+    viteStaticCopy({
+      targets: [
+        { src: 'node_modules/tesseract.js/dist/worker.min.js', dest: 'tesseract' },
+        { src: 'node_modules/tesseract.js-core/tesseract-core*-lstm.wasm.js', dest: 'tesseract' },
+        {
+          src: 'node_modules/@tesseract.js-data/*/4.0.0_best_int/*.traineddata.gz',
+          dest: 'tesseract/lang',
+        },
+      ].map((target) => ({ ...target, rename: { stripBase: true as const } })),
     }),
     VitePWA({
       // Users are asked before a new version is activated (see ReloadPrompt)
@@ -70,12 +85,22 @@ export default defineConfig({
         ],
         // MuPDF (~10 MB) is only needed for redaction & editing: cached on first use
         // (see runtimeCaching), so it doesn't slow down the first visit
-        globIgnores: ['**/mupdf-wasm-*.wasm'],
+        // The same goes for OCR (Tesseract ~4 MB plus 1–3 MB per language)
+        globIgnores: ['**/mupdf-wasm-*.wasm', 'tesseract/**'],
         runtimeCaching: [
           {
             urlPattern: /\/assets\/mupdf-wasm-[\w-]+\.wasm$/,
             handler: 'CacheFirst',
             options: { cacheName: 'doxera-mupdf', expiration: { maxEntries: 2 } },
+          },
+          {
+            // File names carry no hash: a new Tesseract version gets a new cache
+            urlPattern: /\/tesseract\//,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: `doxera-tesseract-${tesseractVersion}`,
+              expiration: { maxEntries: 12 },
+            },
           },
         ],
         // pdf.js worker and Tesseract assets are large

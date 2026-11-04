@@ -7,6 +7,7 @@ import {
   MessageSquareText,
   PanelLeft,
   PenLine,
+  ScanText,
   Redo2,
   Search,
   Share,
@@ -170,6 +171,13 @@ export function Toolbar() {
               </IconButton>
             </>
           )}
+          <IconButton
+            label="Texterkennung (OCR)"
+            className="max-sm:hidden"
+            onClick={() => useUiStore.getState().setOcrOpen(true)}
+          >
+            <ScanText />
+          </IconButton>
           <IconButton
             label={savesViaShareSheet ? 'Sichern oder teilen' : 'Herunterladen'}
             shortcut={formatShortcut('mod+S')}

@@ -54,7 +54,7 @@ export function toPdf(point: PagePoint, box: PageBox) {
 }
 
 /** Replaces characters the standard PDF font can't encode (e.g. emoji) with "?". */
-function encodable(font: PDFFont, text: string): string {
+export function encodable(font: PDFFont, text: string): string {
   return Array.from(text, (char) => {
     try {
       font.encodeText(char)

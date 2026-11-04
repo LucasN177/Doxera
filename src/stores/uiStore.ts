@@ -17,6 +17,9 @@ interface UiState {
   setSignatureOpen: (open: boolean) => void
   watermarkOpen: boolean
   setWatermarkOpen: (open: boolean) => void
+  /** Text recognition (OCR) dialog. */
+  ocrOpen: boolean
+  setOcrOpen: (open: boolean) => void
 }
 
 /** Transient UI state that isn't tied to a document. */
@@ -33,4 +36,6 @@ export const useUiStore = create<UiState>()((set) => ({
   setSignatureOpen: (signatureOpen) => set({ signatureOpen }),
   watermarkOpen: false,
   setWatermarkOpen: (watermarkOpen) => set({ watermarkOpen }),
+  ocrOpen: false,
+  setOcrOpen: (ocrOpen) => set({ ocrOpen }),
 }))

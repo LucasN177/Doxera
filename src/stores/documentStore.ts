@@ -55,6 +55,11 @@ interface DocumentState {
   addAsset: (asset: Omit<ImageAsset, 'url'>) => ImageAsset
   /** Adds the pages of other PDF files at `index` (one undoable step). */
   insertFiles: (files: File[], index: number) => Promise<InsertResult>
+  /**
+   * Loads a generated PDF (e.g. pages with recognized text) as an extra source
+   * that pages can refer to. Returns null if the document changed meanwhile.
+   */
+  addSource: (name: string, data: Uint8Array) => Promise<PdfSource | null>
 }
 
 /** Incremented on every open/close so stale async loads can be discarded. */
@@ -210,6 +215,17 @@ export const useDocumentStore = create<DocumentState>()((set, get) => {
       const asset: ImageAsset = { ...input, url }
       set({ assets: new Map(get().assets).set(asset.id, asset) })
       return asset
+    },
+
+    addSource: async (name, data) => {
+      const documentId = get().document?.id
+      const source = await loadSource(name, data)
+      if (!documentId || get().document?.id !== documentId) {
+        void closePdf(source.pdf)
+        return null
+      }
+      set({ sources: new Map(get().sources).set(source.id, source) })
+      return source
     },
 
     insertFiles: async (files, index) => {

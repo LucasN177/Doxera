@@ -72,12 +72,12 @@ Make documents understandable and turn unstructured information into useful data
 
 Extract information from scanned documents and image-based PDFs.
 
-- [ ] Optical Character Recognition (OCR)
-- [ ] Convert scanned documents into searchable PDFs
-- [ ] Detect text positions and document structure
+- [x] Optical Character Recognition (OCR), entirely in the browser
+- [x] Convert scanned documents into searchable PDFs (invisible text layer: search, select, copy)
+- [x] Detect text positions and document structure (blocks, paragraphs, lines, words)
 - [ ] Recognize headings and paragraphs
 - [ ] Extract tables from scanned documents
-- [ ] Support multiple languages
+- [x] Support multiple languages (German, English, French, Spanish, Italian – shipped with Doxera)
 
 ### ⚙️ Document Processing & Automation
 
@@ -137,7 +137,7 @@ The project is built on a modern TypeScript-based frontend and browser-native do
 | vite-plugin-pwa / Workbox | Offline support and installation | ✅ in use |
 | Vitest & Testing Library | Unit and component tests | ✅ in use |
 | MuPDF.js | Advanced PDF processing (redaction, text editing) | ✅ in use (loaded on demand) |
-| Tesseract.js | Optical Character Recognition | 🔜 planned |
+| Tesseract.js | Optical Character Recognition | ✅ in use (loaded on demand) |
 
 Additional AI technologies and integrations will be evaluated during development.
 
@@ -234,7 +234,8 @@ The main objectives are:
 - ✅ **Phase 2 – Page management:** rotate, delete, duplicate, reorder, merge, extract, split and crop pages, with a page overview that also works on smartphones
 - ✅ **Phase 3 – Annotations:** shapes, lines, arrows, text boxes, freehand drawing, text highlighting, comments, images, signatures and watermarks – all exported into the PDF
 - ✅ **Phase 4 – Real editing:** permanent redaction, editing existing text and moving, resizing or removing existing images with MuPDF.js
-- 🔜 **Next phases:** OCR, automation and AI features
+- 🚧 **Phase 5 – OCR:** scanned pages become searchable PDFs; recognizing headings and paragraphs and extracting tables are next
+- 🔜 **Next phases:** automation and AI features
 
 The full roadmap is in the [implementation plan](docs/IMPLEMENTATION_PLAN.md).
 
