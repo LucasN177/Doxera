@@ -1,5 +1,16 @@
-import { Copy, FileOutput, FilePlus2, RotateCcw, RotateCw, Trash2, X } from 'lucide-react'
+import {
+  Copy,
+  Crop,
+  FileOutput,
+  FilePlus2,
+  RotateCcw,
+  RotateCw,
+  Scissors,
+  Trash2,
+  X,
+} from 'lucide-react'
 import { IconButton } from '@/components/layout/IconButton'
+import { useUiStore } from '@/stores/uiStore'
 import { useViewerStore } from '@/stores/viewerStore'
 import type { usePageActions } from './usePageActions'
 
@@ -12,6 +23,7 @@ interface PageActionBarProps {
 export function PageActionBar({ actions, selectedCount }: PageActionBarProps) {
   const target = selectedCount > 1 ? `${selectedCount} Seiten` : 'Seite'
   const clearSelection = useViewerStore((state) => state.clearSelection)
+  const openPageDialog = useUiStore((state) => state.openPageDialog)
 
   return (
     <div
@@ -19,7 +31,7 @@ export function PageActionBar({ actions, selectedCount }: PageActionBarProps) {
       role="toolbar"
       aria-label="Seiten bearbeiten"
     >
-      <div className="flex items-center justify-between">
+      <div className="grid grid-cols-4 justify-items-center gap-y-0.5">
         <IconButton label={`${target} nach links drehen`} onClick={() => actions.rotate(-90)}>
           <RotateCcw />
         </IconButton>
@@ -37,6 +49,12 @@ export function PageActionBar({ actions, selectedCount }: PageActionBarProps) {
         </IconButton>
         <IconButton label={`${target} als neue PDF speichern`} onClick={actions.extract}>
           <FileOutput />
+        </IconButton>
+        <IconButton label={`${target} zuschneiden`} onClick={() => openPageDialog('crop')}>
+          <Crop />
+        </IconButton>
+        <IconButton label="PDF aufteilen" onClick={() => openPageDialog('split')}>
+          <Scissors />
         </IconButton>
       </div>
       {selectedCount > 0 && (

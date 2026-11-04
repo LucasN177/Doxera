@@ -4,6 +4,19 @@ import type { PDFDocumentProxy } from 'pdfjs-dist'
 export interface PageSize {
   width: number
   height: number
+  /** The page's own rotation (/Rotate) in degrees, if known. */
+  rotate?: number
+}
+
+/**
+ * Crop margins as fractions (0–1) of the uncropped page, measured in the page's
+ * unrotated coordinate space, so they rotate together with the page.
+ */
+export interface CropInsets {
+  top: number
+  right: number
+  bottom: number
+  left: number
 }
 
 export type Rotation = 0 | 90 | 180 | 270
@@ -30,6 +43,8 @@ export interface PageRef {
   sourceIndex: number
   /** Rotation added on top of the page's own rotation. */
   rotation: Rotation
+  /** Visible part of the page; omitted when uncropped. */
+  crop?: CropInsets
 }
 
 /** The document opened in the editor. */
@@ -51,6 +66,10 @@ export interface ResolvedPage {
   pdf: PDFDocumentProxy
   /** 1-based page number within the source, as pdf.js expects it. */
   pageNumber: number
-  /** Displayed size with all rotation applied. */
+  /** Displayed size with all rotation and the crop applied. */
   size: PageSize
+  /** Displayed size of the whole page before cropping. */
+  fullSize: PageSize
+  /** Crop margins in displayed (rotated) orientation; all zero when uncropped. */
+  crop: CropInsets
 }

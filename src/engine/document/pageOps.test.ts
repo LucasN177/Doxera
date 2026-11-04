@@ -10,6 +10,11 @@ import {
   pagesFromSource,
   resolvePages,
   rotatePages,
+  cropPages,
+  displayCrop,
+  MIN_CROP_SIZE,
+  normalizeCrop,
+  rotateInsets,
 } from './pageOps'
 
 const ref = (id: string, sourceIndex = 0, sourceId = 'src'): PageRef => ({
@@ -103,5 +108,87 @@ describe('pageOps', () => {
     const [resolved] = resolvePages(rotatePages([ref('a')], ids('a'), 90), sources)
     expect(resolved).toMatchObject({ pageNumber: 1, size: { width: 2, height: 1 } })
     expect(resolvePages([ref('z', 0, 'missing')], sources)).toEqual([])
+  })
+})
+
+describe('cropping', () => {
+  const insets = { top: 0.1, right: 0.2, bottom: 0.3, left: 0.4 }
+
+  it('rotates insets clockwise', () => {
+    expect(rotateInsets(insets, 1)).toEqual({ top: 0.4, right: 0.1, bottom: 0.2, left: 0.3 })
+    expect(rotateInsets(insets, 4)).toEqual(insets)
+    expect(rotateInsets(rotateInsets(insets, 1), -1)).toEqual(insets)
+  })
+
+  it('crops on the displayed page and keeps the crop when rotating later', () => {
+    const sources = new Map([['src', { pageSizes: [{ width: 100, height: 200 }] }]])
+    const [page] = rotatePages([ref('a')], ids('a'), 90)
+    // Cut 10% off the displayed top (which is the original left edge)
+    const [cropped] = cropPages(
+      [page],
+      ids('a'),
+      { top: 0.1, right: 0, bottom: 0, left: 0 },
+      sources,
+    )
+    expect(cropped.crop).toEqual({ top: 0, right: 0, bottom: 0, left: 0.1 })
+
+    // Rotating back shows the cut on the left again
+    const [unrotated] = rotatePages([cropped], ids('a'), -90)
+    expect(displayCrop(unrotated, { width: 100, height: 200 })).toEqual(cropped.crop)
+  })
+
+  it('accounts for the page’s own rotation', () => {
+    const sources = new Map([['src', { pageSizes: [{ width: 200, height: 100, rotate: 90 }] }]])
+    const [cropped] = cropPages(
+      [ref('a')],
+      ids('a'),
+      { top: 0.25, right: 0, bottom: 0, left: 0 },
+      sources,
+    )
+    expect(cropped.crop).toEqual({ top: 0, right: 0, bottom: 0, left: 0.25 })
+  })
+
+  it('removes the crop with null or empty insets', () => {
+    const sources = new Map([['src', { pageSizes: [{ width: 1, height: 1 }] }]])
+    const [cropped] = cropPages([ref('a')], ids('a'), insets, sources)
+    expect(cropPages([cropped], ids('a'), null, sources)[0]).not.toHaveProperty('crop')
+  })
+
+  it('keeps a minimum visible area', () => {
+    const crop = normalizeCrop({ top: 0.7, right: 0.6, bottom: 0.5, left: 0.6 })
+    expect(1 - crop.left - crop.right).toBeCloseTo(MIN_CROP_SIZE)
+    expect(1 - crop.top - crop.bottom).toBeCloseTo(MIN_CROP_SIZE)
+  })
+
+  it('resolves the cropped display size', () => {
+    const pdf = {} as never
+    const sources = new Map([
+      [
+        'src',
+        {
+          id: 'src',
+          name: 'a',
+          data: new Uint8Array(),
+          pdf,
+          pageSizes: [{ width: 100, height: 200 }],
+        },
+      ],
+    ])
+    const [cropped] = cropPages(
+      [ref('a')],
+      ids('a'),
+      { top: 0.5, right: 0, bottom: 0, left: 0.25 },
+      sources,
+    )
+    const [resolved] = resolvePages([cropped], sources)
+    expect(resolved.size).toEqual({ width: 75, height: 100 })
+    expect(resolved.fullSize).toEqual({ width: 100, height: 200 })
+  })
+
+  it('treats cropped pages as modified', () => {
+    const source = { id: 'src', pageSizes: [{ width: 1, height: 1 }] }
+    const sources = new Map([['src', source]])
+    const [cropped] = cropPages([ref('a')], ids('a'), insets, sources)
+    expect(isUnmodified([cropped], source)).toBe(false)
   })
 })

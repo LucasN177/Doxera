@@ -28,7 +28,7 @@ import {
   type MouseEvent,
   type RefObject,
 } from 'react'
-import { PageCanvas } from '@/features/viewer/PageCanvas'
+import { PageSurface } from '@/features/viewer/PageSurface'
 import { useInView } from '@/hooks/useInView'
 import { useResolvedPages } from '@/hooks/useResolvedPages'
 import { cn } from '@/lib/utils'
@@ -263,20 +263,12 @@ function ThumbnailImage({
   return (
     <div
       className={cn(
-        'relative bg-white shadow-sm ring-1 ring-black/10 transition-shadow',
+        'relative overflow-hidden bg-white shadow-sm ring-1 ring-black/10 transition-shadow',
         className,
       )}
       style={{ width: THUMBNAIL_WIDTH, height: Math.round(page.size.height * scale) }}
     >
-      {visible && (
-        <PageCanvas
-          pdf={page.pdf}
-          pageNumber={page.pageNumber}
-          rotation={page.ref.rotation}
-          scale={scale}
-          showError={false}
-        />
-      )}
+      {visible && <PageSurface page={page} scale={scale} showError={false} />}
     </div>
   )
 }

@@ -69,14 +69,14 @@ export function closePdf(pdf: PDFDocumentProxy): Promise<void> {
   return pdf.loadingTask.destroy()
 }
 
-/** Reads the unscaled size (in PDF points, rotation applied) of every page. */
+/** Reads the unscaled size (in PDF points, rotation applied) and own rotation of every page. */
 export async function getPageSizes(pdf: PDFDocumentProxy): Promise<PageSize[]> {
   const pages = await Promise.all(
     Array.from({ length: pdf.numPages }, (_, i) => pdf.getPage(i + 1)),
   )
   return pages.map((page) => {
     const { width, height } = page.getViewport({ scale: 1 })
-    return { width, height }
+    return { width, height, rotate: page.rotate }
   })
 }
 

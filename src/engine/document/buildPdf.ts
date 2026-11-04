@@ -12,7 +12,7 @@ export interface BuildOptions {
 
 /**
  * Builds a new PDF from a page list using pdf-lib: pages are copied from their
- * sources in order, with the added rotation applied. Page content, annotations
+ * sources in order, with the added rotation and crop (as CropBox) applied. Page content, annotations
  * and links on the page are kept; document-level parts such as outlines
  * (bookmarks) and form field structure are not carried over.
  */
@@ -56,6 +56,17 @@ export async function buildPdf(
     used.add(page)
     if (ref.rotation !== 0) {
       page.setRotation(degrees((page.getRotation().angle + ref.rotation) % 360))
+    }
+    if (ref.crop) {
+      // Crop insets are relative to the currently visible box, in unrotated page space
+      const box = page.getCropBox()
+      const { top, right, bottom, left } = ref.crop
+      page.setCropBox(
+        box.x + left * box.width,
+        box.y + bottom * box.height,
+        box.width * (1 - left - right),
+        box.height * (1 - top - bottom),
+      )
     }
     output.addPage(page)
   }

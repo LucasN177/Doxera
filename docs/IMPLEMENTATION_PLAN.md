@@ -132,7 +132,7 @@ Undo/Redo speichert Schnappschüsse der Liste.
 | P2  | Seiten bearbeiten    | Auswahl in der Seitenleiste, Drehen, Duplizieren, Löschen, Tastenkürzel             | ✅     |
 | P3  | Umsortieren          | Drag & Drop in der Seitenleiste (Maus, Touch, Tastatur), auch mehrere Seiten        | ✅     |
 | P4  | Zusammenführen       | PDFs einfügen, Auswahl als neue PDF exportieren (Extrahieren)                       | ✅     |
-| P5  | Teilen & Zuschneiden | PDF aufteilen (alle N Seiten / an Auswahl), Seiten zuschneiden                      | offen  |
+| P5  | Teilen & Zuschneiden | PDF aufteilen (alle N Seiten / an Auswahl), Seiten zuschneiden                      | ✅     |
 | P6  | Seitenübersicht      | Rasteransicht aller Seiten zum Organisieren, auch auf dem Smartphone                | offen  |
 
 ### Phase 3 – Annotationen & Ergänzungen

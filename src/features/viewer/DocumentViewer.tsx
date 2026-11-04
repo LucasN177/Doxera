@@ -1,12 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-  type CSSProperties,
-} from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useElementSize } from '@/hooks/useElementSize'
 import { useResolvedPages } from '@/hooks/useResolvedPages'
 import {
@@ -18,8 +10,7 @@ import {
 import { clampZoom, computeFitScale } from '@/lib/zoom'
 import { scrollForFocalPoint, type FocalPoint } from '@/lib/zoomFocus'
 import { useViewerStore } from '@/stores/viewerStore'
-import { PageCanvas } from './PageCanvas'
-import { TextLayerView } from './TextLayerView'
+import { PageSurface } from './PageSurface'
 import { resetPinchPreview, usePinchZoom } from './usePinchZoom'
 
 const PADDING = 24
@@ -218,33 +209,17 @@ export function DocumentViewer() {
     pageElements.push(
       <div
         key={page.ref.id}
-        className="pdf-page absolute left-1/2 -translate-x-1/2 bg-white shadow-md ring-1 ring-black/5"
-        style={
-          {
-            top: layout.tops[index],
-            width: layout.widths[index],
-            height: layout.heights[index],
-            '--scale-factor': scale,
-          } as CSSProperties
-        }
+        className="absolute left-1/2 -translate-x-1/2 overflow-hidden bg-white shadow-md ring-1 ring-black/5"
+        style={{
+          top: layout.tops[index],
+          width: layout.widths[index],
+          height: layout.heights[index],
+        }}
         data-page-number={index + 1}
         role="group"
         aria-label={`Seite ${index + 1}`}
       >
-        <PageCanvas
-          pdf={page.pdf}
-          pageNumber={page.pageNumber}
-          rotation={page.ref.rotation}
-          scale={scale}
-        />
-        <TextLayerView
-          key={page.ref.rotation}
-          pdf={page.pdf}
-          pageNumber={page.pageNumber}
-          pageIndex={index}
-          rotation={page.ref.rotation}
-          scale={scale}
-        />
+        <PageSurface page={page} scale={scale} pageIndex={index} textLayer />
       </div>,
     )
   }

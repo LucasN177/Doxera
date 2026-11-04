@@ -1,4 +1,6 @@
 import { Loader2 } from 'lucide-react'
+import { CropDialog } from '@/features/pages/CropDialog'
+import { SplitDialog } from '@/features/pages/SplitDialog'
 import { ThumbnailSidebar } from '@/features/pages/ThumbnailSidebar'
 import { SearchBar } from '@/features/search/SearchBar'
 import { useSearchShortcuts } from '@/features/search/useSearchShortcuts'
@@ -25,6 +27,8 @@ export function AppLayout() {
             <>
               <DocumentViewer key={document.id} />
               <SearchBar />
+              <SplitDialog />
+              <CropDialog />
             </>
           ) : (
             <EmptyState />

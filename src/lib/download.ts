@@ -71,3 +71,35 @@ export async function saveFile(file: File): Promise<SaveResult> {
   if (isAppleMobile() && canShareFile(file)) return shareFile(file)
   return downloadFile(file)
 }
+
+/** Whether the share sheet accepts all of these files at once. */
+export function canShareFiles(files: File[]): boolean {
+  try {
+    return typeof navigator.share === 'function' && navigator.canShare?.({ files }) === true
+  } catch {
+    return false
+  }
+}
+
+/** Opens the system share sheet for several files (e.g. "Save to Files" on iOS saves all). */
+export async function shareFiles(files: File[], title: string): Promise<SaveResult> {
+  try {
+    await navigator.share({ files, title })
+    return 'shared'
+  } catch (error) {
+    if ((error as Error | undefined)?.name === 'AbortError') return 'cancelled'
+    throw error
+  }
+}
+
+/** Packs files into a ZIP archive (fflate is loaded on demand). */
+export async function createZipFile(files: File[], name: string): Promise<File> {
+  const { zip } = await import('fflate')
+  const entries: Record<string, Uint8Array> = {}
+  for (const file of files) entries[file.name] = new Uint8Array(await file.arrayBuffer())
+  // PDFs are already compressed; storing them avoids pointless work
+  const data = await new Promise<Uint8Array>((resolve, reject) =>
+    zip(entries, { level: 0 }, (error, result) => (error ? reject(error) : resolve(result))),
+  )
+  return new File([data.slice()], name, { type: 'application/zip' })
+}

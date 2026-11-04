@@ -41,10 +41,10 @@ Comprehensive tools for viewing and editing existing PDF documents.
 Tools for organizing and restructuring PDF documents.
 
 - [x] Merge multiple PDF files (insert pages of other PDFs)
-- [ ] Split PDF documents
+- [x] Split PDF documents (every n pages, at selected pages or into single pages)
 - [x] Extract individual pages (save a selection as a new PDF)
 - [x] Delete, rotate and rearrange pages
-- [ ] Crop pages
+- [x] Crop pages (non-destructive, can be reset any time)
 - [x] Duplicate pages
 - [x] Preview pages using thumbnails
 - [x] Drag-and-drop page organization (mouse, touch and keyboard)
@@ -127,6 +127,7 @@ The project is built on a modern TypeScript-based frontend and browser-native do
 | PDF.js | PDF rendering, text layer and search | ✅ in use |
 | pdf-lib | PDF creation and manipulation (export of edited documents) | ✅ in use |
 | dnd-kit | Drag and drop for page organization | ✅ in use |
+| fflate | ZIP archives when splitting PDFs | ✅ in use |
 | IndexedDB (idb) | Local document storage | ✅ in use |
 | Web Workers | Background processing (PDF.js worker) | ✅ in use |
 | WebAssembly | High-performance browser processing (PDF.js image decoders) | ✅ in use |
@@ -227,7 +228,7 @@ The main objectives are:
 **Version 0.1.0** – Doxera is under active development.
 
 - ✅ **Phase 1 – Viewer:** viewing, search, local library, export, offline support, dark mode, iPhone/iPad support
-- 🚧 **Phase 2 – Page management:** rotate, delete, duplicate, reorder, merge and extract pages are done; splitting, cropping and a page overview for smartphones are next
+- 🚧 **Phase 2 – Page management:** rotate, delete, duplicate, reorder, merge, extract, split and crop pages are done; a page overview for smartphones is next
 - 🔜 **Next phases:** annotations & signatures, text editing, OCR, automation and AI features
 
 The full roadmap is in the [implementation plan](docs/IMPLEMENTATION_PLAN.md).
