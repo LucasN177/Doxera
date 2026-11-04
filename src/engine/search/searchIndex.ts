@@ -36,3 +36,30 @@ export function loadPageTexts(
   }
   return index
 }
+
+const EMPTY_PAGE: PageText = { raw: '', runStarts: [], runLengths: [] }
+
+/**
+ * Page texts in document order for an edited page list, which can contain
+ * pages of several sources, reordered or duplicated. `onProgress` reports the
+ * extracted pages against the total number of pages of all used sources.
+ */
+export async function loadDocumentTexts(
+  pages: ReadonlyArray<{ sourceId: string; sourceIndex: number }>,
+  sources: ReadonlyMap<string, { pdf: PDFDocumentProxy }>,
+  onProgress?: (done: number, total: number) => void,
+): Promise<PageText[]> {
+  const used = [...new Set(pages.map((page) => page.sourceId))].flatMap((id) => {
+    const source = sources.get(id)
+    return source ? [{ id, pdf: source.pdf }] : []
+  })
+  const total = used.reduce((sum, source) => sum + source.pdf.numPages, 0)
+
+  const texts = new Map<string, PageText[]>()
+  let offset = 0
+  for (const { id, pdf } of used) {
+    texts.set(id, await loadPageTexts(pdf, (done) => onProgress?.(offset + done, total)))
+    offset += pdf.numPages
+  }
+  return pages.map((page) => texts.get(page.sourceId)?.[page.sourceIndex] ?? EMPTY_PAGE)
+}

@@ -113,15 +113,20 @@ export function getOutputScale(
   return preferred * Math.sqrt(MAX_CANVAS_PIXELS / pixels) * 0.999
 }
 
+/** The page's own rotation (/Rotate) plus the rotation added in the editor. */
+function totalRotation(page: PDFPageProxy, extra: number): number {
+  return (((page.rotate + extra) % 360) + 360) % 360
+}
+
 /**
  * Renders a page into a fresh canvas. Using a new canvas per render lets the
  * caller keep showing the previous result until the new one is ready and avoids
  * pdf.js' "same canvas in multiple render() operations" error.
  */
-export function renderPage(page: PDFPageProxy, scale: number): RenderHandle {
+export function renderPage(page: PDFPageProxy, scale: number, rotation = 0): RenderHandle {
   const base = page.getViewport({ scale: 1 })
   const outputScale = getOutputScale(base.width, base.height, scale, window.devicePixelRatio)
-  const viewport = page.getViewport({ scale: outputScale })
+  const viewport = page.getViewport({ scale: outputScale, rotation: totalRotation(page, rotation) })
   const canvas = document.createElement('canvas')
   canvas.width = Math.floor(viewport.width)
   canvas.height = Math.floor(viewport.height)
@@ -203,6 +208,7 @@ export function renderTextLayer(
   pageNumber: number,
   container: HTMLElement,
   scale: number,
+  rotation = 0,
 ): TextLayerJob {
   let cancelled = false
   let cancelLayer: (() => void) | null = null
@@ -218,7 +224,7 @@ export function renderTextLayer(
     const layer = new pdfjs.TextLayer({
       textContentSource: content,
       container,
-      viewport: page.getViewport({ scale }),
+      viewport: page.getViewport({ scale, rotation: totalRotation(page, rotation) }),
     })
     cancelLayer = () => layer.cancel()
 
@@ -239,7 +245,9 @@ export function renderTextLayer(
       textDivs: layer.textDivs,
       runs: layer.textContentItemsStr,
       update: (nextScale: number) =>
-        layer.update({ viewport: page.getViewport({ scale: nextScale }) }),
+        layer.update({
+          viewport: page.getViewport({ scale: nextScale, rotation: totalRotation(page, rotation) }),
+        }),
     }
   })()
 

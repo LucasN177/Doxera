@@ -97,7 +97,7 @@ export const useLibraryStore = create<LibraryState>()(
                 id,
                 name: document.name,
                 size: document.size,
-                pageCount: document.pageCount,
+                pageCount: pdf.numPages,
                 thumbnail,
                 addedAt: now,
                 lastOpenedAt: now,

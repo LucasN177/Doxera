@@ -4,7 +4,6 @@ import { IconButton } from '@/components/layout/IconButton'
 import { Input } from '@/components/ui/input'
 import { MAX_MATCHES } from '@/engine/search/textSearch'
 import { cn } from '@/lib/utils'
-import { useDocumentStore } from '@/stores/documentStore'
 import { useSearchStore } from '@/stores/searchStore'
 
 /** Floating search panel shown above the document view. */
@@ -19,7 +18,7 @@ export function SearchBar() {
   const indexedPages = useSearchStore((state) => state.indexedPages)
   const focusRequest = useSearchStore((state) => state.focusRequest)
   const { setQuery, setMatchCase, next, previous, close } = useSearchStore.getState()
-  const pageCount = useDocumentStore((state) => state.document?.pageCount ?? 0)
+  const indexTotal = useSearchStore((state) => state.indexTotal)
 
   const inputRef = useRef<HTMLInputElement>(null)
   useEffect(() => {
@@ -33,7 +32,7 @@ export function SearchBar() {
 
   const hasQuery = query.trim().length > 0
   let status = ''
-  if (indexing) status = `Lese Seite ${indexedPages} von ${pageCount} …`
+  if (indexing) status = `Lese Seite ${indexedPages} von ${indexTotal} …`
   else if (hasQuery && !searching) {
     status =
       matches.length === 0

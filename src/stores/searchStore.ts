@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { loadPageTexts } from '@/engine/search/searchIndex'
+import { loadDocumentTexts } from '@/engine/search/searchIndex'
 import { searchPages, type SearchMatch } from '@/engine/search/textSearch'
 import { useDocumentStore } from './documentStore'
 import { useViewerStore } from './viewerStore'
@@ -17,6 +17,8 @@ interface SearchState {
   /** True while page texts are being extracted for the first search. */
   indexing: boolean
   indexedPages: number
+  /** Number of pages to extract in total (all used source files). */
+  indexTotal: number
   /** True while a search for the current query is pending. */
   searching: boolean
   matches: SearchMatch[]
@@ -35,6 +37,8 @@ interface SearchState {
   next: () => void
   previous: () => void
   markRevealed: (id: number) => void
+  /** Re-runs the current search after the pages changed. */
+  refresh: () => void
   reset: () => void
 }
 
@@ -50,6 +54,7 @@ const initialState = {
   matchCase: false,
   indexing: false,
   indexedPages: 0,
+  indexTotal: 0,
   searching: false,
   matches: [] as SearchMatch[],
   activeIndex: -1,
@@ -59,20 +64,25 @@ const initialState = {
 
 export const useSearchStore = create<SearchState>()((set, get) => {
   /** Selects a match and scrolls to it. */
-  const select = (matchIndex: number) => {
+  const select = (matchIndex: number, reveal = true) => {
     const match = get().matches[matchIndex]
     if (!match) return
+    if (!reveal) {
+      set({ activeIndex: matchIndex })
+      return
+    }
     set({ activeIndex: matchIndex, reveal: { matchIndex, id: ++revealId } })
     useViewerStore.getState().goToPage(match.pageIndex + 1, { onlyIfHidden: true })
   }
 
-  const run = async () => {
+  /** Runs the search. With `reveal: false` (after page edits) the view doesn't jump. */
+  const run = async ({ reveal = true } = {}) => {
     clearTimeout(debounceTimer)
     const token = ++searchToken
     const { query, matchCase, open } = get()
-    const pdf = useDocumentStore.getState().pdf
+    const { document, sources } = useDocumentStore.getState()
 
-    if (!open || !pdf || !query.trim()) {
+    if (!open || !document || !query.trim()) {
       set({ matches: [], activeIndex: -1, reveal: null, searching: false })
       return
     }
@@ -80,8 +90,10 @@ export const useSearchStore = create<SearchState>()((set, get) => {
     set({ searching: true })
     let pages
     try {
-      pages = await loadPageTexts(pdf, (done) => {
-        if (token === searchToken) set({ indexing: done < pdf.numPages, indexedPages: done })
+      pages = await loadDocumentTexts(document.pages, sources, (done, total) => {
+        if (token === searchToken) {
+          set({ indexing: done < total, indexedPages: done, indexTotal: total })
+        }
       })
     } catch {
       if (token === searchToken) set({ searching: false, indexing: false })
@@ -95,7 +107,7 @@ export const useSearchStore = create<SearchState>()((set, get) => {
     // Start at the first match on or after the page currently in view
     const currentIndex = useViewerStore.getState().currentPage - 1
     const first = matches.findIndex((match) => match.pageIndex >= currentIndex)
-    if (matches.length > 0) select(first === -1 ? 0 : first)
+    if (matches.length > 0) select(first === -1 ? 0 : first, reveal)
   }
 
   const schedule = () => {
@@ -135,6 +147,9 @@ export const useSearchStore = create<SearchState>()((set, get) => {
       if (matches.length > 0) select((activeIndex - 1 + matches.length) % matches.length)
     },
     markRevealed: (id) => set({ revealedId: id }),
+    refresh: () => {
+      if (get().open && get().query.trim()) void run({ reveal: false })
+    },
     reset: () => {
       clearTimeout(debounceTimer)
       searchToken++
@@ -145,5 +160,10 @@ export const useSearchStore = create<SearchState>()((set, get) => {
 
 // Results belong to a document: drop them when another document is opened or closed
 useDocumentStore.subscribe((state, previous) => {
-  if (state.document?.id !== previous.document?.id) useSearchStore.getState().reset()
+  if (state.document?.id !== previous.document?.id) {
+    useSearchStore.getState().reset()
+  } else if (state.document && state.document.pages !== previous.document?.pages) {
+    // Pages were edited: page positions changed, so search again (without jumping)
+    useSearchStore.getState().refresh()
+  }
 })

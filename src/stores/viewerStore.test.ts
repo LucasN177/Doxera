@@ -34,8 +34,8 @@ describe('viewerStore', () => {
         name: 'x.pdf',
         size: 1,
         data: new Uint8Array(),
-        pageCount: 1,
-        pageSizes: [{ width: 1, height: 1 }],
+        primarySourceId: 's',
+        pages: [{ id: 'p', sourceId: 's', sourceIndex: 0, rotation: 0 }],
       },
     })
 
@@ -44,5 +44,40 @@ describe('viewerStore', () => {
       currentPage: 1,
       navigation: null,
     })
+  })
+})
+
+describe('viewerStore selection', () => {
+  const ids = ['a', 'b', 'c', 'd']
+  beforeEach(() => useViewerStore.getState().clearSelection())
+
+  it('selects single pages, toggles and ranges', () => {
+    const { selectPage } = useViewerStore.getState()
+    selectPage('b', 'single', ids)
+    expect(useViewerStore.getState().selectedIds).toEqual(['b'])
+    selectPage('d', 'range', ids)
+    expect(useViewerStore.getState().selectedIds).toEqual(['b', 'c', 'd'])
+    selectPage('c', 'toggle', ids)
+    expect(useViewerStore.getState().selectedIds).toEqual(['b', 'd'])
+    selectPage('a', 'toggle', ids)
+    expect(useViewerStore.getState().selectedIds).toEqual(['b', 'd', 'a'])
+  })
+
+  it('forgets selected pages that were deleted', () => {
+    const page = (id: string) => ({ id, sourceId: 's', sourceIndex: 0, rotation: 0 as const })
+    useDocumentStore.setState({
+      document: {
+        id: 'sel-doc',
+        name: 'x.pdf',
+        size: 1,
+        data: new Uint8Array(),
+        primarySourceId: 's',
+        pages: ids.map(page),
+      },
+    })
+    useViewerStore.getState().setSelection(['a', 'c'])
+    const document = useDocumentStore.getState().document!
+    useDocumentStore.setState({ document: { ...document, pages: [page('a'), page('b')] } })
+    expect(useViewerStore.getState().selectedIds).toEqual(['a'])
   })
 })

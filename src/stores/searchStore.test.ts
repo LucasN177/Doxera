@@ -1,11 +1,10 @@
-import type { PDFDocumentProxy } from 'pdfjs-dist'
-import { loadPageTexts } from '@/engine/search/searchIndex'
+import { loadDocumentTexts } from '@/engine/search/searchIndex'
 import { buildPageText } from '@/engine/search/textSearch'
 import { useDocumentStore } from './documentStore'
 import { useSearchStore } from './searchStore'
 import { useViewerStore } from './viewerStore'
 
-vi.mock('@/engine/search/searchIndex', () => ({ loadPageTexts: vi.fn() }))
+vi.mock('@/engine/search/searchIndex', () => ({ loadDocumentTexts: vi.fn() }))
 
 const pageTexts = ['Rechnung eins', 'nichts', 'Rechnung zwei', 'Rechnung drei'].map((text) =>
   buildPageText([{ str: text, hasEOL: false }]),
@@ -18,16 +17,20 @@ async function search(query: string) {
 }
 
 beforeEach(() => {
-  vi.mocked(loadPageTexts).mockResolvedValue(pageTexts)
+  vi.mocked(loadDocumentTexts).mockResolvedValue(pageTexts)
   useDocumentStore.setState({
-    pdf: { numPages: pageTexts.length } as PDFDocumentProxy,
     document: {
       id: 'doc',
       name: 'a.pdf',
       size: 1,
       data: new Uint8Array(),
-      pageCount: pageTexts.length,
-      pageSizes: [],
+      primarySourceId: 's',
+      pages: pageTexts.map((_, sourceIndex) => ({
+        id: `p${sourceIndex}`,
+        sourceId: 's',
+        sourceIndex,
+        rotation: 0 as const,
+      })),
     },
   })
   useSearchStore.getState().reset()
@@ -72,5 +75,23 @@ describe('searchStore', () => {
       document: { ...useDocumentStore.getState().document!, id: 'other' },
     })
     expect(useSearchStore.getState()).toMatchObject({ query: '', matches: [], open: false })
+  })
+})
+
+describe('searchStore after page edits', () => {
+  it('searches again without moving the view when pages change', async () => {
+    await search('rechnung')
+    const navigation = useViewerStore.getState().navigation
+    vi.mocked(loadDocumentTexts).mockResolvedValue([pageTexts[2], pageTexts[0]])
+
+    const document = useDocumentStore.getState().document!
+    useDocumentStore.setState({
+      document: { ...document, pages: [document.pages[2], document.pages[0]] },
+    })
+
+    await vi.waitFor(() =>
+      expect(useSearchStore.getState().matches.map((m) => m.pageIndex)).toEqual([0, 1]),
+    )
+    expect(useViewerStore.getState().navigation).toBe(navigation)
   })
 })

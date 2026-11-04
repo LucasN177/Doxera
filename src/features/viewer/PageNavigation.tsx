@@ -21,7 +21,7 @@ export function PageNavigation({ pageCount }: { pageCount: number }) {
     <form className="flex items-center gap-1" onSubmit={submit}>
       <IconButton
         label="Vorherige Seite"
-        className="max-sm:hidden"
+        className="max-lg:hidden"
         disabled={currentPage <= 1}
         onClick={() => goToPage(currentPage - 1)}
       >
@@ -29,7 +29,7 @@ export function PageNavigation({ pageCount }: { pageCount: number }) {
       </IconButton>
       <IconButton
         label="Nächste Seite"
-        className="max-sm:hidden"
+        className="max-lg:hidden"
         disabled={currentPage >= pageCount}
         onClick={() => goToPage(currentPage + 1)}
       >

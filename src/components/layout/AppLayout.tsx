@@ -19,13 +19,11 @@ export function AppLayout() {
     <div className="bg-background text-foreground flex h-svh flex-col">
       <Toolbar />
       <div className="flex min-h-0 flex-1">
-        {document && pdf && sidebarOpen && (
-          <ThumbnailSidebar key={document.id} document={document} pdf={pdf} />
-        )}
+        {document && pdf && sidebarOpen && <ThumbnailSidebar key={document.id} />}
         <main className="bg-muted relative min-w-0 flex-1">
           {document && pdf ? (
             <>
-              <DocumentViewer key={document.id} document={document} pdf={pdf} />
+              <DocumentViewer key={document.id} />
               <SearchBar />
             </>
           ) : (

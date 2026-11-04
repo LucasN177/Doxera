@@ -9,17 +9,21 @@ The goal is to combine powerful PDF editing capabilities with intelligent docume
 
 Doxera is being developed with a privacy-first approach. Documents should be processed locally in the browser whenever possible, without requiring users to upload sensitive files to external servers.
 
-> 🚧 **Work in Progress** – Doxera is currently in the planning and development stage. Features listed below represent the project roadmap and are not necessarily implemented yet.
+**▶ Try it:** [lucasn177.github.io/Doxera](https://lucasn177.github.io/Doxera/) – installable as an app (PWA) and usable offline.
+
+> 🚧 **Work in Progress** – Doxera is under active development. Checked items (✅ / `[x]`) are available in the current version; unchecked items are on the roadmap.
 
 ---
 
-## ✨ Planned Features
+## ✨ Features & Roadmap
 
-### 📄 PDF Editing
+### 📄 PDF Viewing & Editing
 
-Comprehensive tools for editing existing PDF documents.
+Comprehensive tools for viewing and editing existing PDF documents.
 
-- [ ] View and navigate PDF documents
+- [x] View and navigate PDF documents (zoom, fit to width/page, page navigation)
+- [x] Select and copy text
+- [x] Full-text search with highlighted matches
 - [ ] Select and edit existing text
 - [ ] Add, modify and delete text blocks
 - [ ] Change font size, font family and text color
@@ -36,14 +40,15 @@ Comprehensive tools for editing existing PDF documents.
 
 Tools for organizing and restructuring PDF documents.
 
-- [ ] Merge multiple PDF files
+- [x] Merge multiple PDF files (insert pages of other PDFs)
 - [ ] Split PDF documents
-- [ ] Extract individual pages
-- [ ] Delete, rotate and rearrange pages
+- [x] Extract individual pages (save a selection as a new PDF)
+- [x] Delete, rotate and rearrange pages
 - [ ] Crop pages
-- [ ] Duplicate pages
-- [ ] Preview pages using thumbnails
-- [ ] Drag-and-drop page organization
+- [x] Duplicate pages
+- [x] Preview pages using thumbnails
+- [x] Drag-and-drop page organization (mouse, touch and keyboard)
+- [x] Undo and redo for all page changes
 
 ### 🧠 AI-Powered Document Intelligence
 
@@ -89,34 +94,46 @@ Automate repetitive document-related tasks.
 
 Privacy and data security are important design principles of Doxera.
 
-- [ ] Client-side PDF processing
-- [ ] Local document storage using IndexedDB
-- [ ] Offline support
-- [ ] No mandatory user registration
-- [ ] No automatic document uploads
+- [x] Client-side PDF processing
+- [x] Local document storage using IndexedDB ("Recently opened")
+- [x] Offline support
+- [x] No mandatory user registration
+- [x] No automatic document uploads
 - [ ] Optional external AI integrations
-- [ ] Configurable document retention and deletion
+- [x] Configurable document retention and deletion (turn off remembering, delete single documents or all local data)
+
+### 📱 App Experience
+
+- [x] Installable as an app (PWA) with update notifications
+- [x] iPhone & iPad support: save via the share sheet ("Save to Files"), pinch-to-zoom, touch-friendly page organization
+- [x] Download and share PDFs
+- [x] Keyboard shortcuts with an overview (`?`)
+- [x] Light and dark mode (follows the system by default)
 
 ---
 
 ## 🛠️ Technology Stack
 
-The project is planned around a modern TypeScript-based frontend and browser-native document processing.
+The project is built on a modern TypeScript-based frontend and browser-native document processing.
 
-| Technology | Purpose |
-|---|---|
-| React | User interface |
-| TypeScript | Type-safe application development |
-| Vite | Development and build tooling |
-| Tailwind CSS | Styling |
-| shadcn/ui | UI components |
-| PDF.js | PDF rendering |
-| pdf-lib | PDF creation and manipulation |
-| MuPDF.js | Advanced PDF processing |
-| Tesseract.js | Optical Character Recognition |
-| IndexedDB | Local document storage |
-| Web Workers | Background processing |
-| WebAssembly | High-performance browser processing |
+| Technology | Purpose | Status |
+|---|---|---|
+| React | User interface | ✅ in use |
+| TypeScript | Type-safe application development | ✅ in use |
+| Vite | Development and build tooling | ✅ in use |
+| Tailwind CSS | Styling | ✅ in use |
+| shadcn/ui | UI components | ✅ in use |
+| Zustand | State management | ✅ in use |
+| PDF.js | PDF rendering, text layer and search | ✅ in use |
+| pdf-lib | PDF creation and manipulation (export of edited documents) | ✅ in use |
+| dnd-kit | Drag and drop for page organization | ✅ in use |
+| IndexedDB (idb) | Local document storage | ✅ in use |
+| Web Workers | Background processing (PDF.js worker) | ✅ in use |
+| WebAssembly | High-performance browser processing (PDF.js image decoders) | ✅ in use |
+| vite-plugin-pwa / Workbox | Offline support and installation | ✅ in use |
+| Vitest & Testing Library | Unit and component tests | ✅ in use |
+| MuPDF.js | Advanced PDF processing (text editing, redaction) | 🔜 planned |
+| Tesseract.js | Optical Character Recognition | 🔜 planned |
 
 Additional AI technologies and integrations will be evaluated during development.
 
@@ -126,7 +143,7 @@ Additional AI technologies and integrations will be evaluated during development
 
 Doxera is designed as a client-side application with a modular architecture.
 
-The initial release is planned to run entirely in the browser, without requiring a dedicated backend.
+It runs entirely in the browser, without requiring a dedicated backend.
 
 ```text
 Doxera
@@ -160,17 +177,33 @@ Doxera
     └── Document Metadata
 ```
 
-The architecture should remain extensible, allowing optional backend services and cloud integrations in the future.
+Edited documents are represented as a list of page references (source file, page, rotation). Changes are instant and fully undoable; a new PDF is only built with pdf-lib when exporting.
+
+The architecture should remain extensible, allowing optional backend services and cloud integrations in the future. Details: [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md).
 
 ---
 
 ## 🚀 Deployment
 
-Doxera is intended to be hosted as a static web application using **GitHub Pages**.
+Doxera is hosted as a static web application on **GitHub Pages**.
 
-The deployment pipeline will use GitHub Actions to build and publish the application automatically.
+A GitHub Actions pipeline lints, tests, builds and publishes the application automatically on every push to `main`.
 
 The goal is to provide a freely accessible PDF editor without requiring server infrastructure for its core functionality.
+
+---
+
+## 💻 Development
+
+Requirements: Node.js 24 or newer.
+
+```bash
+npm install
+npm run dev        # start the development server
+npm test           # run the tests
+npm run lint       # lint with oxlint
+npm run build      # production build
+```
 
 ---
 
@@ -191,8 +224,12 @@ The main objectives are:
 
 ## 📌 Project Status
 
-Doxera is currently under active development.
+**Version 0.1.0** – Doxera is under active development.
 
-More information, screenshots and documentation will be added as the project evolves.
+- ✅ **Phase 1 – Viewer:** viewing, search, local library, export, offline support, dark mode, iPhone/iPad support
+- 🚧 **Phase 2 – Page management:** rotate, delete, duplicate, reorder, merge and extract pages are done; splitting, cropping and a page overview for smartphones are next
+- 🔜 **Next phases:** annotations & signatures, text editing, OCR, automation and AI features
+
+The full roadmap is in the [implementation plan](docs/IMPLEMENTATION_PLAN.md).
 
 **Built with curiosity and a passion for software development.**

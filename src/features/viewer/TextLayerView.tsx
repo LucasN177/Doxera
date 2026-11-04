@@ -7,9 +7,12 @@ import './textLayer.css'
 
 interface TextLayerViewProps {
   pdf: PDFDocumentProxy
-  /** 1-based page number. */
+  /** 1-based page number within `pdf`. */
   pageNumber: number
+  /** Zero-based position of the page in the document (search results refer to it). */
+  pageIndex: number
   scale: number
+  rotation?: number
 }
 
 interface Highlight extends RunRange {
@@ -17,7 +20,13 @@ interface Highlight extends RunRange {
 }
 
 /** Selectable text of a page, including search match highlighting. */
-export function TextLayerView({ pdf, pageNumber, scale }: TextLayerViewProps) {
+export function TextLayerView({
+  pdf,
+  pageNumber,
+  pageIndex,
+  scale,
+  rotation = 0,
+}: TextLayerViewProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [layer, setLayer] = useState<TextLayerHandle | null>(null)
 
@@ -26,7 +35,7 @@ export function TextLayerView({ pdf, pageNumber, scale }: TextLayerViewProps) {
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
-    const job = renderTextLayer(pdf, pageNumber, container, initialScale.current)
+    const job = renderTextLayer(pdf, pageNumber, container, initialScale.current, rotation)
     job.ready
       .then((handle) => handle && setLayer(handle))
       .catch((error: unknown) => console.error(`Textebene von Seite ${pageNumber}`, error))
@@ -35,7 +44,7 @@ export function TextLayerView({ pdf, pageNumber, scale }: TextLayerViewProps) {
       container.replaceChildren()
       setLayer(null)
     }
-  }, [pdf, pageNumber])
+  }, [pdf, pageNumber, rotation])
 
   useEffect(() => {
     layer?.update(scale)
@@ -65,22 +74,18 @@ export function TextLayerView({ pdf, pageNumber, scale }: TextLayerViewProps) {
   const highlights = useMemo(() => {
     const result: Highlight[] = []
     matches.forEach((match, index) => {
-      if (match.pageIndex !== pageNumber - 1) return
+      if (match.pageIndex !== pageIndex) return
       for (const range of match.ranges) result.push({ ...range, selected: index === activeIndex })
     })
     return result
-  }, [matches, activeIndex, pageNumber])
+  }, [matches, activeIndex, pageIndex])
 
   useLayoutEffect(() => {
     if (!layer || highlights.length === 0) return
     const touched = applyHighlights(layer, highlights)
 
     // Scroll the selected match into view once per reveal request
-    if (
-      reveal &&
-      reveal.id !== revealedId &&
-      matches[reveal.matchIndex]?.pageIndex === pageNumber - 1
-    ) {
+    if (reveal && reveal.id !== revealedId && matches[reveal.matchIndex]?.pageIndex === pageIndex) {
       const selected = containerRef.current?.querySelector('.highlight.selected')
       if (selected) {
         selected.scrollIntoView({ block: 'center', inline: 'nearest' })
@@ -89,7 +94,7 @@ export function TextLayerView({ pdf, pageNumber, scale }: TextLayerViewProps) {
     }
 
     return () => clearHighlights(layer, touched)
-  }, [layer, highlights, reveal, revealedId, matches, pageNumber, markRevealed])
+  }, [layer, highlights, reveal, revealedId, matches, pageIndex, markRevealed])
 
   return <div ref={containerRef} className="textLayer" />
 }

@@ -1,4 +1,3 @@
-import type { PDFDocumentProxy } from 'pdfjs-dist'
 import {
   useCallback,
   useEffect,
@@ -9,6 +8,7 @@ import {
   type CSSProperties,
 } from 'react'
 import { useElementSize } from '@/hooks/useElementSize'
+import { useResolvedPages } from '@/hooks/useResolvedPages'
 import {
   computePageLayout,
   findPageIndexAt,
@@ -18,7 +18,6 @@ import {
 import { clampZoom, computeFitScale } from '@/lib/zoom'
 import { scrollForFocalPoint, type FocalPoint } from '@/lib/zoomFocus'
 import { useViewerStore } from '@/stores/viewerStore'
-import type { OpenDocument } from '@/types/document'
 import { PageCanvas } from './PageCanvas'
 import { TextLayerView } from './TextLayerView'
 import { resetPinchPreview, usePinchZoom } from './usePinchZoom'
@@ -48,16 +47,11 @@ interface PendingFocus {
   point: FocalPoint
 }
 
-interface DocumentViewerProps {
-  document: OpenDocument
-  pdf: PDFDocumentProxy
-}
-
 /**
  * Continuous vertical page view. Only pages near the viewport get a canvas;
  * all others are empty placeholders with the correct size.
  */
-export function DocumentViewer({ document, pdf }: DocumentViewerProps) {
+export function DocumentViewer() {
   const zoomMode = useViewerStore((state) => state.zoomMode)
   const scale = useViewerStore((state) => state.scale)
   const navigation = useViewerStore((state) => state.navigation)
@@ -66,7 +60,8 @@ export function DocumentViewer({ document, pdf }: DocumentViewerProps) {
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const viewport = useElementSize(scrollRef)
-  const { pageSizes } = document
+  const pages = useResolvedPages()
+  const pageSizes = useMemo(() => pages.map((page) => page.size), [pages])
 
   // Fit modes: derive the scale from the available space. `scale` is a dependency
   // so the fit is re-applied if something else (e.g. a viewer reset) changes it.
@@ -216,11 +211,13 @@ export function DocumentViewer({ document, pdf }: DocumentViewerProps) {
     return () => element.removeEventListener('wheel', onWheel)
   }, [zoomAround])
 
-  const pages = []
+  const pageElements = []
   for (let index = range.first; index <= range.last && index < layout.tops.length; index++) {
-    pages.push(
+    const page = pages[index]
+    if (!page) continue
+    pageElements.push(
       <div
-        key={index}
+        key={page.ref.id}
         className="pdf-page absolute left-1/2 -translate-x-1/2 bg-white shadow-md ring-1 ring-black/5"
         style={
           {
@@ -234,8 +231,20 @@ export function DocumentViewer({ document, pdf }: DocumentViewerProps) {
         role="group"
         aria-label={`Seite ${index + 1}`}
       >
-        <PageCanvas pdf={pdf} pageNumber={index + 1} scale={scale} />
-        <TextLayerView pdf={pdf} pageNumber={index + 1} scale={scale} />
+        <PageCanvas
+          pdf={page.pdf}
+          pageNumber={page.pageNumber}
+          rotation={page.ref.rotation}
+          scale={scale}
+        />
+        <TextLayerView
+          key={page.ref.rotation}
+          pdf={page.pdf}
+          pageNumber={page.pageNumber}
+          pageIndex={index}
+          rotation={page.ref.rotation}
+          scale={scale}
+        />
       </div>,
     )
   }
@@ -259,7 +268,7 @@ export function DocumentViewer({ document, pdf }: DocumentViewerProps) {
           minWidth: '100%',
         }}
       >
-        {pages}
+        {pageElements}
       </div>
     </div>
   )

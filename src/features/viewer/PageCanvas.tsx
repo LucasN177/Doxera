@@ -9,6 +9,8 @@ interface PageCanvasProps {
   /** 1-based page number. */
   pageNumber: number
   scale: number
+  /** Rotation added in the editor (0, 90, 180, 270). */
+  rotation?: number
   className?: string
   /** Show a short error text if rendering fails (off for tiny thumbnails). */
   showError?: boolean
@@ -22,6 +24,7 @@ export function PageCanvas({
   pdf,
   pageNumber,
   scale,
+  rotation = 0,
   className,
   showError = true,
 }: PageCanvasProps) {
@@ -38,7 +41,7 @@ export function PageCanvas({
       .getPage(pageNumber)
       .then((page) => {
         if (job.cancelled) return null
-        job.handle = renderPage(page, scale)
+        job.handle = renderPage(page, scale, rotation)
         return job.handle.promise
       })
       .then((canvas) => {
@@ -57,7 +60,7 @@ export function PageCanvas({
       job.cancelled = true
       job.handle?.cancel()
     }
-  }, [pdf, pageNumber, scale])
+  }, [pdf, pageNumber, scale, rotation])
 
   return (
     <>

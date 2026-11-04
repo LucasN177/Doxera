@@ -39,7 +39,14 @@ export function useAppShortcuts() {
       // Modifier shortcuts work everywhere, also while typing
       if (mod && !event.altKey) {
         const lower = key.toLowerCase()
-        if (lower === 'o') {
+        if (lower === 'z' && hasDocument && !isTyping(event)) {
+          event.preventDefault()
+          if (event.shiftKey) useDocumentStore.getState().redo()
+          else useDocumentStore.getState().undo()
+        } else if (lower === 'y' && hasDocument && !isTyping(event)) {
+          event.preventDefault()
+          useDocumentStore.getState().redo()
+        } else if (lower === 'o') {
           event.preventDefault()
           void openFromPicker()
         } else if (lower === 's' && hasDocument) {
@@ -67,7 +74,7 @@ export function useAppShortcuts() {
       }
       if (!hasDocument) return
 
-      const pageCount = useDocumentStore.getState().document?.pageCount ?? 1
+      const pageCount = useDocumentStore.getState().document?.pages.length ?? 1
       const go = (page: number) => {
         event.preventDefault()
         viewer.goToPage(Math.min(pageCount, Math.max(1, page)))

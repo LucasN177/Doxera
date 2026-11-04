@@ -9,6 +9,8 @@ export const SHORTCUT_GROUPS: Array<{
       { keys: ['mod+O'], label: 'PDF öffnen' },
       { keys: ['mod+S'], label: 'Herunterladen / Sichern' },
       { keys: ['mod+F'], label: 'Im Dokument suchen' },
+      { keys: ['mod+Z'], label: 'Rückgängig' },
+      { keys: ['mod+Y', 'mod+⇧ Z'], label: 'Wiederholen' },
       { keys: ['Enter', 'F3'], label: 'Nächster Treffer' },
       { keys: ['⇧ Enter', '⇧ F3'], label: 'Vorheriger Treffer' },
       { keys: ['Esc'], label: 'Suche oder Dialog schließen' },
@@ -21,6 +23,16 @@ export const SHORTCUT_GROUPS: Array<{
       { keys: ['←', 'P'], label: 'Vorherige Seite' },
       { keys: ['Pos1', 'Ende'], label: 'Erste / letzte Seite' },
       { keys: ['Bild ↑', 'Bild ↓'], label: 'Bildschirmweise blättern' },
+    ],
+  },
+  {
+    title: 'Seiten (in der Seitenleiste)',
+    shortcuts: [
+      { keys: ['Klick'], label: 'Seite auswählen und anzeigen' },
+      { keys: ['mod+Klick', '⇧ Klick'], label: 'Mehrere Seiten auswählen' },
+      { keys: ['mod+A'], label: 'Alle Seiten auswählen' },
+      { keys: ['Entf'], label: 'Ausgewählte Seiten löschen' },
+      { keys: ['Leertaste'], label: 'Seite zum Verschieben aufnehmen (dann ↑ ↓)' },
     ],
   },
   {

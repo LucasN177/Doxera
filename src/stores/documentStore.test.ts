@@ -20,7 +20,97 @@ beforeEach(() => {
   vi.mocked(openPdf).mockReset()
   vi.mocked(getPageSizes).mockReset()
   vi.mocked(closePdf).mockReset()
-  useDocumentStore.setState({ loading: false, document: null, pdf: null })
+  useDocumentStore.getState().close()
+})
+
+/** Opens a document with `pageCount` A4 pages. */
+async function openDocument(pageCount = 3) {
+  vi.mocked(openPdf).mockResolvedValueOnce(fakePdf(pageCount))
+  vi.mocked(getPageSizes).mockResolvedValueOnce(
+    Array.from({ length: pageCount }, () => ({ width: 595, height: 842 })),
+  )
+  await useDocumentStore.getState().openFile(pdfFile())
+}
+
+const pageOrder = () => useDocumentStore.getState().document!.pages.map((page) => page.sourceIndex)
+
+describe('documentStore editing', () => {
+  it('applies edits and undoes/redoes them', async () => {
+    await openDocument(3)
+    const { edit, undo, redo } = useDocumentStore.getState()
+
+    edit((pages) => [...pages].reverse())
+    expect(pageOrder()).toEqual([2, 1, 0])
+    edit((pages) => pages.slice(1))
+    expect(pageOrder()).toEqual([1, 0])
+
+    undo()
+    expect(pageOrder()).toEqual([2, 1, 0])
+    undo()
+    expect(pageOrder()).toEqual([0, 1, 2])
+    undo() // nothing left to undo
+    expect(pageOrder()).toEqual([0, 1, 2])
+
+    redo()
+    expect(pageOrder()).toEqual([2, 1, 0])
+    expect(useDocumentStore.getState().history.future).toHaveLength(1)
+  })
+
+  it('drops the redo stack after a new edit', async () => {
+    await openDocument(2)
+    const { edit, undo } = useDocumentStore.getState()
+    edit((pages) => pages.slice(1))
+    undo()
+    edit((pages) => [...pages].reverse())
+    expect(useDocumentStore.getState().history.future).toEqual([])
+  })
+
+  it('refuses edits that would leave no pages', async () => {
+    await openDocument(2)
+    expect(useDocumentStore.getState().edit(() => [])).toBe(false)
+    expect(pageOrder()).toEqual([0, 1])
+    expect(useDocumentStore.getState().history.past).toEqual([])
+  })
+
+  it('does not record no-op edits', async () => {
+    await openDocument(2)
+    useDocumentStore.getState().edit((pages) => pages)
+    expect(useDocumentStore.getState().history.past).toEqual([])
+  })
+
+  it('inserts pages of other PDFs as one undoable step', async () => {
+    await openDocument(2)
+    vi.mocked(openPdf).mockResolvedValueOnce(fakePdf(3))
+    vi.mocked(getPageSizes).mockResolvedValueOnce(
+      Array.from({ length: 3 }, () => ({ width: 100, height: 100 })),
+    )
+
+    const result = await useDocumentStore
+      .getState()
+      .insertFiles([pdfFile('extra.pdf'), new File(['x'], 'notes.txt')], 1)
+
+    expect(result.pages).toBe(3)
+    expect(result.errors).toEqual([expect.stringContaining('notes.txt')])
+    const { document, sources } = useDocumentStore.getState()
+    expect(sources.size).toBe(2)
+    expect(document!.pages.map((page) => page.sourceId === document!.primarySourceId)).toEqual([
+      true,
+      false,
+      false,
+      false,
+      true,
+    ])
+
+    useDocumentStore.getState().undo()
+    expect(pageOrder()).toEqual([0, 1])
+  })
+
+  it('clears history when another document is opened', async () => {
+    await openDocument(2)
+    useDocumentStore.getState().edit((pages) => pages.slice(1))
+    await openDocument(2)
+    expect(useDocumentStore.getState().history).toEqual({ past: [], future: [] })
+  })
 })
 
 describe('documentStore.openFile', () => {
@@ -37,8 +127,9 @@ describe('documentStore.openFile', () => {
     expect(result).toEqual({ ok: true })
     const { document, loading } = useDocumentStore.getState()
     expect(loading).toBe(false)
-    expect(document).toMatchObject({ name: 'test.pdf', pageCount: 2 })
-    expect(document?.pageSizes).toHaveLength(2)
+    expect(document).toMatchObject({ name: 'test.pdf' })
+    expect(document?.pages.map((page) => page.sourceIndex)).toEqual([0, 1])
+    expect(useDocumentStore.getState().sources.get(document!.primarySourceId)?.pdf).toBe(pdf)
   })
 
   it('rejects non-PDF files without loading them', async () => {

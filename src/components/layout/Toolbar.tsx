@@ -1,4 +1,14 @@
-import { Download, FolderOpen, Keyboard, PanelLeft, Search, Share, X } from 'lucide-react'
+import {
+  Download,
+  FolderOpen,
+  Keyboard,
+  PanelLeft,
+  Redo2,
+  Search,
+  Share,
+  Undo2,
+  X,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { ThemeToggle } from '@/features/settings/ThemeToggle'
@@ -19,6 +29,9 @@ const separator = 'mx-1 data-[orientation=vertical]:h-6'
 export function Toolbar() {
   const document = useDocumentStore((state) => state.document)
   const close = useDocumentStore((state) => state.close)
+  const canUndo = useDocumentStore((state) => state.history.past.length > 0)
+  const canRedo = useDocumentStore((state) => state.history.future.length > 0)
+  const { undo, redo } = useDocumentStore.getState()
   const sidebarOpen = useViewerStore((state) => state.sidebarOpen)
   const toggleSidebar = useViewerStore((state) => state.toggleSidebar)
   const { openFromPicker } = useOpenDocument()
@@ -40,7 +53,7 @@ export function Toolbar() {
 
       <div className="flex shrink-0 items-center gap-2 px-1">
         <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="size-6" />
-        <span className="font-semibold tracking-tight max-md:hidden">Doxera</span>
+        <span className="font-semibold tracking-tight max-lg:hidden">Doxera</span>
       </div>
 
       <Separator orientation="vertical" className={separator} />
@@ -53,11 +66,11 @@ export function Toolbar() {
         onClick={() => void openFromPicker()}
       >
         <FolderOpen />
-        <span className="max-sm:hidden">Öffnen</span>
+        <span className="max-lg:hidden">Öffnen</span>
       </Button>
 
       {document && (
-        <div className="flex min-w-0 items-baseline gap-2 px-2 max-sm:hidden" title={document.name}>
+        <div className="flex min-w-0 items-baseline gap-2 px-2 max-lg:hidden" title={document.name}>
           <span className="truncate text-sm font-medium">{document.name}</span>
           <span className="text-muted-foreground shrink-0 text-xs max-lg:hidden">
             {formatFileSize(document.size)}
@@ -65,12 +78,33 @@ export function Toolbar() {
         </div>
       )}
 
+      {document && (
+        <div className="flex items-center max-sm:hidden">
+          <IconButton
+            label="Rückgängig"
+            shortcut={formatShortcut('mod+Z')}
+            disabled={!canUndo}
+            onClick={undo}
+          >
+            <Undo2 />
+          </IconButton>
+          <IconButton
+            label="Wiederholen"
+            shortcut={formatShortcut('mod+Y')}
+            disabled={!canRedo}
+            onClick={redo}
+          >
+            <Redo2 />
+          </IconButton>
+        </div>
+      )}
+
       <div className="flex-1" />
 
       {document && (
         <>
-          <PageNavigation pageCount={document.pageCount} />
-          <Separator orientation="vertical" className={`${separator} max-md:hidden`} />
+          <PageNavigation pageCount={document.pages.length} />
+          <Separator orientation="vertical" className={`${separator} max-lg:hidden`} />
           <ZoomControls />
           <Separator orientation="vertical" className={separator} />
           <IconButton label="Suchen" shortcut={formatShortcut('mod+F')} onClick={openSearch}>
@@ -95,7 +129,7 @@ export function Toolbar() {
       <IconButton
         label="Tastenkürzel"
         shortcut="?"
-        className="max-md:hidden"
+        className="max-lg:hidden"
         onClick={openShortcuts}
       >
         <Keyboard />

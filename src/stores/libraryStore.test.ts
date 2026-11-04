@@ -9,10 +9,17 @@ vi.mock('@/engine/render/pdfjs', () => ({
   renderThumbnail: vi.fn(async () => 'data:image/webp;base64,AAAA'),
 }))
 
-const pdf = {} as PDFDocumentProxy
+const pdf = { numPages: 2 } as PDFDocumentProxy
 const doc = (name: string, content = name): OpenDocument => {
   const data = new TextEncoder().encode(content)
-  return { id: crypto.randomUUID(), name, size: data.byteLength, data, pageCount: 2, pageSizes: [] }
+  return {
+    id: crypto.randomUUID(),
+    name,
+    size: data.byteLength,
+    data,
+    primarySourceId: 's',
+    pages: [],
+  }
 }
 
 beforeEach(async () => {

@@ -119,6 +119,22 @@ mit pdf-lib bzw. MuPDF auf die Originaldatei angewendet. Vorteile: Undo/Redo, ve
 - Seiten zuschneiden (CropBox)
 - Undo/Redo über das Operationsmodell
 
+**Seitenmodell:** Das Dokument ist eine Liste virtueller Seiten (`PageRef`: Quelle, Seitenindex,
+zusätzliche Drehung). Quellen sind die geöffnete PDF und alle eingefügten PDFs. Bearbeitungen ändern nur
+diese Liste – sofort, ohne Neuberechnung der PDF. Erst beim Export baut pdf-lib daraus eine neue Datei.
+Undo/Redo speichert Schnappschüsse der Liste.
+
+**Milestones Phase 2:**
+
+| #   | Milestone            | Inhalt                                                                              | Status |
+| --- | -------------------- | ----------------------------------------------------------------------------------- | ------ |
+| P1  | Seitenmodell & Undo  | Virtuelle Seitenliste, Seiten-Operationen, Undo/Redo, Export mit pdf-lib (auch iOS) | ✅     |
+| P2  | Seiten bearbeiten    | Auswahl in der Seitenleiste, Drehen, Duplizieren, Löschen, Tastenkürzel             | ✅     |
+| P3  | Umsortieren          | Drag & Drop in der Seitenleiste (Maus, Touch, Tastatur), auch mehrere Seiten        | ✅     |
+| P4  | Zusammenführen       | PDFs einfügen, Auswahl als neue PDF exportieren (Extrahieren)                       | ✅     |
+| P5  | Teilen & Zuschneiden | PDF aufteilen (alle N Seiten / an Auswahl), Seiten zuschneiden                      | offen  |
+| P6  | Seitenübersicht      | Rasteransicht aller Seiten zum Organisieren, auch auf dem Smartphone                | offen  |
+
 ### Phase 3 – Annotationen & Ergänzungen
 
 - Hervorheben, Freitext, Kommentare/Notizen
