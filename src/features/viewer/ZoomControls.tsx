@@ -25,7 +25,7 @@ export function ZoomControls() {
   }
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-1 max-sm:hidden">
       <IconButton label="Verkleinern" disabled={scale <= MIN_ZOOM} onClick={zoomOut}>
         <ZoomOut />
       </IconButton>

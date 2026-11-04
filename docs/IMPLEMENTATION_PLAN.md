@@ -142,6 +142,21 @@ Undo/Redo speichert Schnappschüsse der Liste.
 - Signaturen (zeichnen, tippen, Bild) mit lokaler Speicherung
 - Wasserzeichen (Text/Bild)
 
+**Annotationsmodell:** Annotationen hängen an der Seite (`PageRef.annotations`) und werden damit
+automatisch mitkopiert, mitgelöscht, mitgedreht und sind über Undo/Redo abgedeckt. Koordinaten liegen
+als Anteile der ungedrehten Seite vor (wie der Zuschnitt). Beim Export zeichnet pdf-lib sie fest in den
+Seiteninhalt ein, sodass sie in jedem PDF-Programm gleich aussehen.
+
+**Milestones Phase 3:**
+
+| #   | Milestone                | Inhalt                                                                                  | Status |
+| --- | ------------------------ | --------------------------------------------------------------------------------------- | ------ |
+| A1  | Formen & Text            | Rechteck, Ellipse, Linie, Pfeil, Textfeld; auswählen, verschieben, Größe, Farbe, Export | ✅     |
+| A2  | Text markieren           | Hervorheben, Unterstreichen, Durchstreichen auf Basis der Textauswahl                   | offen  |
+| A3  | Kommentare & Notizen     | Notizzettel mit Text, Liste aller Kommentare                                            | offen  |
+| A4  | Bilder & Signaturen      | Bilder einfügen; Signatur zeichnen, tippen oder laden, lokal speichern                  | offen  |
+| A5  | Freihand & Wasserzeichen | Freihandzeichnen; Text-/Bild-Wasserzeichen für alle Seiten                              | offen  |
+
 ### Phase 4 – Echtes Editieren (MuPDF.js)
 
 - MuPDF.js als WASM in Worker integrieren

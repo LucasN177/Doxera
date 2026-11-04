@@ -43,7 +43,7 @@ export function rotateInsets(insets: CropInsets, quarterTurns: number): CropInse
 }
 
 /** Total clockwise quarter turns of a page as displayed (own rotation + added rotation). */
-function quarterTurns(stored: PageSize, rotation: Rotation): number {
+export function quarterTurns(stored: PageSize, rotation: Rotation): number {
   return Math.round(((stored.rotate ?? 0) + rotation) / 90)
 }
 
@@ -101,6 +101,7 @@ export function resolvePages(
         pageNumber: ref.sourceIndex + 1,
         fullSize,
         crop,
+        turns: ((quarterTurns(stored, ref.rotation) % 4) + 4) % 4,
         size: {
           width: fullSize.width * (1 - crop.left - crop.right),
           height: fullSize.height * (1 - crop.top - crop.bottom),
@@ -122,7 +123,8 @@ export function isUnmodified(
         page.sourceId === source.id &&
         page.sourceIndex === index &&
         page.rotation === 0 &&
-        !isCropped(page.crop),
+        !isCropped(page.crop) &&
+        !page.annotations?.length,
     )
   )
 }
@@ -183,12 +185,10 @@ export function cropPages(
     if (!ids.has(page.id)) return page
     if (!displayInsets || !isCropped(displayInsets)) {
       if (!page.crop) return page
-      return {
-        id: page.id,
-        sourceId: page.sourceId,
-        sourceIndex: page.sourceIndex,
-        rotation: page.rotation,
-      }
+      // Keep everything else (e.g. annotations), only drop the crop
+      const uncropped = { ...page }
+      delete uncropped.crop
+      return uncropped
     }
     const stored = sources.get(page.sourceId)?.pageSizes[page.sourceIndex] ?? {
       width: 1,

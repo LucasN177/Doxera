@@ -5,6 +5,7 @@ import {
   Keyboard,
   LayoutGrid,
   PanelLeft,
+  PenLine,
   Redo2,
   Search,
   Share,
@@ -21,6 +22,7 @@ import { useOpenDocument } from '@/hooks/useOpenDocument'
 import { formatFileSize } from '@/lib/file'
 import { formatShortcut } from '@/lib/platform'
 import { cn } from '@/lib/utils'
+import { useAnnotationStore } from '@/stores/annotationStore'
 import { useDocumentStore } from '@/stores/documentStore'
 import { useSearchStore } from '@/stores/searchStore'
 import { useUiStore } from '@/stores/uiStore'
@@ -40,6 +42,8 @@ export function Toolbar() {
   const viewMode = useViewerStore((state) => state.viewMode)
   const setViewMode = useViewerStore((state) => state.setViewMode)
   const grid = viewMode === 'grid'
+  const annotating = useAnnotationStore((state) => state.active)
+  const setAnnotating = useAnnotationStore((state) => state.setActive)
   const { openFromPicker } = useOpenDocument()
   const openSearch = useSearchStore((state) => state.openSearch)
   const openShortcuts = useUiStore((state) => state.openShortcuts)
@@ -132,9 +136,19 @@ export function Toolbar() {
           )}
           <Separator orientation="vertical" className={separator} />
           {!grid && (
-            <IconButton label="Suchen" shortcut={formatShortcut('mod+F')} onClick={openSearch}>
-              <Search />
-            </IconButton>
+            <>
+              <IconButton
+                label={annotating ? 'Zeichnen beenden' : 'Zeichnen & beschriften'}
+                aria-pressed={annotating}
+                className={cn(annotating && 'bg-accent text-accent-foreground')}
+                onClick={() => setAnnotating(!annotating)}
+              >
+                <PenLine />
+              </IconButton>
+              <IconButton label="Suchen" shortcut={formatShortcut('mod+F')} onClick={openSearch}>
+                <Search />
+              </IconButton>
+            </>
           )}
           <IconButton
             label={savesViaShareSheet ? 'Sichern oder teilen' : 'Herunterladen'}

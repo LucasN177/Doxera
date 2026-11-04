@@ -36,6 +36,17 @@ export const SHORTCUT_GROUPS: Array<{
     ],
   },
   {
+    title: 'Zeichnen & beschriften (im Zeichenmodus)',
+    shortcuts: [
+      { keys: ['V'], label: 'Auswählen und verschieben' },
+      { keys: ['R', 'E'], label: 'Rechteck / Ellipse' },
+      { keys: ['L', 'P'], label: 'Linie / Pfeil' },
+      { keys: ['T'], label: 'Text' },
+      { keys: ['Entf'], label: 'Ausgewähltes Element löschen' },
+      { keys: ['Esc'], label: 'Auswahl aufheben, dann Modus beenden' },
+    ],
+  },
+  {
     title: 'Ansicht',
     shortcuts: [
       { keys: ['mod++', 'mod+-'], label: 'Vergrößern / verkleinern' },

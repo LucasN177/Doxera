@@ -1,4 +1,6 @@
+import type { PDFFont } from 'pdf-lib'
 import type { PageRef } from '@/types/document'
+import { drawAnnotations } from './drawAnnotations'
 
 /** What the builder needs from a source: its original bytes. */
 export interface SourceData {
@@ -12,7 +14,8 @@ export interface BuildOptions {
 
 /**
  * Builds a new PDF from a page list using pdf-lib: pages are copied from their
- * sources in order, with the added rotation and crop (as CropBox) applied. Page content, annotations
+ * sources in order, with the added rotation, annotations (drawn into the page
+ * content) and crop (as CropBox) applied. Page content, annotations
  * and links on the page are kept; document-level parts such as outlines
  * (bookmarks) and form field structure are not carried over.
  */
@@ -24,8 +27,10 @@ export async function buildPdf(
   if (pages.length === 0) throw new Error('Ein PDF braucht mindestens eine Seite.')
 
   // Loaded on demand: pdf-lib is only needed when exporting edited documents
-  const { PDFDocument, degrees } = await import('pdf-lib')
+  const lib = await import('pdf-lib')
+  const { PDFDocument, degrees, StandardFonts } = lib
   const output = await PDFDocument.create()
+  let font: PDFFont | null = null
 
   // Load every used source once and copy all its needed pages in one call
   const sourceIds = [...new Set(pages.map((page) => page.sourceId))]
@@ -57,9 +62,13 @@ export async function buildPdf(
     if (ref.rotation !== 0) {
       page.setRotation(degrees((page.getRotation().angle + ref.rotation) % 360))
     }
+    // Annotations and crop both refer to the page's visible box before cropping
+    const box = page.getCropBox()
+    if (ref.annotations?.length) {
+      font ??= await output.embedFont(StandardFonts.Helvetica)
+      drawAnnotations(lib, page, ref.annotations, box, font)
+    }
     if (ref.crop) {
-      // Crop insets are relative to the currently visible box, in unrotated page space
-      const box = page.getCropBox()
       const { top, right, bottom, left } = ref.crop
       page.setCropBox(
         box.x + left * box.width,

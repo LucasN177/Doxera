@@ -1,4 +1,5 @@
 import type { PDFDocumentProxy } from 'pdfjs-dist'
+import type { Annotation } from './annotations'
 
 /** Unscaled page size in PDF points (1/72 inch), with page rotation applied. */
 export interface PageSize {
@@ -45,6 +46,8 @@ export interface PageRef {
   rotation: Rotation
   /** Visible part of the page; omitted when uncropped. */
   crop?: CropInsets
+  /** Shapes, lines and texts drawn on the page. */
+  annotations?: Annotation[]
 }
 
 /** The document opened in the editor. */
@@ -72,4 +75,6 @@ export interface ResolvedPage {
   fullSize: PageSize
   /** Crop margins in displayed (rotated) orientation; all zero when uncropped. */
   crop: CropInsets
+  /** Clockwise quarter turns the page is displayed with (own + added rotation). */
+  turns: number
 }
