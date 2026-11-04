@@ -100,6 +100,16 @@ export interface ImageAnnotation extends AnnotationBase {
   turns: number
   /** Inserted as signature (only affects labels). */
   signature?: boolean
+  /**
+   * Set when this replaces an image of the PDF itself: the original (drawn by
+   * the page's image XObject `xobject`) is hidden here and dropped on export.
+   */
+  replaces?: PageRect
+  xobject?: string
+  /** The replaced original image is removed without a replacement. */
+  removed?: boolean
+  /** Page background around the original, to hide it on screen (white if missing). */
+  cover?: string
 }
 
 /** An image file used by image annotations, shared between pages and undo steps. */

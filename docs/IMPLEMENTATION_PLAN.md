@@ -157,7 +157,7 @@ Seiteninhalt ein, sodass sie in jedem PDF-Programm gleich aussehen.
 | A4  | Bilder & Signaturen      | Bilder einfügen; Signatur zeichnen, tippen oder laden, lokal speichern                  | ✅     |
 | A5  | Freihand & Wasserzeichen | Freihandzeichnen; Text-/Bild-Wasserzeichen für alle Seiten                              | ✅     |
 
-### Phase 4 – Echtes Editieren (MuPDF.js)
+### Phase 4 – Echtes Editieren (MuPDF.js) ✅
 
 - MuPDF.js als WASM in Worker integrieren
 - Vorhandenen Text auswählen und bearbeiten (Inhalt, Schriftgröße, Schriftart, Farbe)
@@ -179,6 +179,16 @@ Courier, jeweils fett/kursiv) an der Originalposition. Grenzen: zeilenweise, nur
 eingebettete Schriften werden durch die ähnlichste Standardschrift ersetzt, Zeichen außerhalb von
 WinAnsi werden zu „?“.
 
+**Bilder bearbeiten (E4):** MuPDF liefert die Bilder einer Seite (Box, Transformation, Pixel); über die
+Reihenfolge der `/Name Do`-Aufrufe im Content-Stream wird das zugehörige Bild-XObject bestimmt. Ein
+angeklicktes Bild wird zur Bild-Annotation mit `xobject` (Original) und lässt sich verschieben,
+skalieren oder entfernen (`removed`). Beim Export zeigt der Seitenname in einer seitenlokalen Kopie der
+Ressourcen auf ein leeres Form-XObject; anschließend schreibt MuPDF die Datei ohne unreferenzierte
+Objekte neu, sodass die Daten entfernter Bilder nicht in der Datei bleiben. Mit Textänderungen auf
+derselben Seite geschieht das schon in der ersten Exportstufe, weil MuPDF Ressourcen umbenennen kann.
+Grenzen: nur Bilder, die die Seite direkt und genau einmal zeichnet (keine Inline-Bilder, keine Bilder
+in Form-XObjects), nur in Vierteldrehungen (nicht geschert oder gespiegelt).
+
 **Milestones Phase 4:**
 
 | #   | Milestone           | Inhalt                                                                                   | Status |
@@ -186,7 +196,7 @@ WinAnsi werden zu „?“.
 | E1  | MuPDF-Grundlage     | MuPDF.js lazy im Worker, Nachbearbeitung beim Export, PWA-Caching                        | ✅     |
 | E2  | Schwärzen           | Bereiche aufziehen oder Text markieren; beim Export dauerhaft entfernt                   | ✅     |
 | E3  | Text bearbeiten     | Vorhandenen Text auswählen, Inhalt/Größe/Farbe ändern (alter Text entfernt, neu gesetzt) | ✅     |
-| E4  | Elemente bearbeiten | Vorhandene Bilder auswählen, verschieben, skalieren, entfernen                           | offen  |
+| E4  | Elemente bearbeiten | Vorhandene Bilder auswählen, verschieben, skalieren, entfernen                           | ✅     |
 
 ### Phase 5 – OCR
 

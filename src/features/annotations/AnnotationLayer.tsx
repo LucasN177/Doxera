@@ -1,5 +1,6 @@
 import { MessageSquareText } from 'lucide-react'
 import { useEffect, useRef, useState, type PointerEvent } from 'react'
+import { toast } from 'sonner'
 import {
   addAnnotation,
   hasCorners,
@@ -27,7 +28,13 @@ import {
   unrotatedSize,
 } from '@/engine/document/annotations'
 import { arrowHead, NOTE_ICON_SIZE } from '@/engine/document/drawAnnotations'
-import { replacementFor, sameRect, type EditableLine } from '@/engine/document/textEditing'
+import {
+  imageReplacementFor,
+  replacementFor,
+  sameRect,
+  type EditableImage,
+  type EditableLine,
+} from '@/engine/document/contentEditing'
 import { cn } from '@/lib/utils'
 import { NOTE_DEFAULT_COLOR, useAnnotationStore } from '@/stores/annotationStore'
 import { useDocumentStore } from '@/stores/documentStore'
@@ -42,7 +49,7 @@ import type {
   TextAnnotation,
 } from '@/types/annotations'
 import type { PageRef, ResolvedPage } from '@/types/document'
-import { useEditableLines } from './useEditableLines'
+import { useEditableContent } from './useEditableContent'
 
 type Handle = 'a' | 'b' | 'nw' | 'ne' | 'sw' | 'se'
 
@@ -102,7 +109,7 @@ export function AnnotationLayer({ page, scale, interactive }: AnnotationLayerPro
   const tool = useAnnotationStore((state) => state.tool)
   const selected = useAnnotationStore((state) => state.selected)
   const editing = useAnnotationStore((state) => state.editing)
-  const lines = useEditableLines(page, interactive && modeActive && tool === 'edittext')
+  const content = useEditableContent(page, interactive && modeActive && tool === 'edittext')
 
   const active = interactive && modeActive
   const drawing = active && tool !== 'select'
@@ -370,8 +377,53 @@ export function AnnotationLayer({ page, scale, interactive }: AnnotationLayerPro
     setDraft(replacement)
     store.setEditing({ pageId, id: replacement.id })
   }
-  const editableLines =
-    active && tool === 'edittext' && lines?.status === 'ready' ? lines.lines : []
+  /** Turns an image of the PDF into an editable copy (or selects the existing one). */
+  const editImage = (image: EditableImage) => (event: PointerEvent<SVGElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    const store = useAnnotationStore.getState()
+    const existing = annotations.find(
+      (item): item is ImageAnnotation => item.type === 'image' && item.xobject === image.xobject,
+    )
+    if (existing) {
+      // A removed image comes back on click
+      if (existing.removed) {
+        const restored = { ...existing }
+        delete restored.removed
+        commit((pages) => replaceAnnotation(pages, pageId, restored))
+      }
+      store.setTool('select')
+      store.select({ pageId, id: existing.id })
+      return
+    }
+    const source = useDocumentStore.getState().sources.get(page.ref.sourceId)
+    if (!source) return
+    const cover = sampleBackground(
+      svgRef.current,
+      { a: px(image.rect.a), b: px(image.rect.b) },
+      { width, height },
+    )
+    void import('@/engine/mupdf/client')
+      .then(({ readImage }) => readImage(source.id, page.ref.sourceIndex, image.index))
+      .then((pixels) => {
+        const asset = useDocumentStore.getState().addAsset({ id: crypto.randomUUID(), ...pixels })
+        const replacement = imageReplacementFor(image, asset.id, crypto.randomUUID())
+        if (cover && cover !== '#ffffff') replacement.cover = cover
+        commit((pages) => addAnnotation(pages, pageId, replacement))
+        const current = useAnnotationStore.getState()
+        current.setTool('select')
+        current.select({ pageId, id: replacement.id })
+      })
+      .catch((error: unknown) => {
+        console.error('Bild konnte nicht gelesen werden', error)
+        toast.error('Dieses Bild kann nicht bearbeitet werden.')
+      })
+  }
+
+  const ready =
+    active && tool === 'edittext' && content?.status === 'ready' ? content.content : null
+  const editableLines = ready?.lines ?? []
+  const editableImages = ready?.images ?? []
   // Text editing only needs the line targets; elsewhere the page keeps scrolling
   const capturing = drawing && tool !== 'edittext'
 
@@ -405,10 +457,10 @@ export function AnnotationLayer({ page, scale, interactive }: AnnotationLayerPro
         data-annotation-layer
         aria-hidden={!active}
       >
-        {/* Replaced PDF text is hidden below its new version (removed on export) */}
+        {/* Replaced PDF text and images are hidden below their new version (removed on export) */}
         {shown.map((annotation) =>
-          annotation.type === 'text' && annotation.replaces ? (
-            <ReplacedTextCover
+          (annotation.type === 'text' || annotation.type === 'image') && annotation.replaces ? (
+            <ReplacedContentCover
               key={`cover-${annotation.id}`}
               rect={annotation.replaces}
               color={annotation.cover}
@@ -416,6 +468,27 @@ export function AnnotationLayer({ page, scale, interactive }: AnnotationLayerPro
             />
           ) : null,
         )}
+        {editableImages.map((image) => {
+          const a = px(image.rect.a)
+          const b = px(image.rect.b)
+          return (
+            <rect
+              key={`image-${image.index}`}
+              x={Math.min(a.x, b.x)}
+              y={Math.min(a.y, b.y)}
+              width={Math.abs(a.x - b.x)}
+              height={Math.abs(a.y - b.y)}
+              className="fill-transparent stroke-violet-500/50 hover:fill-violet-500/10 hover:stroke-violet-500"
+              strokeWidth={1.5}
+              strokeDasharray="5 3"
+              style={{ pointerEvents: 'all', cursor: 'pointer' }}
+              onPointerDown={editImage(image)}
+              data-annotation
+            >
+              <title>Bild bearbeiten: verschieben, Größe ändern oder entfernen</title>
+            </rect>
+          )
+        })}
         {editableLines.map((line, index) => {
           const a = px(line.rect.a)
           const b = px(line.rect.b)
@@ -438,6 +511,8 @@ export function AnnotationLayer({ page, scale, interactive }: AnnotationLayerPro
         })}
         {shown.map((annotation) => {
           if (annotation.id === editingHere || annotation.type === 'note') return null
+          // A removed original image leaves only its cover
+          if (annotation.type === 'image' && annotation.removed) return null
           // Watermarks are managed in their dialog, not on the page
           if (annotation.type === 'watermark') {
             return (
@@ -1069,10 +1144,10 @@ function SelectionFrame({
 }
 
 /**
- * Hides replaced PDF text on screen with the page color next to it. On export
- * the original glyphs are removed instead, so the real background stays.
+ * Hides replaced PDF text or images on screen with the page color next to
+ * them. On export the originals are removed instead, so the real background stays.
  */
-function ReplacedTextCover({
+function ReplacedContentCover({
   rect,
   color = '#ffffff',
   px,
@@ -1085,10 +1160,10 @@ function ReplacedTextCover({
   const b = px(rect.b)
   return (
     <rect
-      x={Math.min(a.x, b.x) - 1}
-      y={Math.min(a.y, b.y) - 1}
-      width={Math.abs(a.x - b.x) + 2}
-      height={Math.abs(a.y - b.y) + 2}
+      x={Math.min(a.x, b.x) - 2}
+      y={Math.min(a.y, b.y) - 2}
+      width={Math.abs(a.x - b.x) + 4}
+      height={Math.abs(a.y - b.y) + 4}
       fill={color}
     />
   )

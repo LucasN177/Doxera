@@ -1,8 +1,13 @@
 import type { PDFFont, PDFImage } from 'pdf-lib'
 import type { PageRef } from '@/types/document'
 import { standardFontName } from './annotations'
-import { addNoteAnnotations, addRedactAnnotations, drawAnnotations } from './drawAnnotations'
-import { hasTextReplacements, textRemovalPages } from './textEditing'
+import { hasImageReplacements, hasTextReplacements, textRemovalPages } from './contentEditing'
+import {
+  addNoteAnnotations,
+  addRedactAnnotations,
+  drawAnnotations,
+  hideImageXObjects,
+} from './drawAnnotations'
 
 /** What the builder needs from a source: its original bytes. */
 export interface SourceData {
@@ -18,7 +23,7 @@ export interface BuildOptions {
    * Applies the redaction annotations of the built PDF for good. Defaults to
    * MuPDF in a worker; tests pass MuPDF directly.
    */
-  redact?: (data: Uint8Array, mode: 'redact' | 'text') => Promise<Uint8Array>
+  redact?: (data: Uint8Array, mode: 'redact' | 'text' | 'clean') => Promise<Uint8Array>
 }
 
 /** Source id of the intermediate file with replaced text removed. */
@@ -56,7 +61,12 @@ export async function buildPdf(
         sourceId: TEXT_REMOVED_SOURCE,
         sourceIndex: index,
         annotations: page.annotations?.map((item) =>
-          item.type === 'text' && item.replaces ? { ...item, replaces: undefined } : item,
+          item.type === 'text' && item.replaces
+            ? { ...item, replaces: undefined }
+            : // Originals are already hidden in the intermediate file
+              item.type === 'image' && item.xobject
+              ? { ...item, xobject: undefined }
+              : item,
         ),
       })),
       new Map(sources).set(TEXT_REMOVED_SOURCE, { data: removed }),
@@ -125,6 +135,14 @@ export async function buildPdf(
     // Annotations and crop both refer to the page's visible box before cropping
     const box = page.getCropBox()
     if (ref.annotations?.length) {
+      // Original images that were moved, resized or removed
+      hideImageXObjects(
+        lib,
+        page,
+        ref.annotations.flatMap((item) =>
+          item.type === 'image' && item.xobject ? [item.xobject] : [],
+        ),
+      )
       font ??= await output.embedFont(StandardFonts.Helvetica)
       if (ref.annotations.some((annotation) => annotation.type === 'watermark')) {
         boldFont ??= await output.embedFont(StandardFonts.HelveticaBold)
@@ -157,10 +175,15 @@ export async function buildPdf(
   output.setModificationDate(new Date())
   const data = await output.save()
   const redacting = pages.some((page) => page.annotations?.some((item) => item.type === 'redact'))
-  return redacting ? redact(data, 'redact') : data
+  if (redacting) return redact(data, 'redact')
+  // Replaced images are no longer drawn; rewriting drops their data from the file
+  return hasImageReplacements(pages) ? redact(data, 'clean') : data
 }
 
-async function defaultRedact(data: Uint8Array, mode: 'redact' | 'text'): Promise<Uint8Array> {
+async function defaultRedact(
+  data: Uint8Array,
+  mode: 'redact' | 'text' | 'clean',
+): Promise<Uint8Array> {
   const { redactPdf } = await import('@/engine/mupdf/client')
   return redactPdf(data, mode)
 }

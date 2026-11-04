@@ -1,7 +1,7 @@
 import { expose, transfer } from 'comlink'
 import type { PDFDocument } from 'mupdf'
 import { applyRedactions, type RedactionMode } from './redact'
-import { extractTextLines, type RawPageText } from './textLines'
+import { extractImage, extractPageContent, type ImagePixels, type RawPageText } from './pageContent'
 
 // MuPDF initializes its WebAssembly with a top-level await. Importing it on
 // demand lets `expose` run right away: messages arriving while a worker module
@@ -11,6 +11,17 @@ const loadMupdf = () => (mupdf ??= import('mupdf'))
 
 /** Opened source PDFs, by key, for reading text without resending the file. */
 const documents = new Map<string, PDFDocument>()
+
+async function openDocument(key: string, data?: Uint8Array): Promise<PDFDocument> {
+  const lib = await loadMupdf()
+  let document = documents.get(key)
+  if (!document) {
+    if (!data) throw new Error(`Dokument ${key} ist nicht geöffnet.`)
+    document = new lib.PDFDocument(data)
+    documents.set(key, document)
+  }
+  return document
+}
 
 /** MuPDF (WebAssembly) runs in its own worker, so the page stays responsive. */
 const api = {
@@ -24,16 +35,15 @@ const api = {
     return documents.has(key)
   },
 
-  /** Text lines of a page; `data` is needed the first time a key is used. */
-  async textLines(key: string, index: number, data?: Uint8Array): Promise<RawPageText> {
-    const lib = await loadMupdf()
-    let document = documents.get(key)
-    if (!document) {
-      if (!data) throw new Error(`Dokument ${key} ist nicht geöffnet.`)
-      document = new lib.PDFDocument(data)
-      documents.set(key, document)
-    }
-    return extractTextLines(document, index)
+  /** Text lines and images of a page; `data` is needed the first time a key is used. */
+  async pageContent(key: string, index: number, data?: Uint8Array): Promise<RawPageText> {
+    return extractPageContent(await openDocument(key, data), index)
+  },
+
+  /** Pixels of one image of a page (see `RawImage.index`). */
+  async image(key: string, pageIndex: number, imageIndex: number): Promise<ImagePixels> {
+    const pixels = extractImage(await loadMupdf(), await openDocument(key), pageIndex, imageIndex)
+    return transfer(pixels, [pixels.data.buffer as ArrayBuffer])
   },
 
   /** Frees an opened document (e.g. when the file is closed). */

@@ -43,7 +43,7 @@ export const SHORTCUT_GROUPS: Array<{
       { keys: ['L', 'P'], label: 'Linie / Pfeil' },
       { keys: ['D', 'M'], label: 'Stift / Marker (freihand)' },
       { keys: ['T'], label: 'Text' },
-      { keys: ['B'], label: 'Vorhandenen Text bearbeiten' },
+      { keys: ['B'], label: 'Vorhandenen Text & Bilder bearbeiten' },
       { keys: ['K'], label: 'Notiz / Kommentar' },
       { keys: ['X'], label: 'Schwärzen (dauerhaft beim Export)' },
       { keys: ['Entf'], label: 'Ausgewähltes Element löschen' },

@@ -3,9 +3,9 @@ import * as mupdf from 'mupdf'
 import { degrees, PDFDocument, rgb, StandardFonts } from 'pdf-lib'
 import { buildPdf } from '@/engine/document/buildPdf'
 import type { PageRef } from '@/types/document'
-import { replacementFor, toEditableLines } from '@/engine/document/textEditing'
+import { replacementFor, toEditableLines } from '@/engine/document/contentEditing'
 import { applyRedactions } from './redact'
-import { extractTextLines } from './textLines'
+import { extractPageContent } from './pageContent'
 
 async function samplePdf() {
   const document = await PDFDocument.create()
@@ -72,7 +72,7 @@ async function linesOf(data: Uint8Array, index = 0) {
     const page = document.loadPage(index)
     const rotate = page.getObject().get('Rotate').valueOf()
     page.destroy()
-    return toEditableLines(extractTextLines(document, index), Number(rotate) || 0)
+    return toEditableLines(extractPageContent(document, index), Number(rotate) || 0)
   } finally {
     document.destroy()
   }

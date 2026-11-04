@@ -111,6 +111,8 @@ export function drawAnnotations(
     }
 
     if (annotation.type === 'image') {
+      // A removed original image has nothing to draw (see hideImageXObjects)
+      if (annotation.removed) continue
       const image = images.get(annotation.assetId)
       if (!image) continue
       const placement = imagePlacement(annotation, box)
@@ -310,6 +312,35 @@ export function addRedactAnnotations(
     })
     page.node.addAnnot(context.register(annotation))
   }
+}
+
+/**
+ * Stops the page from drawing the given image XObjects: in a page-local copy of
+ * its resources, each name points to an empty form instead. Other pages using
+ * the same image keep it. The image data itself is dropped later when the file
+ * is rewritten without unreferenced objects.
+ */
+export function hideImageXObjects(lib: PdfLib, page: PDFPage, names: readonly string[]) {
+  if (names.length === 0) return
+  const { PDFDict, PDFName } = lib
+  const context = page.doc.context
+  const resources = page.node.Resources()
+  const xobjects = resources?.lookupMaybe(PDFName.of('XObject'), PDFDict)
+  if (!resources || !xobjects) return
+  const empty = context.register(
+    context.stream(new Uint8Array(0), {
+      Type: 'XObject',
+      Subtype: 'Form',
+      BBox: [0, 0, 1, 1],
+    }),
+  )
+  const localXObjects = xobjects.clone(context)
+  for (const name of names) {
+    if (localXObjects.has(PDFName.of(name))) localXObjects.set(PDFName.of(name), empty)
+  }
+  const localResources = resources.clone(context)
+  localResources.set(PDFName.of('XObject'), localXObjects)
+  page.node.set(PDFName.of('Resources'), localResources)
 }
 
 /** The two short lines of an arrow head at `end`. */

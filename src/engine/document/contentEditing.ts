@@ -1,7 +1,7 @@
-import type { RawPageText } from '@/engine/mupdf/textLines'
-import type { PageRect, TextAnnotation } from '@/types/annotations'
+import type { RawPageText } from '@/engine/mupdf/pageContent'
+import type { ImageAnnotation, PageRect, TextAnnotation } from '@/types/annotations'
 import type { PageRef } from '@/types/document'
-import { classifyFont, REDACT_COLOR, TEXT_ASCENT, toStored } from './annotations'
+import { classifyFont, REDACT_COLOR, TEXT_ASCENT, toDisplay, toStored } from './annotations'
 
 /** A line of existing PDF text that can be edited, in stored page fractions. */
 export interface EditableLine {
@@ -116,8 +116,10 @@ export function hasTextReplacements(pages: readonly PageRef[]): boolean {
 
 /**
  * Pages for the first export stage: the same pages, unrotated and uncropped,
- * with a redaction area for every replaced text line (and nothing else). The
- * areas are shrunk a little vertically so neighbouring lines stay untouched.
+ * with a redaction area for every replaced text line. The areas are shrunk a
+ * little vertically so neighbouring lines stay untouched. Replaced images are
+ * hidden in this stage too, while their resource names are still the
+ * original ones (MuPDF may rename resources when it rewrites the page).
  */
 export function textRemovalPages(pages: readonly PageRef[]): PageRef[] {
   return pages.map((page) => {
@@ -135,12 +137,108 @@ export function textRemovalPages(pages: readonly PageRef[]): PageRef[] {
         },
       ]
     })
+    const hiddenImages = (page.annotations ?? []).flatMap((item) =>
+      item.type === 'image' && item.xobject ? [{ ...item, removed: true }] : [],
+    )
+    const annotations = [...removals, ...hiddenImages]
     return {
       id: page.id,
       sourceId: page.sourceId,
       sourceIndex: page.sourceIndex,
       rotation: 0,
-      ...(removals.length > 0 && { annotations: removals }),
+      ...(annotations.length > 0 && { annotations }),
     }
   })
+}
+
+// ---------------------------------------------------------------------------
+// Images
+// ---------------------------------------------------------------------------
+
+/** An image of the PDF that can be moved, resized or removed, in stored page fractions. */
+export interface EditableImage {
+  /** Position among the page's images, to fetch its pixels. */
+  index: number
+  rect: PageRect
+  /** Quarter turns of the page display in which the image is upright. */
+  turns: number
+  xobject: string
+  width: number
+  height: number
+}
+
+/**
+ * Converts MuPDF's images into stored page fractions. Only images that can be
+ * identified in the page resources and are drawn upright in a quarter-turn
+ * orientation (not skewed or mirrored) are returned.
+ */
+export function toEditableImages(raw: RawPageText, rotate = 0): EditableImage[] {
+  const [bx0, by0, bx1, by1] = raw.bounds
+  const width = bx1 - bx0
+  const height = by1 - by0
+  const pageTurns = Math.round(rotate / 90)
+  const stored = (x: number, y: number) =>
+    toStored({ x: (x - bx0) / width, y: (y - by0) / height }, pageTurns)
+
+  const images: EditableImage[] = []
+  for (const image of raw.images) {
+    if (!image.xobject) continue
+    const [a, b, c, d, e, f] = image.transform
+    const origin = stored(e, f)
+    const xEnd = stored(e + a, f + b)
+    const yEnd = stored(e + c, f + d)
+    // Find the display orientation in which the image's x axis points right and its y axis down
+    const turns = [0, 1, 2, 3].find((k) => {
+      const o = toDisplay(origin, k)
+      const u = toDisplay(xEnd, k)
+      const v = toDisplay(yEnd, k)
+      const ux = u.x - o.x
+      const uy = u.y - o.y
+      const vx = v.x - o.x
+      const vy = v.y - o.y
+      return ux > 0 && vy > 0 && Math.abs(uy) < ux * 0.02 && Math.abs(vx) < vy * 0.02
+    })
+    if (turns === undefined) continue
+
+    const p = stored(image.bbox[0], image.bbox[1])
+    const q = stored(image.bbox[2], image.bbox[3])
+    images.push({
+      index: image.index,
+      rect: {
+        a: { x: Math.min(p.x, q.x), y: Math.min(p.y, q.y) },
+        b: { x: Math.max(p.x, q.x), y: Math.max(p.y, q.y) },
+      },
+      turns,
+      xobject: image.xobject,
+      width: image.width,
+      height: image.height,
+    })
+  }
+  return images
+}
+
+/** An image annotation that takes the place of an existing image (same position and size). */
+export function imageReplacementFor(
+  image: EditableImage,
+  assetId: string,
+  id: string,
+): ImageAnnotation {
+  return {
+    id,
+    type: 'image',
+    color: '#000000',
+    a: image.rect.a,
+    b: image.rect.b,
+    assetId,
+    turns: image.turns,
+    replaces: image.rect,
+    xobject: image.xobject,
+  }
+}
+
+/** Whether any page replaces or removes an existing image. */
+export function hasImageReplacements(pages: readonly PageRef[]): boolean {
+  return pages.some((page) =>
+    page.annotations?.some((item) => item.type === 'image' && item.xobject),
+  )
 }

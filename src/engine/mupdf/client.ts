@@ -1,7 +1,7 @@
 import type { Remote } from 'comlink'
 import type { MupdfWorkerApi } from './mupdf.worker'
 import type { RedactionMode } from './redact'
-import type { RawPageText } from './textLines'
+import type { ImagePixels, RawPageText } from './pageContent'
 
 interface Connection {
   api: Remote<MupdfWorkerApi>
@@ -42,10 +42,10 @@ export async function redactPdf(
 }
 
 /**
- * Text lines of a page of a source PDF. The file is sent to the worker only
- * the first time a source is used.
+ * Text lines and images of a page of a source PDF. The file is sent to the
+ * worker only the first time a source is used.
  */
-export async function readTextLines(
+export async function readPageContent(
   source: { id: string; data: Uint8Array },
   index: number,
 ): Promise<RawPageText> {
@@ -53,9 +53,19 @@ export async function readTextLines(
   const read = async () => {
     // The worker copies the data; the source keeps its own bytes
     const data = (await api.hasDocument(source.id)) ? undefined : source.data.slice()
-    return api.textLines(source.id, index, data)
+    return api.pageContent(source.id, index, data)
   }
   return Promise.race([read(), failed])
+}
+
+/** Pixels of an image of a source page (after `readPageContent` for that source). */
+export async function readImage(
+  sourceId: string,
+  pageIndex: number,
+  imageIndex: number,
+): Promise<ImagePixels> {
+  const { api, failed } = await connect()
+  return Promise.race([api.image(sourceId, pageIndex, imageIndex), failed])
 }
 
 /** Frees a source in the worker, if it was opened there. */

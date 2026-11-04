@@ -5,8 +5,10 @@ import type * as Mupdf from 'mupdf'
  *   fully covered line art) and a black box is drawn in their place.
  * - `text`: only the text below is removed, nothing is drawn (used to
  *   replace existing text with edited text).
+ * - `clean`: nothing is redacted; the file is only rewritten without
+ *   unreferenced objects (e.g. the data of removed images).
  */
-export type RedactionMode = 'redact' | 'text'
+export type RedactionMode = 'redact' | 'text' | 'clean'
 
 /**
  * Applies all redaction annotations (/Subtype /Redact) of a PDF for good. The
@@ -25,7 +27,7 @@ export function applyRedactions(
       const page = document.loadPage(index)
       try {
         const redactions = page.getAnnotations().filter((item) => item.getType() === 'Redact')
-        if (redactions.length === 0) continue
+        if (redactions.length === 0 || mode === 'clean') continue
         if (mode === 'redact') {
           page.applyRedactions(
             true,

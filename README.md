@@ -25,10 +25,10 @@ Comprehensive tools for viewing and editing existing PDF documents.
 - [x] Select and copy text
 - [x] Full-text search with highlighted matches
 - [x] Select and edit existing text (line by line: change, restyle or delete a line; exported in place of the original)
-- [ ] Add, modify and delete text blocks
+- [x] Add, modify and delete text (new text boxes; existing text line by line)
 - [x] Change font size, font family, bold/italic and text color
-- [ ] Move and resize existing elements
-- [ ] Select, move and remove images
+- [x] Move and resize existing elements (images and edited text lines)
+- [x] Select, move, resize and remove existing images (removed image data is dropped from the file)
 - [x] Add shapes, lines, arrows and text boxes (select, move, resize, recolor)
 - [x] Add images (PNG, JPEG, WebP, HEIC …; move and resize with fixed proportions)
 - [x] Highlight, underline and strike through text (from a text selection)
@@ -233,7 +233,7 @@ The main objectives are:
 - ✅ **Phase 1 – Viewer:** viewing, search, local library, export, offline support, dark mode, iPhone/iPad support
 - ✅ **Phase 2 – Page management:** rotate, delete, duplicate, reorder, merge, extract, split and crop pages, with a page overview that also works on smartphones
 - ✅ **Phase 3 – Annotations:** shapes, lines, arrows, text boxes, freehand drawing, text highlighting, comments, images, signatures and watermarks – all exported into the PDF
-- 🚧 **Phase 4 – Real editing:** permanent redaction and editing existing text with MuPDF.js are done; editing existing images is next
+- ✅ **Phase 4 – Real editing:** permanent redaction, editing existing text and moving, resizing or removing existing images with MuPDF.js
 - 🔜 **Next phases:** OCR, automation and AI features
 
 The full roadmap is in the [implementation plan](docs/IMPLEMENTATION_PLAN.md).

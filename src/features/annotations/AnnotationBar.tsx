@@ -14,6 +14,7 @@ import {
   Stamp,
   StickyNote,
   Trash2,
+  RotateCcw,
   Type,
   type LucideIcon,
   EyeOff,
@@ -27,7 +28,7 @@ import { toast } from 'sonner'
 import { IconButton } from '@/components/layout/IconButton'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { isTwoPoint, removeAnnotation } from '@/engine/document/annotations'
+import { isTwoPoint, removeAnnotation, replaceAnnotation } from '@/engine/document/annotations'
 import { pickFiles } from '@/lib/file'
 import { prepareImage } from '@/lib/images'
 import { cn } from '@/lib/utils'
@@ -49,7 +50,12 @@ const TOOLS: Array<{ tool: AnnotationTool; label: string; icon: LucideIcon; key:
   { tool: 'ink', label: 'Stift (freihand)', icon: Pencil, key: 'D' },
   { tool: 'marker', label: 'Marker (freihand)', icon: Highlighter, key: 'M' },
   { tool: 'text', label: 'Text', icon: Type, key: 'T' },
-  { tool: 'edittext', label: 'Vorhandenen Text bearbeiten', icon: TextCursorInput, key: 'B' },
+  {
+    tool: 'edittext',
+    label: 'Vorhandenen Text & Bilder bearbeiten',
+    icon: TextCursorInput,
+    key: 'B',
+  },
   { tool: 'note', label: 'Notiz / Kommentar', icon: StickyNote, key: 'K' },
   { tool: 'redact', label: 'Schwärzen (dauerhaft)', icon: EyeOff, key: 'X' },
 ]
@@ -122,6 +128,7 @@ export function AnnotationBar() {
       ? selectedAnnotation.filled
       : style.filled
   const selectedText = selectedAnnotation?.type === 'text' ? selectedAnnotation : null
+  const selectedImage = selectedAnnotation?.type === 'image' ? selectedAnnotation : null
   const fontSize = selectedText?.fontSize ?? style.fontSize
   const font = selectedText ? (selectedText.font ?? 'sans') : style.font
   const bold = selectedText ? !!selectedText.bold : style.bold
@@ -132,6 +139,23 @@ export function AnnotationBar() {
     : [...FONT_SIZES, fontSize].sort((a, b) => a - b)
 
   const deleteSelected = () => {
+    const current = useAnnotationStore.getState().selected
+    if (!current) return
+    const { edit, document } = useDocumentStore.getState()
+    const annotation = document?.pages
+      .find((page) => page.id === current.pageId)
+      ?.annotations?.find((item) => item.id === current.id)
+    // An image of the PDF itself: "deleting" removes the original
+    if (annotation?.type === 'image' && annotation.xobject) {
+      edit((pages) => replaceAnnotation(pages, current.pageId, { ...annotation, removed: true }))
+    } else {
+      edit((pages) => removeAnnotation(pages, current.pageId, current.id))
+    }
+    useAnnotationStore.getState().select(null)
+  }
+
+  /** Drops the changes to a text line or image of the PDF: the original shows again. */
+  const restoreOriginal = () => {
     const current = useAnnotationStore.getState().selected
     if (!current) return
     useDocumentStore.getState().edit((pages) => removeAnnotation(pages, current.pageId, current.id))
@@ -325,9 +349,20 @@ export function AnnotationBar() {
         </>
       )}
 
+      {selectedImage?.xobject && (
+        <IconButton label="Original wiederherstellen" onClick={restoreOriginal}>
+          <RotateCcw />
+        </IconButton>
+      )}
       {selectedAnnotation && (
         <IconButton
-          label={selectedText?.replaces ? 'Änderung verwerfen (Originaltext)' : 'Auswahl löschen'}
+          label={
+            selectedText?.replaces
+              ? 'Änderung verwerfen (Originaltext)'
+              : selectedImage?.xobject
+                ? 'Bild entfernen'
+                : 'Auswahl löschen'
+          }
           shortcut="Entf"
           onClick={deleteSelected}
         >
@@ -351,7 +386,7 @@ export function AnnotationBar() {
           : tool === 'text'
             ? 'Auf die Seite klicken und schreiben'
             : tool === 'edittext'
-              ? 'Textzeile anklicken und ändern – leeren löscht sie'
+              ? 'Textzeile oder Bild anklicken – Text ändern, Bild verschieben oder entfernen'
               : tool === 'redact'
                 ? 'Bereich aufziehen – Inhalt darunter wird beim Export entfernt'
                 : tool === 'ink' || tool === 'marker'
