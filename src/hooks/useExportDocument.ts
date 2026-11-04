@@ -88,7 +88,12 @@ export function useExportDocument() {
         return
       }
 
-      const progress = toast.loading('PDF wird erstellt …')
+      const redacting = selected.some((page) =>
+        page.annotations?.some((annotation) => annotation.type === 'redact'),
+      )
+      const progress = toast.loading(
+        redacting ? 'Schwärzungen werden angewendet …' : 'PDF wird erstellt …',
+      )
       try {
         const data = await buildPdf(selected, state.sources, {
           title: baseName(name),
@@ -99,7 +104,11 @@ export function useExportDocument() {
       } catch (error) {
         console.error('Export fehlgeschlagen', error)
         toast.dismiss(progress)
-        toast.error('Die PDF konnte nicht erstellt werden.')
+        toast.error(
+          redacting
+            ? 'Die Schwärzungen konnten nicht angewendet werden. Die PDF wurde nicht erstellt.'
+            : 'Die PDF konnte nicht erstellt werden.',
+        )
       }
     },
     [deliver],

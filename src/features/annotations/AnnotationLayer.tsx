@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type PointerEvent } from 'react'
 import {
   addAnnotation,
   hasCorners,
+  REDACT_COLOR,
   imageDisplayAngle,
   isMarkup,
   isTwoPoint,
@@ -174,16 +175,18 @@ export function AnnotationLayer({ page, scale, interactive }: AnnotationLayerPro
     }
 
     const original: Annotation =
-      tool === 'rect' || tool === 'ellipse'
-        ? { id, type: tool, color, a: at, b: at, strokeWidth, filled }
-        : {
-            id,
-            type: tool as 'line' | 'arrow',
-            color,
-            a: at,
-            b: at,
-            strokeWidth,
-          }
+      tool === 'redact'
+        ? { id, type: 'redact', color: REDACT_COLOR, a: at, b: at }
+        : tool === 'rect' || tool === 'ellipse'
+          ? { id, type: tool, color, a: at, b: at, strokeWidth, filled }
+          : {
+              id,
+              type: tool as 'line' | 'arrow',
+              color,
+              a: at,
+              b: at,
+              strokeWidth,
+            }
     drag.current = { kind: 'create', original }
     setDraft(original)
   }
@@ -221,7 +224,10 @@ export function AnnotationLayer({ page, scale, interactive }: AnnotationLayerPro
       if (Math.hypot((point.x - previous.x) * width, (point.y - previous.y) * height) < 1.5) return
       current.points.push(next)
       setDraft({ ...current.original, points: [...current.points] })
-    } else if (current.kind === 'create' && isTwoPoint(current.original)) {
+    } else if (
+      current.kind === 'create' &&
+      (isTwoPoint(current.original) || current.original.type === 'redact')
+    ) {
       setDraft({ ...current.original, b: toStored(point, turns) })
     } else if (current.kind === 'move') {
       // Small jitter isn't a move (lets a tap on a note open it)
@@ -778,6 +784,26 @@ export function AnnotationShape({ annotation, px, scale, turns, storedSize }: Sh
 
   const a = px(annotation.a)
   const b = px(annotation.b)
+
+  if (annotation.type === 'redact') {
+    // Shows the result; the dashed red edge marks it as a redaction that is
+    // applied (content removed) on export
+    return (
+      <rect
+        x={Math.min(a.x, b.x)}
+        y={Math.min(a.y, b.y)}
+        width={Math.abs(a.x - b.x)}
+        height={Math.abs(a.y - b.y)}
+        fill={REDACT_COLOR}
+        stroke="#ef4444"
+        strokeWidth={1}
+        strokeDasharray="4 3"
+      >
+        <title>Schwärzung – wird beim Export dauerhaft angewendet</title>
+      </rect>
+    )
+  }
+
   const strokeWidth = Math.max(0.5, annotation.strokeWidth * scale)
 
   if (annotation.type === 'rect' || annotation.type === 'ellipse') {

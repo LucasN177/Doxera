@@ -36,7 +36,7 @@ Comprehensive tools for viewing and editing existing PDF documents.
 - [x] Insert signatures (draw, type or upload; saved locally for reuse)
 - [x] Draw freehand with pen and marker (smoothed strokes; move, recolor, delete)
 - [x] Add watermarks (text or image, size, opacity, angle; all, selected or current pages)
-- [ ] Permanently redact sensitive information
+- [x] Permanently redact sensitive information (areas or selected text; the content below is removed from the exported file)
 
 ### 📑 Page Management
 
@@ -136,7 +136,7 @@ The project is built on a modern TypeScript-based frontend and browser-native do
 | WebAssembly | High-performance browser processing (PDF.js image decoders) | ✅ in use |
 | vite-plugin-pwa / Workbox | Offline support and installation | ✅ in use |
 | Vitest & Testing Library | Unit and component tests | ✅ in use |
-| MuPDF.js | Advanced PDF processing (text editing, redaction) | 🔜 planned |
+| MuPDF.js | Advanced PDF processing (redaction; text editing planned) | ✅ in use (loaded on demand) |
 | Tesseract.js | Optical Character Recognition | 🔜 planned |
 
 Additional AI technologies and integrations will be evaluated during development.
@@ -233,8 +233,13 @@ The main objectives are:
 - ✅ **Phase 1 – Viewer:** viewing, search, local library, export, offline support, dark mode, iPhone/iPad support
 - ✅ **Phase 2 – Page management:** rotate, delete, duplicate, reorder, merge, extract, split and crop pages, with a page overview that also works on smartphones
 - ✅ **Phase 3 – Annotations:** shapes, lines, arrows, text boxes, freehand drawing, text highlighting, comments, images, signatures and watermarks – all exported into the PDF
-- 🔜 **Next phases:** text editing (Phase 4), then OCR, automation and AI features
+- 🚧 **Phase 4 – Real editing:** permanent redaction with MuPDF.js is done; editing existing text and images is next
+- 🔜 **Next phases:** OCR, automation and AI features
 
 The full roadmap is in the [implementation plan](docs/IMPLEMENTATION_PLAN.md).
+
+## 📄 License
+
+Doxera is licensed under the [GNU Affero General Public License v3.0](LICENSE) (AGPL-3.0-or-later), as it uses [MuPDF.js](https://mupdf.readthedocs.io/).
 
 **Built with curiosity and a passion for software development.**

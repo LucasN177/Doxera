@@ -16,6 +16,7 @@ import {
   Trash2,
   Type,
   type LucideIcon,
+  EyeOff,
 } from 'lucide-react'
 import { useEffect } from 'react'
 import { toast } from 'sonner'
@@ -45,6 +46,7 @@ const TOOLS: Array<{ tool: AnnotationTool; label: string; icon: LucideIcon; key:
   { tool: 'marker', label: 'Marker (freihand)', icon: Highlighter, key: 'M' },
   { tool: 'text', label: 'Text', icon: Type, key: 'T' },
   { tool: 'note', label: 'Notiz / Kommentar', icon: StickyNote, key: 'K' },
+  { tool: 'redact', label: 'Schwärzen (dauerhaft)', icon: EyeOff, key: 'X' },
 ]
 
 /** Picks an image file and places it on the current page. */
@@ -204,32 +206,34 @@ export function AnnotationBar() {
 
       <Separator orientation="vertical" className="mx-1 data-[orientation=vertical]:h-6" />
 
-      <div className="flex items-center gap-1" role="radiogroup" aria-label="Farbe">
-        {ANNOTATION_COLORS.map((value) => (
-          <button
-            key={value}
-            type="button"
-            role="radio"
-            aria-checked={color === value}
-            aria-label={COLOR_NAMES[value] ?? value}
-            title={COLOR_NAMES[value] ?? value}
-            className={cn(
-              'flex size-6 shrink-0 items-center justify-center rounded-full border border-black/20 transition-transform hover:scale-110',
-              color === value && 'ring-ring ring-2 ring-offset-1',
-            )}
-            style={{ backgroundColor: value }}
-            onClick={() => setStyle({ color: value })}
-          >
-            {color === value && (
-              <Check
-                className="size-3.5"
-                style={{ color: value === '#ffffff' || value === '#f59e0b' ? '#000' : '#fff' }}
-                aria-hidden
-              />
-            )}
-          </button>
-        ))}
-      </div>
+      {kind !== 'redact' && (
+        <div className="flex items-center gap-1" role="radiogroup" aria-label="Farbe">
+          {ANNOTATION_COLORS.map((value) => (
+            <button
+              key={value}
+              type="button"
+              role="radio"
+              aria-checked={color === value}
+              aria-label={COLOR_NAMES[value] ?? value}
+              title={COLOR_NAMES[value] ?? value}
+              className={cn(
+                'flex size-6 shrink-0 items-center justify-center rounded-full border border-black/20 transition-transform hover:scale-110',
+                color === value && 'ring-ring ring-2 ring-offset-1',
+              )}
+              style={{ backgroundColor: value }}
+              onClick={() => setStyle({ color: value })}
+            >
+              {color === value && (
+                <Check
+                  className="size-3.5"
+                  style={{ color: value === '#ffffff' || value === '#f59e0b' ? '#000' : '#fff' }}
+                  aria-hidden
+                />
+              )}
+            </button>
+          ))}
+        </div>
+      )}
 
       {showStroke && (
         <>
@@ -297,11 +301,13 @@ export function AnnotationBar() {
           ? 'Element anklicken zum Bearbeiten, Doppelklick auf Text zum Ändern'
           : tool === 'text'
             ? 'Auf die Seite klicken und schreiben'
-            : tool === 'ink' || tool === 'marker'
-              ? 'Auf der Seite zeichnen – zwei Finger zoomen'
-              : tool === 'note'
-                ? 'Auf die Seite klicken, um eine Notiz zu setzen'
-                : 'Auf der Seite ziehen zum Zeichnen'}
+            : tool === 'redact'
+              ? 'Bereich aufziehen – Inhalt darunter wird beim Export entfernt'
+              : tool === 'ink' || tool === 'marker'
+                ? 'Auf der Seite zeichnen – zwei Finger zoomen'
+                : tool === 'note'
+                  ? 'Auf die Seite klicken, um eine Notiz zu setzen'
+                  : 'Auf der Seite ziehen zum Zeichnen'}
       </span>
       <Button size="sm" onClick={() => setActive(false)}>
         Fertig

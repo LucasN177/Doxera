@@ -165,6 +165,21 @@ Seiteninhalt ein, sodass sie in jedem PDF-Programm gleich aussehen.
 - Dauerhafte Schwärzung (Redaction) inkl. Entfernung des darunterliegenden Inhalts
 - **Risiko:** komplexester Teil – Schriften-Subsets, Content-Streams. Prototyp früh starten.
 
+**Umsetzung:** MuPDF.js läuft in einem eigenen Web Worker (Comlink) und wird erst bei Bedarf geladen;
+die WASM-Datei (~10 MB) wird nicht vorab gecacht, sondern bei der ersten Nutzung (danach offline).
+Schwärzungen sind Annotationen (`type: 'redact'`); pdf-lib schreibt sie als /Redact-Annotationen,
+MuPDF wendet sie danach an (Text entfernen, Bildpixel löschen, vollständig überdeckte Vektorgrafik
+entfernen) und schreibt die Datei vollständig neu (`garbage=compact`), damit nichts Entferntes übrig bleibt.
+
+**Milestones Phase 4:**
+
+| #   | Milestone           | Inhalt                                                                                   | Status |
+| --- | ------------------- | ---------------------------------------------------------------------------------------- | ------ |
+| E1  | MuPDF-Grundlage     | MuPDF.js lazy im Worker, Nachbearbeitung beim Export, PWA-Caching                        | ✅     |
+| E2  | Schwärzen           | Bereiche aufziehen oder Text markieren; beim Export dauerhaft entfernt                   | ✅     |
+| E3  | Text bearbeiten     | Vorhandenen Text auswählen, Inhalt/Größe/Farbe ändern (alter Text entfernt, neu gesetzt) | offen  |
+| E4  | Elemente bearbeiten | Vorhandene Bilder auswählen, verschieben, skalieren, entfernen                           | offen  |
+
 ### Phase 5 – OCR
 
 - Tesseract.js im Worker, Sprachdaten lazy laden
@@ -208,7 +223,7 @@ Seiteninhalt ein, sodass sie in jedem PDF-Programm gleich aussehen.
 
 ## 6. Offene Entscheidungen
 
-1. Lizenz des Projekts (Kompatibilität mit AGPL von MuPDF.js)
+1. ~~Lizenz des Projekts~~ → entschieden: AGPL-3.0-or-later (wegen MuPDF.js)
 2. Routing-Bedarf (Single-View-Editor vs. mehrere Seiten → React Router mit HashRouter)
 3. Welche KI-Provider standardmäßig unterstützt werden (Claude, OpenAI, lokal)
 4. Text-Editing-Strategie: MuPDF.js allein oder eigenes Overlay-Modell + MuPDF für den Export

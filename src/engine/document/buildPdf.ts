@@ -1,6 +1,6 @@
 import type { PDFFont, PDFImage } from 'pdf-lib'
 import type { PageRef } from '@/types/document'
-import { addNoteAnnotations, drawAnnotations } from './drawAnnotations'
+import { addNoteAnnotations, addRedactAnnotations, drawAnnotations } from './drawAnnotations'
 
 /** What the builder needs from a source: its original bytes. */
 export interface SourceData {
@@ -12,6 +12,11 @@ export interface BuildOptions {
   title?: string
   /** Image data for image annotations, by asset id. */
   assets?: ReadonlyMap<string, ImageData>
+  /**
+   * Applies the redaction annotations of the built PDF for good. Defaults to
+   * MuPDF in a worker; tests pass MuPDF directly.
+   */
+  redact?: (data: Uint8Array) => Promise<Uint8Array>
 }
 
 export interface ImageData {
@@ -22,14 +27,15 @@ export interface ImageData {
 /**
  * Builds a new PDF from a page list using pdf-lib: pages are copied from their
  * sources in order, with the added rotation, annotations (drawn into the page
- * content) and crop (as CropBox) applied. Page content, annotations
+ * content) and crop (as CropBox) applied. Redactions are applied afterwards
+ * with MuPDF, which removes the content below them. Page content, annotations
  * and links on the page are kept; document-level parts such as outlines
  * (bookmarks) and form field structure are not carried over.
  */
 export async function buildPdf(
   pages: readonly PageRef[],
   sources: ReadonlyMap<string, SourceData>,
-  { title, assets = new Map() }: BuildOptions = {},
+  { title, assets = new Map(), redact = defaultRedact }: BuildOptions = {},
 ): Promise<Uint8Array> {
   if (pages.length === 0) throw new Error('Ein PDF braucht mindestens eine Seite.')
 
@@ -100,6 +106,8 @@ export async function buildPdf(
       drawAnnotations(lib, page, ref.annotations, box, font, images, boldFont ?? font)
       const notes = ref.annotations.filter((annotation) => annotation.type === 'note')
       if (notes.length > 0) addNoteAnnotations(lib, page, notes, box)
+      const redactions = ref.annotations.filter((annotation) => annotation.type === 'redact')
+      if (redactions.length > 0) addRedactAnnotations(page, redactions, box)
     }
     if (ref.crop) {
       const { top, right, bottom, left } = ref.crop
@@ -116,5 +124,12 @@ export async function buildPdf(
   if (title) output.setTitle(title)
   output.setProducer('Doxera')
   output.setModificationDate(new Date())
-  return output.save()
+  const data = await output.save()
+  const redacting = pages.some((page) => page.annotations?.some((item) => item.type === 'redact'))
+  return redacting ? redact(data) : data
+}
+
+async function defaultRedact(data: Uint8Array): Promise<Uint8Array> {
+  const { redactPdf } = await import('@/engine/mupdf/client')
+  return redactPdf(data)
 }

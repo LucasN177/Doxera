@@ -2,6 +2,7 @@ import type { PDFFont, PDFImage, PDFPage } from 'pdf-lib'
 import type {
   Annotation,
   NoteAnnotation,
+  RedactAnnotation,
   PagePoint,
   TextAnnotation,
   WatermarkAnnotation,
@@ -80,8 +81,9 @@ export function drawAnnotations(
   const { rgb, degrees, LineCapStyle, BlendMode } = lib
 
   for (const annotation of annotations) {
-    // Notes become real PDF comments, see addNoteAnnotations
-    if (annotation.type === 'note') continue
+    // Notes become real PDF comments (addNoteAnnotations), redactions are
+    // applied by MuPDF after building (addRedactAnnotations)
+    if (annotation.type === 'note' || annotation.type === 'redact') continue
 
     if (annotation.type === 'ink') {
       // SVG coordinates (y down) relative to the top-left corner of the page box
@@ -269,6 +271,36 @@ export function addNoteAnnotations(
       // Print | NoZoom | NoRotate
       F: 4 | 8 | 16,
       Open: false,
+    })
+    page.node.addAnnot(context.register(annotation))
+  }
+}
+
+/**
+ * Marks areas for redaction with standard /Redact annotations. They are not
+ * applied yet: MuPDF removes the content below them afterwards (see
+ * `applyRedactions`), which also deletes these annotations.
+ */
+export function addRedactAnnotations(
+  page: PDFPage,
+  redactions: readonly RedactAnnotation[],
+  box: PageBox,
+) {
+  const context = page.doc.context
+  for (const redaction of redactions) {
+    const a = toPdf(redaction.a, box)
+    const b = toPdf(redaction.b, box)
+    const x0 = Math.min(a.x, b.x)
+    const y0 = Math.min(a.y, b.y)
+    const x1 = Math.max(a.x, b.x)
+    const y1 = Math.max(a.y, b.y)
+    const annotation = context.obj({
+      Type: 'Annot',
+      Subtype: 'Redact',
+      Rect: [x0, y0, x1, y1],
+      // Upper left, upper right, lower left, lower right
+      QuadPoints: [x0, y1, x1, y1, x0, y0, x1, y0],
+      IC: [0, 0, 0],
     })
     page.node.addAnnot(context.register(annotation))
   }

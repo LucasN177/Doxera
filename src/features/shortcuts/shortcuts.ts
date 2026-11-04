@@ -44,6 +44,7 @@ export const SHORTCUT_GROUPS: Array<{
       { keys: ['D', 'M'], label: 'Stift / Marker (freihand)' },
       { keys: ['T'], label: 'Text' },
       { keys: ['K'], label: 'Notiz / Kommentar' },
+      { keys: ['X'], label: 'Schwärzen (dauerhaft beim Export)' },
       { keys: ['Entf'], label: 'Ausgewähltes Element löschen' },
       { keys: ['Esc'], label: 'Auswahl aufheben, dann Modus beenden' },
     ],

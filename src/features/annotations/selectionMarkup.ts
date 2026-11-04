@@ -1,5 +1,11 @@
-import { mergeLineRects, toStored, type Box } from '@/engine/document/annotations'
-import type { MarkupAnnotation, MarkupType } from '@/types/annotations'
+import {
+  mergeLineRects,
+  REDACT_COLOR,
+  toDisplay,
+  toStored,
+  type Box,
+} from '@/engine/document/annotations'
+import type { MarkupAnnotation, MarkupType, RedactAnnotation } from '@/types/annotations'
 import type { ResolvedPage } from '@/types/document'
 
 /** Text nodes of the PDF text layers that the range covers. */
@@ -82,4 +88,38 @@ export function markupsFromSelection(
     })
   }
   return result
+}
+
+/**
+ * Turns the current text selection into redaction areas, one per selected
+ * line, slightly enlarged so that the glyphs are fully covered.
+ */
+export function redactionsFromSelection(
+  selection: Selection,
+  pages: readonly ResolvedPage[],
+): Array<{ pageId: string; annotation: RedactAnnotation }> {
+  return markupsFromSelection(selection, pages, 'highlight', REDACT_COLOR).flatMap(
+    ({ pageId, annotation }) =>
+      annotation.rects.map((rect) => {
+        const { turns } = annotation
+        const a = toDisplay(rect.a, turns)
+        const b = toDisplay(rect.b, turns)
+        // Lines run along the display x axis: pad mostly across them
+        const pad = Math.abs(a.y - b.y) * 0.12
+        const x0 = Math.min(a.x, b.x) - pad / 2
+        const x1 = Math.max(a.x, b.x) + pad / 2
+        const y0 = Math.min(a.y, b.y) - pad
+        const y1 = Math.max(a.y, b.y) + pad
+        return {
+          pageId,
+          annotation: {
+            id: crypto.randomUUID(),
+            type: 'redact' as const,
+            color: REDACT_COLOR,
+            a: toStored({ x: x0, y: y0 }, turns),
+            b: toStored({ x: x1, y: y1 }, turns),
+          },
+        }
+      }),
+  )
 }

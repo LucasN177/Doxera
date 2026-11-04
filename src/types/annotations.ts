@@ -128,7 +128,18 @@ export interface WatermarkAnnotation extends AnnotationBase {
   turns: number
 }
 
+/**
+ * Area to be redacted for good: on export, everything below it (text, image
+ * pixels, line art) is removed from the page and a black box drawn instead.
+ */
+export interface RedactAnnotation extends AnnotationBase {
+  type: 'redact'
+  a: PagePoint
+  b: PagePoint
+}
+
 export type Annotation =
+  | RedactAnnotation
   | InkAnnotation
   | WatermarkAnnotation
   | ShapeAnnotation

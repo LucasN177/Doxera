@@ -4,7 +4,7 @@ import type { Annotation } from '@/types/annotations'
 import { useDocumentStore } from './documentStore'
 
 export type AnnotationTool =
-  'select' | 'rect' | 'ellipse' | 'line' | 'arrow' | 'ink' | 'marker' | 'text' | 'note'
+  'select' | 'rect' | 'ellipse' | 'line' | 'arrow' | 'ink' | 'marker' | 'text' | 'note' | 'redact'
 
 export interface AnnotationStyle {
   color: string
@@ -65,6 +65,8 @@ const DEFAULT_STYLE: AnnotationStyle = {
 
 /** Applies the relevant style properties to an existing annotation. */
 export function applyStyle(annotation: Annotation, style: Partial<AnnotationStyle>): Annotation {
+  // Redactions are always black
+  if (annotation.type === 'redact') return annotation
   const next = { ...annotation }
   if (style.color) next.color = style.color
   if (next.type === 'text') {

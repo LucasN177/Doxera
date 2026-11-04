@@ -68,7 +68,17 @@ export default defineConfig({
           // pdf.js runtime resources, needed to render all PDFs offline
           'pdfjs/**/*.{bcmap,pfb,ttf,icc}',
         ],
-        // pdf.js worker, MuPDF and Tesseract assets are large
+        // MuPDF (~10 MB) is only needed for redaction & editing: cached on first use
+        // (see runtimeCaching), so it doesn't slow down the first visit
+        globIgnores: ['**/mupdf-wasm-*.wasm'],
+        runtimeCaching: [
+          {
+            urlPattern: /\/assets\/mupdf-wasm-[\w-]+\.wasm$/,
+            handler: 'CacheFirst',
+            options: { cacheName: 'doxera-mupdf', expiration: { maxEntries: 2 } },
+          },
+        ],
+        // pdf.js worker and Tesseract assets are large
         maximumFileSizeToCacheInBytes: 30 * 1024 * 1024,
         cleanupOutdatedCaches: true,
         navigateFallback: 'index.html',
@@ -86,6 +96,10 @@ export default defineConfig({
   },
   worker: {
     format: 'es',
+  },
+  optimizeDeps: {
+    // MuPDF loads its .wasm relative to its own module: don't pre-bundle it
+    exclude: ['mupdf'],
   },
   test: {
     globals: true,

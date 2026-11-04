@@ -1,4 +1,11 @@
-import { Copy, Highlighter, MessageSquarePlus, Strikethrough, Underline } from 'lucide-react'
+import {
+  Copy,
+  EyeOff,
+  Highlighter,
+  MessageSquarePlus,
+  Strikethrough,
+  Underline,
+} from 'lucide-react'
 import { useEffect, useState, type MouseEvent } from 'react'
 import { toast } from 'sonner'
 import { IconButton } from '@/components/layout/IconButton'
@@ -8,7 +15,11 @@ import { cn } from '@/lib/utils'
 import { NOTE_DEFAULT_COLOR, useAnnotationStore } from '@/stores/annotationStore'
 import { useDocumentStore } from '@/stores/documentStore'
 import type { MarkupType, NoteAnnotation } from '@/types/annotations'
-import { isPdfTextSelection, markupsFromSelection } from './selectionMarkup'
+import {
+  isPdfTextSelection,
+  markupsFromSelection,
+  redactionsFromSelection,
+} from './selectionMarkup'
 
 const MARKUP_COLORS = [
   { value: '#facc15', name: 'Gelb' },
@@ -108,6 +119,27 @@ export function SelectionMenu() {
     setPosition(null)
   }
 
+  /** Marks the selected text for redaction (removed for good on export). */
+  const redact = () => {
+    const selection = document.getSelection()
+    if (!selection) return
+    const redactions = redactionsFromSelection(selection, pages)
+    if (redactions.length === 0) return
+    useDocumentStore
+      .getState()
+      .edit((list) =>
+        redactions.reduce(
+          (acc, { pageId, annotation }) => addAnnotation(acc, pageId, annotation),
+          list,
+        ),
+      )
+    selection.removeAllRanges()
+    setPosition(null)
+    toast.success('Zum Schwärzen markiert', {
+      description: 'Der Text wird beim Export dauerhaft aus der PDF entfernt.',
+    })
+  }
+
   /** Highlights the selection and attaches a note right after its first line. */
   const comment = () => {
     const selection = document.getSelection()
@@ -196,6 +228,9 @@ export function SelectionMenu() {
       </IconButton>
       <IconButton label="Kommentieren" onClick={comment}>
         <MessageSquarePlus />
+      </IconButton>
+      <IconButton label="Schwärzen" onClick={redact}>
+        <EyeOff />
       </IconButton>
       <IconButton label="Kopieren" onClick={() => void copy()}>
         <Copy />

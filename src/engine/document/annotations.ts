@@ -4,6 +4,7 @@ import type {
   ImageAnnotation,
   LineAnnotation,
   MarkupAnnotation,
+  RedactAnnotation,
   PagePoint,
   ShapeAnnotation,
   TextAnnotation,
@@ -219,8 +220,8 @@ export function removeAnnotation(pages: readonly PageRef[], pageId: string, id: 
 /** Annotations with two corner points that can be moved and resized. */
 export function hasCorners(
   annotation: Annotation,
-): annotation is ShapeAnnotation | LineAnnotation | ImageAnnotation {
-  return isTwoPoint(annotation) || annotation.type === 'image'
+): annotation is ShapeAnnotation | LineAnnotation | ImageAnnotation | RedactAnnotation {
+  return isTwoPoint(annotation) || annotation.type === 'image' || annotation.type === 'redact'
 }
 
 /**
@@ -360,3 +361,6 @@ export function setWatermarks(
     return cleared
   })
 }
+
+/** Fill of redactions (MuPDF draws the same black box on export). */
+export const REDACT_COLOR = '#000000'
