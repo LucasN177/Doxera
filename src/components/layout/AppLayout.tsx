@@ -8,6 +8,8 @@ import { OcrDialog } from '@/features/ocr/OcrDialog'
 import { BatchDialog } from '@/features/batch/BatchDialog'
 import { WorkflowsDialog } from '@/features/workflow/WorkflowsDialog'
 import { CompressDialog } from '@/features/convert/CompressDialog'
+import { PasswordDialog } from '@/features/security/PasswordDialog'
+import { ProtectDialog } from '@/features/security/ProtectDialog'
 import { DataExportDialog } from '@/features/data/DataExportDialog'
 import { ExportImagesDialog } from '@/features/convert/ExportImagesDialog'
 import { ImagesToPdfDialog } from '@/features/convert/ImagesToPdfDialog'
@@ -65,6 +67,7 @@ export function AppLayout() {
               <TextExportDialog />
               <ExportImagesDialog />
               <CompressDialog />
+              <ProtectDialog />
               <DataExportDialog />
               <CropDialog />
             </>
@@ -72,6 +75,7 @@ export function AppLayout() {
             <EmptyState />
           )}
           <ImagesToPdfDialog />
+          <PasswordDialog />
           <BatchDialog />
           <WorkflowsDialog />
           {loading && (

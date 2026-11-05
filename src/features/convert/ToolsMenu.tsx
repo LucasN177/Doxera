@@ -4,6 +4,7 @@ import {
   FileSpreadsheet,
   Images,
   Layers,
+  LockKeyhole,
   Workflow,
   Wrench,
 } from 'lucide-react'
@@ -36,6 +37,12 @@ export function ToolsMenu() {
             onSelect={() => useUiStore.getState().setCompressOpen(true)}
           >
             <FileArchive /> PDF komprimieren …
+          </DropdownMenu.Item>
+          <DropdownMenu.Item
+            className={item}
+            onSelect={() => useUiStore.getState().setProtectOpen(true)}
+          >
+            <LockKeyhole /> Mit Passwort schützen …
           </DropdownMenu.Item>
           <DropdownMenu.Item
             className={item}

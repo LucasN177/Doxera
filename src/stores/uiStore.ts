@@ -40,6 +40,18 @@ interface UiState {
   setBatchWorkflowId: (id: string | null) => void
   workflowsOpen: boolean
   setWorkflowsOpen: (open: boolean) => void
+  protectOpen: boolean
+  setProtectOpen: (open: boolean) => void
+  /** Open question for the password of a protected PDF. */
+  passwordRequest: PasswordRequest | null
+  setPasswordRequest: (request: PasswordRequest | null) => void
+}
+
+export interface PasswordRequest {
+  name: string
+  /** The previous attempt was wrong. */
+  retry: boolean
+  resolve: (password: string | null) => void
 }
 
 /** Transient UI state that isn't tied to a document. */
@@ -74,4 +86,22 @@ export const useUiStore = create<UiState>()((set) => ({
   setBatchWorkflowId: (batchWorkflowId) => set({ batchWorkflowId }),
   workflowsOpen: false,
   setWorkflowsOpen: (workflowsOpen) => set({ workflowsOpen }),
+  protectOpen: false,
+  setProtectOpen: (protectOpen) => set({ protectOpen }),
+  passwordRequest: null,
+  setPasswordRequest: (passwordRequest) => set({ passwordRequest }),
 }))
+
+/** Asks the user for a PDF's password; resolves with null if they cancel. */
+export function requestPassword(name: string, retry: boolean): Promise<string | null> {
+  return new Promise((resolve) => {
+    useUiStore.getState().setPasswordRequest({
+      name,
+      retry,
+      resolve: (password) => {
+        useUiStore.getState().setPasswordRequest(null)
+        resolve(password)
+      },
+    })
+  })
+}

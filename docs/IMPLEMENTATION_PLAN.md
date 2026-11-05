@@ -325,7 +325,7 @@ Nach Phase 6 erkannte Lücken, die vor den KI-Funktionen geschlossen werden:
 | --- | ------------------------- | ----------------------------------------------------------------------------------------------------- | ------ |
 | G1  | Bearbeitungen speichern   | Bearbeitungsstand lokal sichern und beim erneuten Öffnen wiederherstellen                             | ✅     |
 | G2  | Formulare                 | PDF-Formularfelder ausfüllen und mit exportieren                                                      | ✅     |
-| G3  | Passwortschutz            | Geschützte PDFs öffnen, PDFs mit Passwort verschlüsseln                                               | offen  |
+| G3  | Passwortschutz            | Geschützte PDFs öffnen, PDFs mit Passwort verschlüsseln                                               | ✅     |
 | G4  | Seitenzahlen & Kopfzeilen | Seitenzahlen, Kopf- und Fußzeilen einfügen (auch als Workflow-Schritt)                                | offen  |
 | G5  | Lesezeichen               | Lesezeichen (Outline) beim Export erhalten                                                            | offen  |
 | G6  | Dokumentvergleich         | Textunterschiede zweier Dokumente ohne KI hervorheben                                                 | offen  |
@@ -346,6 +346,14 @@ Feldname (gleichnamige Felder teilen sie) und werden mit G1 gespeichert. Export:
 unverändert, wird das Original mit gefüllten Feldern ausgegeben und bleibt ausfüllbar; bei geänderten
 Seiten werden die Werte eingezeichnet (`flatten`), weil die Formularstruktur kopierten Seiten nicht folgt.
 Alle Wege zu den Dokument-Bytes (Export, Komprimieren, Bilder, Workflows) laufen über `documentBytes`.
+
+**Passwortschutz (G3):** Verschlüsselte Dateien (auch solche, die sich ohne Passwort öffnen lassen, aber
+Bearbeiten verbieten – pdf-lib könnte deren Inhalte nicht lesen) entschlüsselt MuPDF im Worker beim Öffnen
+und Einfügen; bei Bedarf fragt ein Dialog nach dem Passwort (erneut nach falscher Eingabe). Gearbeitet wird
+mit der entschlüsselten Fassung, in der Bibliothek bleibt die verschlüsselte Originaldatei (erneutes Öffnen
+fragt wieder; der Datei-Hash der entschlüsselten Fassung hält G1-Bearbeitungen zusammen). „Mit Passwort
+schützen“ erzeugt per MuPDF eine AES-256-Kopie mit Rechte-Flags (Drucken, Kopieren, Ändern). Passwörter
+werden nicht gespeichert; Kommas sind wegen MuPDFs Optionssyntax nicht erlaubt.
 
 ## 5. Querschnittsthemen
 

@@ -2,6 +2,7 @@ import { expose, transfer } from 'comlink'
 import type { PDFDocument } from 'mupdf'
 import { compressPdf, type CompressionLevel, type CompressionResult } from './compress'
 import { applyRedactions, type RedactionMode } from './redact'
+import { decryptPdf, encryptPdf, type DecryptResult, type ProtectOptions } from './encryption'
 import { extractImage, extractPageContent, type ImagePixels, type RawPageText } from './pageContent'
 
 // MuPDF initializes its WebAssembly with a top-level await. Importing it on
@@ -37,6 +38,18 @@ const api = {
     // The input may come back unchanged; copy so it can be transferred
     const output = result.data === data ? data.slice() : result.data
     return transfer({ ...result, data: output }, [output.buffer as ArrayBuffer])
+  },
+
+  /** Removes the encryption (see `decryptPdf`). */
+  async decrypt(data: Uint8Array, password: string): Promise<DecryptResult> {
+    const result = decryptPdf(await loadMupdf(), data, password)
+    return result.status === 'ok' ? transfer(result, [result.data.buffer as ArrayBuffer]) : result
+  },
+
+  /** Encrypts with passwords and permissions (see `encryptPdf`). */
+  async encrypt(data: Uint8Array, options: ProtectOptions): Promise<Uint8Array> {
+    const result = encryptPdf(await loadMupdf(), data, options)
+    return transfer(result, [result.buffer as ArrayBuffer])
   },
 
   /** Whether a document is open under this key (otherwise send its data). */

@@ -101,6 +101,8 @@ Privacy and data security are important design principles of Doxera.
 - [x] Client-side PDF processing
 - [x] Local document storage using IndexedDB ("Recently opened")
 - [x] Edits are saved locally and restored when a document is opened again (with "show original")
+- [x] Open password-protected PDFs (the password is never stored; protected files stay protected in the library)
+- [x] Protect PDFs with a password (AES-256, optional limits on printing, copying and editing)
 - [x] Offline support
 - [x] No mandatory user registration
 - [x] No automatic document uploads

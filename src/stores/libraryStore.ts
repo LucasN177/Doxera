@@ -102,7 +102,8 @@ export const useLibraryStore = create<LibraryState>()(
                 addedAt: now,
                 lastOpenedAt: now,
               },
-              document.data,
+              // Protected files stay protected on the device
+              document.originalData ?? document.data,
             )
             requestPersistentStorage()
             await pruneLibrary(MAX_LIBRARY_ENTRIES)

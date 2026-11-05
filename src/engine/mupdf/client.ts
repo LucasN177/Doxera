@@ -1,5 +1,6 @@
 import type { Remote } from 'comlink'
 import type { CompressionLevel, CompressionResult } from './compress'
+import type { DecryptResult, ProtectOptions } from './encryption'
 import type { MupdfWorkerApi } from './mupdf.worker'
 import type { RedactionMode } from './redact'
 import type { ImagePixels, RawPageText } from './pageContent'
@@ -40,6 +41,21 @@ export async function redactPdf(
 ): Promise<Uint8Array> {
   const { api, failed } = await connect()
   return Promise.race([api.redact(data, mode), failed])
+}
+
+/** Removes a PDF's encryption in the MuPDF worker (see `decryptPdf`). */
+export async function decryptPdfData(data: Uint8Array, password: string): Promise<DecryptResult> {
+  const { api, failed } = await connect()
+  return Promise.race([api.decrypt(data, password), failed])
+}
+
+/** Encrypts a PDF in the MuPDF worker (see `encryptPdf`). */
+export async function encryptPdfData(
+  data: Uint8Array,
+  options: ProtectOptions,
+): Promise<Uint8Array> {
+  const { api, failed } = await connect()
+  return Promise.race([api.encrypt(data, options), failed])
 }
 
 /** Makes a PDF smaller in the MuPDF worker (see `compressPdf`). */

@@ -6,6 +6,8 @@ import { hasPdfSignature, looksLikePdf } from '@/lib/file'
 import type { ImageAsset } from '@/types/annotations'
 import { restorePages } from '@/engine/document/editState'
 import type { StoredEdits } from '@/storage/db'
+import { isEncrypted } from '@/engine/mupdf/encryption'
+import { requestPassword } from '@/stores/uiStore'
 import type { OpenDocument, PageRef, PdfSource } from '@/types/document'
 import type { FormValues } from '@/types/forms'
 
@@ -83,6 +85,35 @@ const GENERIC_ERROR = 'Die PDF konnte nicht geöffnet werden.'
 const CANCELLED: OpenResult = { ok: false, cancelled: true, message: 'Abgebrochen' }
 const EMPTY_HISTORY: History = { past: [], future: [] }
 
+/**
+ * Removes the encryption of protected PDFs, asking for the password when
+ * one is needed (again after a wrong one). Files that only restrict editing
+ * are decrypted without asking, so all tools can work with them.
+ */
+async function unlock(name: string, data: Uint8Array): Promise<Uint8Array> {
+  if (!hasPdfSignature(data) || !isEncrypted(data)) return data
+  let decrypt
+  try {
+    decrypt = (await import('@/engine/mupdf/client')).decryptPdfData
+  } catch (error) {
+    throw new PdfLoadError(
+      'password',
+      'Zum Entsperren wird MuPDF benötigt; es konnte nicht geladen werden.',
+      {
+        cause: error,
+      },
+    )
+  }
+  let password = ''
+  for (let attempt = 0; ; attempt++) {
+    const result = await decrypt(data, password)
+    if (result.status === 'ok') return result.data
+    const entered = await requestPassword(name, attempt > 0)
+    if (entered === null) throw new PdfLoadError('cancelled', 'Abgebrochen')
+    password = entered
+  }
+}
+
 /** Validates and parses a PDF. Throws {@link PdfLoadError} with a user-facing message. */
 async function loadSource(name: string, data: Uint8Array): Promise<PdfSource> {
   if (!hasPdfSignature(data)) {
@@ -123,7 +154,8 @@ export const useDocumentStore = create<DocumentState>()((set, get) => {
 
     let source: PdfSource | null = null
     try {
-      const data = await read()
+      const original = await read()
+      const data = await unlock(name, original)
       source = await loadSource(name, data)
 
       if (isStale()) {
@@ -142,8 +174,9 @@ export const useDocumentStore = create<DocumentState>()((set, get) => {
         document: {
           id: crypto.randomUUID(),
           name,
-          size: data.byteLength,
+          size: original.byteLength,
           data,
+          ...(data !== original && { originalData: original }),
           primarySourceId: source.id,
           pages: pagesFromSource(source),
         },
@@ -153,6 +186,7 @@ export const useDocumentStore = create<DocumentState>()((set, get) => {
       if (source) void closePdf(source.pdf)
       if (isStale()) return CANCELLED
       set({ loading: false })
+      if (error instanceof PdfLoadError && error.reason === 'cancelled') return CANCELLED
       return { ok: false, message: errorMessage(error) }
     }
   }
@@ -302,8 +336,11 @@ export const useDocumentStore = create<DocumentState>()((set, get) => {
           continue
         }
         try {
-          loaded.push(await loadSource(file.name, new Uint8Array(await file.arrayBuffer())))
+          const data = await unlock(file.name, new Uint8Array(await file.arrayBuffer()))
+          loaded.push(await loadSource(file.name, data))
         } catch (error) {
+          // A cancelled password prompt just skips the file
+          if (error instanceof PdfLoadError && error.reason === 'cancelled') continue
           errors.push(errorMessage(error))
         }
       }

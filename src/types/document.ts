@@ -56,8 +56,10 @@ export interface OpenDocument {
   name: string
   /** Size of the original file in bytes. */
   size: number
-  /** Original, unmodified file contents. */
+  /** Original, unmodified file contents (decrypted if the file was protected). */
   data: Uint8Array
+  /** The file as it was, if it had to be decrypted (kept in the library instead of `data`). */
+  originalData?: Uint8Array
   /** Source of the opened file. */
   primarySourceId: string
   pages: PageRef[]

@@ -19,7 +19,7 @@ function loadPdfJs(): Promise<PdfJs> {
 /** Static pdf.js resources (CMaps, standard fonts, WASM decoders), copied at build time. */
 const ASSET_BASE = `${import.meta.env.BASE_URL}pdfjs/`
 
-export type PdfLoadErrorReason = 'password' | 'invalid' | 'unknown'
+export type PdfLoadErrorReason = 'password' | 'invalid' | 'unknown' | 'cancelled'
 
 export class PdfLoadError extends Error {
   readonly reason: PdfLoadErrorReason
@@ -51,9 +51,13 @@ export async function openPdf(data: Uint8Array): Promise<PDFDocumentProxy> {
   } catch (error) {
     const name = (error as Error | undefined)?.name
     if (name === 'PasswordException') {
-      throw new PdfLoadError('password', 'Passwortgeschützte PDFs werden noch nicht unterstützt.', {
-        cause: error,
-      })
+      throw new PdfLoadError(
+        'password',
+        'Die PDF ist passwortgeschützt und konnte nicht entsperrt werden.',
+        {
+          cause: error,
+        },
+      )
     }
     if (name === 'InvalidPDFException') {
       throw new PdfLoadError('invalid', 'Die Datei ist keine gültige oder eine beschädigte PDF.', {
