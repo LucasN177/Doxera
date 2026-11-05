@@ -28,7 +28,7 @@ export default defineConfig({
   projects: [
     {
       name: 'desktop',
-      testIgnore: '**/mobile.e2e.ts',
+      testIgnore: ['**/mobile.e2e.ts', '**/performance.e2e.ts'],
       use: { ...devices['Desktop Chrome'], ...(ci ? {} : { channel: 'msedge' }) },
     },
     {
@@ -40,6 +40,16 @@ export default defineConfig({
       },
       testMatch: '**/mobile.e2e.ts',
     },
+    // Large-PDF measurements (npm run test:perf): only when asked for, they take minutes
+    ...(process.argv.includes('--project=perf')
+      ? [
+          {
+            name: 'perf',
+            testMatch: '**/performance.e2e.ts',
+            use: { ...devices['Desktop Chrome'], ...(ci ? {} : { channel: 'msedge' }) },
+          },
+        ]
+      : []),
   ],
   webServer: {
     command: `npm run preview -- --port ${PORT} --strictPort`,

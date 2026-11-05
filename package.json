@@ -16,7 +16,8 @@
     "test:watch": "vitest",
     "generate-pwa-assets": "pwa-assets-generator",
     "generate-fixtures": "node scripts/generate-fixtures.mjs",
-    "test:e2e": "npm run build && playwright test"
+    "test:e2e": "npm run build && playwright test",
+    "test:perf": "npm run build && playwright test --project=perf"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

@@ -352,7 +352,7 @@ Einzelfunktionen (`ocrPdf`, `watermarkPdf`, `compressPdfData`, `pdfToImageFiles`
 | F1  | Öffnen mit Doxera | Dateizuordnung (`file_handlers`) und Launch Queue für die installierte App          | ✅     |
 | F2  | E2E-Tests         | Playwright-Tests der wichtigsten Abläufe im echten Browser                          | ✅     |
 | F3  | Offline-Test      | Alle Funktionen ohne Netz (Service Worker, nachgeladene MuPDF-/OCR-Dateien) geprüft | ✅     |
-| F4  | Große PDFs        | Speicher und Geschwindigkeit bei vielen Seiten (Vorschaubilder, Rendering, Export)  | offen  |
+| F4  | Große PDFs        | Speicher und Geschwindigkeit bei vielen Seiten (Vorschaubilder, Rendering, Export)  | ✅     |
 | F5  | Barrierefreiheit  | Tastaturbedienung, Fokus, Beschriftungen, Kontraste, Screenreader-Durchgang         | offen  |
 | F6  | Englisch (i18n)   | Oberfläche auf Deutsch und Englisch, Sprache nach Browser, umschaltbar              | offen  |
 
@@ -377,6 +377,19 @@ nie benutzt hatte, konnte offline weder Text bearbeiten noch schwärzen, komprim
 „Alles offline verfügbar machen (ca. 19 MB)“ auf dem Startbildschirm lädt beides einmal vorab (`prepareOffline`;
 der Service Worker speichert die Dateien), der Status wird aus den Caches gelesen. Die installierte App erledigt das
 selbst im Leerlauf, wenn sie online ist.
+
+**Große PDFs (F4):** `npm run test:perf` erzeugt eine große PDF und misst im Produktions-Build (Edge, Desktop):
+
+| Datei                                  | Öffnen | Zur letzten Seite | Suche | Seite löschen + speichern |
+| -------------------------------------- | ------ | ----------------- | ----- | ------------------------- |
+| 300 Seiten mit je eigenem Bild, 302 MB | 4,2 s  | 0,3 s             | 0,5 s | 3,4 s                     |
+| 2000 Textseiten, 0,5 MB                | 2,4 s  | 0,4 s             | 2,2 s | 1,9 s                     |
+
+Ansicht und Seitenleiste rendern nur sichtbare Seiten; ein CPU-Profil beim Drehen einer Seite in 2000 Seiten zeigt
+rund 30 ms App-Zeit (der Rest war Playwrights eigene Elementsuche). Es gab daher keinen Engpass zu beheben. Speicher:
+Doxera hält die Datei einmal selbst und pdf.js einmal im Worker; Bearbeiten (MuPDF) und Neuaufbau beim Speichern
+brauchen kurzzeitig weitere Kopien – sehr große Dateien (mehrere hundert MB) können auf iPhone/iPad daher an
+Speichergrenzen stoßen.
 
 ---
 

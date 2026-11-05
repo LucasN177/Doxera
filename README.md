@@ -217,6 +217,7 @@ npm install
 npm run dev        # start the development server
 npm test           # run the tests
 npm run test:e2e   # end-to-end tests (build + Playwright; uses the installed Edge locally)
+npm run test:perf  # measure a large generated PDF (300 pages, ~300 MB)
 npm run lint       # lint with oxlint
 npm run build      # production build
 ```
