@@ -53,6 +53,50 @@ export function textLines(text: string): string[] {
   return text.split('\n')
 }
 
+/**
+ * Breaks one line into lines no wider than `max` (greedy, at spaces). A word
+ * wider than `max` gets a line of its own.
+ */
+export function wrapLine(line: string, max: number, measure: (text: string) => number): string[] {
+  const words = line.split(' ')
+  const lines: string[] = []
+  let current = ''
+  for (const word of words) {
+    const candidate = current ? `${current} ${word}` : word
+    if (current && measure(candidate) > max) {
+      lines.push(current)
+      current = word
+    } else {
+      current = candidate
+    }
+  }
+  lines.push(current)
+  return lines
+}
+
+/**
+ * The lines a text annotation is drawn with: its own line breaks, plus
+ * automatic ones for paragraphs with a wrap width.
+ *
+ * @param measure Width of a text in points at the annotation's font size.
+ * @param frameWidth Page width in points in the orientation the text was written in.
+ */
+export function layoutTextLines(
+  text: Pick<TextAnnotation, 'text' | 'wrapWidth'>,
+  measure: (line: string) => number,
+  frameWidth: number,
+): string[] {
+  const lines = textLines(text.text)
+  if (!text.wrapWidth) return lines
+  const max = text.wrapWidth * frameWidth
+  return lines.flatMap((line) => wrapLine(line, max, measure))
+}
+
+/** Distance between baselines of a text annotation, as a multiple of its font size. */
+export function textLineHeight(text: Pick<TextAnnotation, 'lineHeight'>): number {
+  return text.lineHeight ?? TEXT_LINE_HEIGHT
+}
+
 /** Moves an annotation by a delta given in *display* fractions. */
 export function moveAnnotation(
   annotation: Annotation,

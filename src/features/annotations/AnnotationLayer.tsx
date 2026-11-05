@@ -20,9 +20,9 @@ import {
   TEXT_ASCENT,
   TEXT_FONT_FAMILY,
   textFontCss,
-  TEXT_LINE_HEIGHT,
+  layoutTextLines,
+  textLineHeight,
   textDisplayAngle,
-  textLines,
   toDisplay,
   toStored,
   unrotatedSize,
@@ -30,6 +30,7 @@ import {
 import { arrowHead, NOTE_ICON_SIZE } from '@/engine/document/drawAnnotations'
 import {
   imageReplacementFor,
+  replacedLines,
   replacementFor,
   sameRect,
   type EditableImage,
@@ -88,6 +89,21 @@ function measureText(
   if (!measureContext) return text.length * fontSizePx * 0.55
   measureContext.font = `${style} ${weight} ${fontSizePx}px ${family}`
   return measureContext.measureText(text).width
+}
+
+/** Lines of a text annotation as drawn, with automatic wrapping for paragraphs. */
+function annotationTextLines(
+  annotation: TextAnnotation,
+  storedSize: { width: number; height: number },
+  text = annotation.text,
+): string[] {
+  const font = textFontCss(annotation)
+  const frameWidth = ((annotation.turns % 4) + 4) % 2 === 0 ? storedSize.width : storedSize.height
+  return layoutTextLines(
+    { text, wrapWidth: annotation.wrapWidth },
+    (line) => measureText(line, annotation.fontSize, font.weight, font.family, font.style),
+    frameWidth,
+  )
 }
 
 interface AnnotationLayerProps {
@@ -422,7 +438,7 @@ export function AnnotationLayer({ page, scale, interactive }: AnnotationLayerPro
 
   const ready =
     active && tool === 'edittext' && content?.status === 'ready' ? content.content : null
-  const editableLines = ready?.lines ?? []
+  const editableLines = ready?.paragraphs ?? []
   const editableImages = ready?.images ?? []
   // Text editing only needs the line targets; elsewhere the page keeps scrolling
   const capturing = drawing && tool !== 'edittext'
@@ -459,7 +475,16 @@ export function AnnotationLayer({ page, scale, interactive }: AnnotationLayerPro
       >
         {/* Replaced PDF text and images are hidden below their new version (removed on export) */}
         {shown.map((annotation) =>
-          (annotation.type === 'text' || annotation.type === 'image') && annotation.replaces ? (
+          annotation.type === 'text' && annotation.replaces ? (
+            replacedLines(annotation).map((rect, index) => (
+              <ReplacedContentCover
+                key={`cover-${annotation.id}-${index}`}
+                rect={rect}
+                color={annotation.cover}
+                px={px}
+              />
+            ))
+          ) : annotation.type === 'image' && annotation.replaces ? (
             <ReplacedContentCover
               key={`cover-${annotation.id}`}
               rect={annotation.replaces}
@@ -526,7 +551,7 @@ export function AnnotationLayer({ page, scale, interactive }: AnnotationLayerPro
               />
             )
           }
-          const box = boundingBox(annotation, px, scale, turns)
+          const box = boundingBox(annotation, px, scale, turns, storedSize)
           return (
             <g key={annotation.id} data-annotation>
               <AnnotationShape
@@ -589,6 +614,7 @@ export function AnnotationLayer({ page, scale, interactive }: AnnotationLayerPro
           anchor={px(editingText.at)}
           angle={textDisplayAngle(editingText, turns)}
           scale={scale}
+          storedSize={storedSize}
           onDone={finishText}
         />
       )}
@@ -744,17 +770,18 @@ function boundingBox(
   px: (point: PagePoint) => { x: number; y: number },
   scale: number,
   turns: number,
+  storedSize: { width: number; height: number },
 ): Box {
   if (annotation.type === 'text') {
     const anchor = px(annotation.at)
     const fontSize = annotation.fontSize * scale
-    const lines = textLines(annotation.text)
+    const lines = annotationTextLines(annotation, storedSize)
     const font = textFontCss(annotation)
     const w = Math.max(
       fontSize * 0.5,
       ...lines.map((line) => measureText(line, fontSize, font.weight, font.family, font.style)),
     )
-    const h = lines.length * fontSize * TEXT_LINE_HEIGHT
+    const h = lines.length * fontSize * textLineHeight(annotation)
     const angle = (textDisplayAngle(annotation, turns) * Math.PI) / 180
     const corners = [
       [0, 0],
@@ -874,11 +901,11 @@ export function AnnotationShape({ annotation, px, scale, turns, storedSize }: Sh
     const font = textFontCss(annotation)
     return (
       <g transform={`rotate(${textDisplayAngle(annotation, turns)} ${anchor.x} ${anchor.y})`}>
-        {textLines(annotation.text).map((line, index) => (
+        {annotationTextLines(annotation, storedSize).map((line, index) => (
           <text
             key={index}
             x={anchor.x}
-            y={anchor.y + fontSize * (TEXT_ASCENT + index * TEXT_LINE_HEIGHT)}
+            y={anchor.y + fontSize * (TEXT_ASCENT + index * textLineHeight(annotation))}
             fill={color}
             fontSize={fontSize}
             fontFamily={font.family}
@@ -1201,12 +1228,14 @@ function TextEditor({
   anchor,
   angle,
   scale,
+  storedSize,
   onDone,
 }: {
   annotation: TextAnnotation
   anchor: { x: number; y: number }
   angle: number
   scale: number
+  storedSize: { width: number; height: number }
   onDone: (value: string) => void
 }) {
   const [value, setValue] = useState(annotation.text)
@@ -1214,13 +1243,18 @@ function TextEditor({
   const done = useRef(false)
   const fontSize = annotation.fontSize * scale
   const font = textFontCss(annotation)
-  const lines = textLines(value)
-  const widthPx = Math.max(
-    fontSize * 4,
-    ...lines.map(
-      (line) => measureText(line, fontSize, font.weight, font.family, font.style) + fontSize,
-    ),
-  )
+  const lines = annotationTextLines(annotation, storedSize, value)
+  const lineHeight = textLineHeight(annotation)
+  const frameWidth = ((annotation.turns % 4) + 4) % 2 === 0 ? storedSize.width : storedSize.height
+  // Paragraphs wrap at their width (a little extra keeps the browser from wrapping earlier)
+  const widthPx = annotation.wrapWidth
+    ? annotation.wrapWidth * frameWidth * scale + fontSize * 0.5
+    : Math.max(
+        fontSize * 4,
+        ...lines.map(
+          (line) => measureText(line, fontSize, font.weight, font.family, font.style) + fontSize,
+        ),
+      )
   const replacing = !!annotation.replaces
 
   useEffect(() => {
@@ -1249,16 +1283,17 @@ function TextEditor({
         left: anchor.x,
         top: anchor.y,
         width: widthPx,
-        height: lines.length * fontSize * TEXT_LINE_HEIGHT + 2,
+        height: lines.length * fontSize * lineHeight + 2,
         fontSize,
-        lineHeight: TEXT_LINE_HEIGHT,
+        lineHeight,
         fontFamily: font.family,
         fontWeight: font.weight,
         fontStyle: font.style,
         color: annotation.color,
         transform: `rotate(${angle}deg)`,
         transformOrigin: '0 0',
-        whiteSpace: 'pre',
+        whiteSpace: annotation.wrapWidth ? 'pre-wrap' : 'pre',
+        overflowWrap: annotation.wrapWidth ? 'break-word' : undefined,
       }}
       onChange={(event) => setValue(event.target.value)}
       onBlur={finish}

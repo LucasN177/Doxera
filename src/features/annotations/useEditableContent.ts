@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
+import { unrotatedSize } from '@/engine/document/annotations'
 import {
   toEditableImages,
   toEditableLines,
+  toEditableParagraphs,
   type EditableImage,
   type EditableLine,
 } from '@/engine/document/contentEditing'
@@ -9,7 +11,10 @@ import { useDocumentStore } from '@/stores/documentStore'
 import type { PageRef, ResolvedPage } from '@/types/document'
 
 export interface EditableContent {
+  /** Single lines (for text export and markings). */
   lines: EditableLine[]
+  /** Lines grouped into paragraphs where they form one (edit targets). */
+  paragraphs: EditableLine[]
   images: EditableImage[]
 }
 
@@ -26,13 +31,19 @@ export function loadPageContent(
   if (cached) return cached
   const source = useDocumentStore.getState().sources.get(sourceId)
   if (!source) return null
-  const rotate = source.pageSizes[sourceIndex]?.rotate ?? 0
+  const size = source.pageSizes[sourceIndex]
+  const rotate = size?.rotate ?? 0
   const content = import('@/engine/mupdf/client')
     .then(({ readPageContent }) => readPageContent(source, sourceIndex))
-    .then((raw) => ({
-      lines: toEditableLines(raw, rotate),
-      images: toEditableImages(raw, rotate),
-    }))
+    .then((raw) => {
+      const lines = toEditableLines(raw, rotate)
+      const stored = size ? unrotatedSize(size, Math.round(rotate / 90)) : null
+      return {
+        lines,
+        paragraphs: stored ? toEditableParagraphs(lines, stored) : lines,
+        images: toEditableImages(raw, rotate),
+      }
+    })
   // A failure (e.g. offline before MuPDF was cached) may be retried later
   content.catch(() => cache.delete(key))
   cache.set(key, content)

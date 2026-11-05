@@ -1,6 +1,7 @@
 import type { RawPageText } from '@/engine/mupdf/pageContent'
 import type { ImageAnnotation, PageRect, TextAnnotation } from '@/types/annotations'
 import type { PageRef } from '@/types/document'
+import { joinLines } from '@/engine/text/structure'
 import { classifyFont, REDACT_COLOR, TEXT_ASCENT, toDisplay, toStored } from './annotations'
 
 /** A line of existing PDF text that can be edited, in stored page fractions. */
@@ -17,6 +18,101 @@ export interface EditableLine {
   italic: boolean
   /** Parts separated by wide gaps (e.g. table cells), as x fractions of the page. */
   segments?: Array<{ text: string; x0: number; x1: number }>
+  /**
+   * Set for paragraphs (see {@link toEditableParagraphs}): the single lines,
+   * the width to wrap at and the distance between baselines.
+   */
+  paragraph?: { lines: PageRect[]; wrapWidth: number; lineHeight: number }
+}
+
+const SAME_SIZE = 0.35
+
+/** Whether two lines look alike (font, size, style, color). */
+function sameStyle(a: EditableLine, b: EditableLine): boolean {
+  return (
+    Math.abs(a.fontSize - b.fontSize) <= SAME_SIZE &&
+    a.font === b.font &&
+    a.bold === b.bold &&
+    a.italic === b.italic &&
+    a.color === b.color
+  )
+}
+
+/**
+ * Groups lines into paragraphs so they can be edited as a whole: lines of the
+ * same style directly below each other (even spacing), in the same column,
+ * where every line but the last runs (nearly) to the right edge of the
+ * paragraph. Table rows (lines with gaps) and single lines stay as they are.
+ *
+ * @param size Size of the unrotated page in points.
+ */
+export function toEditableParagraphs(
+  lines: readonly EditableLine[],
+  size: { width: number; height: number },
+): EditableLine[] {
+  const sorted = [...lines].sort((a, b) => a.at.y - b.at.y || a.at.x - b.at.x)
+  const used = new Set<EditableLine>()
+  const result: EditableLine[] = []
+  const isTableRow = (line: EditableLine) => (line.segments?.length ?? 0) > 1
+
+  for (const first of sorted) {
+    if (used.has(first)) continue
+    used.add(first)
+    const group = [first]
+    if (!isTableRow(first)) {
+      let gap = 0
+      for (;;) {
+        const last = group[group.length - 1]!
+        const fontSize = last.fontSize
+        // The nearest line below in the same column
+        const next = sorted.find(
+          (line) =>
+            !used.has(line) &&
+            line.at.y > last.at.y &&
+            line.rect.a.x < last.rect.b.x &&
+            last.rect.a.x < line.rect.b.x,
+        )
+        if (!next || isTableRow(next) || !sameStyle(first, next)) break
+        const distance = (next.at.y - last.at.y) * size.height
+        if (distance < fontSize * 0.95 || distance > fontSize * 1.9) break
+        if (gap && Math.abs(distance - gap) > fontSize * 0.2) break
+        // Left edges line up (the first line may be indented)
+        const left = group.length === 1 ? group[0]!.rect.a.x : group[1]!.rect.a.x
+        const indent = (next.rect.a.x - left) * size.width
+        if (indent > fontSize * 0.6 || indent < -fontSize * (group.length === 1 ? 4 : 0.6)) break
+        // A clearly shorter line ended the paragraph before it
+        const right = Math.max(...group.map((line) => line.rect.b.x), next.rect.b.x)
+        if ((right - last.rect.b.x) * size.width > fontSize * 4) break
+        gap = distance
+        used.add(next)
+        group.push(next)
+      }
+    }
+    if (group.length === 1) {
+      result.push(first)
+      continue
+    }
+    const left = Math.min(...group.map((line) => line.at.x))
+    const right = Math.max(...group.map((line) => line.rect.b.x))
+    const baselineGap = (group[group.length - 1]!.at.y - first.at.y) / (group.length - 1)
+    result.push({
+      ...first,
+      segments: undefined,
+      text: group.slice(1).reduce((text, line) => joinLines(text, line.text), first.text),
+      at: { x: left, y: first.at.y },
+      rect: {
+        a: { x: Math.min(...group.map((line) => line.rect.a.x)), y: first.rect.a.y },
+        b: { x: right, y: Math.max(...group.map((line) => line.rect.b.y)) },
+      },
+      paragraph: {
+        lines: group.map((line) => line.rect),
+        // A little room, as the export font may run slightly wider than the original
+        wrapWidth: right - left + 1 / size.width,
+        lineHeight: Math.round(((baselineGap * size.height) / first.fontSize) * 100) / 100,
+      },
+    })
+  }
+  return result
 }
 
 function toHex(color: readonly number[]): string {
@@ -96,9 +192,14 @@ export function sameRect(first: PageRect, second: PageRect, tolerance = 0.002): 
   )
 }
 
-/** A text annotation that replaces an existing line, starting with the same text and style. */
+/** A text annotation that replaces an existing line or paragraph, starting with the same text and style. */
 export function replacementFor(line: EditableLine, id: string): TextAnnotation {
   return {
+    ...(line.paragraph && {
+      replacesLines: line.paragraph.lines,
+      wrapWidth: line.paragraph.wrapWidth,
+      lineHeight: line.paragraph.lineHeight,
+    }),
     id,
     type: 'text',
     color: line.color,
@@ -112,6 +213,11 @@ export function replacementFor(line: EditableLine, id: string): TextAnnotation {
     italic: line.italic,
     replaces: line.rect,
   }
+}
+
+/** The original lines a text annotation replaces (one, or all lines of a paragraph). */
+export function replacedLines(text: TextAnnotation): PageRect[] {
+  return text.replacesLines ?? (text.replaces ? [text.replaces] : [])
 }
 
 /** Whether any page replaces existing text. */
@@ -132,17 +238,16 @@ export function textRemovalPages(pages: readonly PageRef[]): PageRef[] {
   return pages.map((page) => {
     const removals = (page.annotations ?? []).flatMap((item) => {
       if (item.type !== 'text' || !item.replaces) return []
-      const { a, b } = item.replaces
-      const inset = (b.y - a.y) * 0.15
-      return [
-        {
-          id: item.id,
+      return replacedLines(item).map(({ a, b }, index) => {
+        const inset = (b.y - a.y) * 0.15
+        return {
+          id: `${item.id}-${index}`,
           type: 'redact' as const,
           color: REDACT_COLOR,
           a: { x: a.x, y: a.y + inset },
           b: { x: b.x, y: b.y - inset },
-        },
-      ]
+        }
+      })
     })
     const hiddenImages = (page.annotations ?? []).flatMap((item) =>
       item.type === 'image' && item.xobject ? [{ ...item, removed: true }] : [],

@@ -1,4 +1,4 @@
-import { sameRect, type EditableLine } from '@/engine/document/contentEditing'
+import { replacedLines, sameRect, type EditableLine } from '@/engine/document/contentEditing'
 import { textLines } from '@/engine/document/annotations'
 import type { PageRect, TextAnnotation } from '@/types/annotations'
 import type { PageRef } from '@/types/document'
@@ -62,7 +62,9 @@ export function pageTextLines(
     if (!visible(line.rect)) continue
     if (redactions.some((redaction) => overlaps(redaction, line.rect))) continue
     // An edited line: its new text, if any, is added with the text boxes below
-    if (texts.some((text) => text.replaces && sameRect(text.replaces, line.rect))) continue
+    if (texts.some((text) => replacedLines(text).some((rect) => sameRect(rect, line.rect)))) {
+      continue
+    }
     result.push({
       text: line.text,
       left: line.rect.a.x * size.width,

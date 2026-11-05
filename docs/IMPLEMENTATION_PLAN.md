@@ -175,9 +175,13 @@ entfernen) und schreibt die Datei vollständig neu (`garbage=compact`), damit ni
 Worker. Eine bearbeitete Zeile wird zur Text-Annotation mit `replaces` (Bereich der Originalzeile).
 Export in zwei Stufen: zuerst entfernt MuPDF nur die Glyphen der ersetzten Zeilen (ohne schwarze
 Kästen), danach zeichnet pdf-lib den neuen Text mit der passenden Standardschrift (Helvetica, Times,
-Courier, jeweils fett/kursiv) an der Originalposition. Grenzen: zeilenweise, nur waagerechter Text,
-eingebettete Schriften werden durch die ähnlichste Standardschrift ersetzt, Zeichen außerhalb von
-WinAnsi werden zu „?“.
+Courier, jeweils fett/kursiv) an der Originalposition. Grenzen: nur waagerechter Text.
+
+**Absätze bearbeiten:** `toEditableParagraphs` fasst Zeilen gleichen Stils, gleichmäßigen Abstands und
+gleicher Spalte zu Absätzen zusammen (Tabellenzeilen und kurze Schlusszeilen trennen). Ein Absatz wird als
+Ganzes bearbeitet: die Annotation trägt `replacesLines` (einzeln entfernt), `wrapWidth` und `lineHeight`;
+`layoutTextLines` bricht im Editor (Canvas-Maße) und beim Export (PDF-Schriftmaße) gleich um. Wird der Text
+länger, wächst der Absatz nach unten – nachfolgender Inhalt rückt nicht nach.
 
 **Bilder bearbeiten (E4):** MuPDF liefert die Bilder einer Seite (Box, Transformation, Pixel); über die
 Reihenfolge der `/Name Do`-Aufrufe im Content-Stream wird das zugehörige Bild-XObject bestimmt. Ein

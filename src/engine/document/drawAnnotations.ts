@@ -18,7 +18,8 @@ import {
   MARKUP_OPACITY,
   markupPieces,
   TEXT_ASCENT,
-  TEXT_LINE_HEIGHT,
+  layoutTextLines,
+  textLineHeight,
   textLines,
   toDisplay,
   toStored,
@@ -370,15 +371,20 @@ export function arrowHead(
  * Lines are laid out in the orientation the text was written in, then mapped
  * back onto the unrotated page.
  */
-export function textBaselines(text: TextAnnotation, box: PageBox) {
+export function textBaselines(
+  text: TextAnnotation,
+  box: PageBox,
+  lines: readonly string[] = textLines(text.text),
+) {
   const turns = ((text.turns % 4) + 4) % 4
   const height = turns % 2 === 0 ? box.height : box.width
   const anchor = toDisplay(text.at, turns)
-  return textLines(text.text).map((line, index) => {
+  const lineHeight = textLineHeight(text)
+  return lines.map((line, index) => {
     const baseline = toStored(
       {
         x: anchor.x,
-        y: anchor.y + (text.fontSize * (TEXT_ASCENT + index * TEXT_LINE_HEIGHT)) / height,
+        y: anchor.y + (text.fontSize * (TEXT_ASCENT + index * lineHeight)) / height,
       },
       turns,
     )
@@ -405,7 +411,14 @@ function drawText(
   color: ReturnType<PdfLib['rgb']>,
   degrees: PdfLib['degrees'],
 ) {
-  for (const { line, x, y, rotate } of textBaselines(text, box)) {
+  const turns = ((text.turns % 4) + 4) % 4
+  const frameWidth = turns % 2 === 0 ? box.width : box.height
+  const lines = layoutTextLines(
+    text,
+    (line) => font.widthOfTextAtSize(encodable(font, line), text.fontSize),
+    frameWidth,
+  )
+  for (const { line, x, y, rotate } of textBaselines(text, box, lines)) {
     if (!line) continue
     page.drawText(encodable(font, line), {
       x,

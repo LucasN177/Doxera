@@ -54,8 +54,17 @@ export interface TextAnnotation extends AnnotationBase {
    * this area is hidden on screen and removed from the page on export.
    */
   replaces?: PageRect
+  /** The single lines of a replaced paragraph (removed one by one); `replaces` is their union. */
+  replacesLines?: PageRect[]
   /** Page background next to the replaced text, to hide it on screen (white if missing). */
   cover?: string
+  /**
+   * Wraps the text automatically at this width (fraction of the page width in
+   * the orientation the text was written in), like the paragraph it replaces.
+   */
+  wrapWidth?: number
+  /** Distance between baselines as a multiple of the font size (default 1.2). */
+  lineHeight?: number
 }
 
 export type TextFont = 'sans' | 'serif' | 'mono'
