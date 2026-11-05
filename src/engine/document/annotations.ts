@@ -7,6 +7,7 @@ import type {
   RedactAnnotation,
   PagePoint,
   ShapeAnnotation,
+  TextAlign,
   TextAnnotation,
   TextFont,
 } from '@/types/annotations'
@@ -86,10 +87,68 @@ export function layoutTextLines(
   measure: (line: string) => number,
   frameWidth: number,
 ): string[] {
+  return layoutText(text, measure, frameWidth).map((line) => line.text)
+}
+
+/** A drawn line of a text; `last` marks the last line of a paragraph (not justified). */
+export interface LaidOutLine {
+  text: string
+  last: boolean
+}
+
+/** Like {@link layoutTextLines}, also telling which lines end a paragraph. */
+export function layoutText(
+  text: Pick<TextAnnotation, 'text' | 'wrapWidth'>,
+  measure: (line: string) => number,
+  frameWidth: number,
+): LaidOutLine[] {
   const lines = textLines(text.text)
-  if (!text.wrapWidth) return lines
+  if (!text.wrapWidth) return lines.map((line) => ({ text: line, last: true }))
   const max = text.wrapWidth * frameWidth
-  return lines.flatMap((line) => wrapLine(line, max, measure))
+  return lines.flatMap((line) => {
+    const parts = wrapLine(line, max, measure)
+    return parts.map((part, index) => ({ text: part, last: index === parts.length - 1 }))
+  })
+}
+
+/** A piece of a line to draw, starting `x` points after the text's left edge. */
+export interface TextRun {
+  text: string
+  x: number
+}
+
+/**
+ * Where to draw a line within the wrap width: shifted for centered and
+ * right-aligned text, word by word with even gaps for justified text (but
+ * not the last line of a paragraph).
+ *
+ * @param max Wrap width in points (undefined: no wrapping, always left).
+ */
+export function placeRuns(
+  line: LaidOutLine,
+  align: TextAlign | undefined,
+  max: number | undefined,
+  measure: (text: string) => number,
+): TextRun[] {
+  const plain = [{ text: line.text, x: 0 }]
+  if (max === undefined || !align || align === 'left') return plain
+  if (align === 'justify') {
+    if (line.last) return plain
+    const words = line.text.split(' ').filter(Boolean)
+    if (words.length < 2) return plain
+    const widths = words.map(measure)
+    const gap = (max - widths.reduce((sum, width) => sum + width, 0)) / (words.length - 1)
+    if (gap <= 0) return plain
+    let x = 0
+    return words.map((word, index) => {
+      const run = { text: word, x }
+      x += widths[index]! + gap
+      return run
+    })
+  }
+  const width = measure(line.text)
+  const offset = align === 'center' ? (max - width) / 2 : max - width
+  return [{ text: line.text, x: Math.max(0, offset) }]
 }
 
 /** Distance between baselines of a text annotation, as a multiple of its font size. */

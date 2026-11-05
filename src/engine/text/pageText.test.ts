@@ -11,6 +11,7 @@ const line = (text: string, y: number): EditableLine => ({
   font: 'sans',
   bold: false,
   italic: false,
+  turns: 0,
 })
 
 const lines = [

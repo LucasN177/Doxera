@@ -175,7 +175,14 @@ entfernen) und schreibt die Datei vollständig neu (`garbage=compact`), damit ni
 Worker. Eine bearbeitete Zeile wird zur Text-Annotation mit `replaces` (Bereich der Originalzeile).
 Export in zwei Stufen: zuerst entfernt MuPDF nur die Glyphen der ersetzten Zeilen (ohne schwarze
 Kästen), danach zeichnet pdf-lib den neuen Text mit der passenden Standardschrift (Helvetica, Times,
-Courier, jeweils fett/kursiv) an der Originalposition. Grenzen: nur waagerechter Text.
+Courier, jeweils fett/kursiv) an der Originalposition. Zeilen in jeder Vierteldrehung (auf-/abwärts, kopfüber)
+sind bearbeitbar: `toEditableLines` bestimmt die Anzeige-Drehung `turns`, in der die Zeile von links nach rechts
+läuft; Absätze werden in dieser Orientierung gruppiert. Schräger Text bleibt ausgenommen.
+
+**Ausrichtung:** Die Absatzgruppierung erkennt links-, rechtsbündige und zentrierte Absätze sowie Blocksatz
+(alle Zeilen außer der letzten enden am selben rechten Rand). `placeRuns` verteilt beim Blocksatz den Platz auf
+die Wortabstände (letzte Zeile linksbündig) bzw. verschiebt zentrierte/rechte Zeilen – im Editor und im Export
+gleich.
 
 **Absätze bearbeiten:** `toEditableParagraphs` fasst Zeilen gleichen Stils, gleichmäßigen Abstands und
 gleicher Spalte zu Absätzen zusammen (Tabellenzeilen und kurze Schlusszeilen trennen). Ein Absatz wird als
@@ -188,7 +195,8 @@ nicht; ein eigenes MuPDF-Device sammelt die Glyphen, die über `ignoreText` (Ren
 Zeilen, die überwiegend daraus bestehen, als `invisible` (erkannter Text auf Scans). Deren Ersatz trägt
 `coverOriginal`: Beim Export wird zusätzlich zum Entfernen der unsichtbaren Zeile die Papierfarbe (`cover`)
 über die Scanpixel gemalt. Die Textfarbe wird im Editor aus den dunkelsten Pixeln der Zeile übernommen.
-Die Scanpixel bleiben unter der Abdeckung in der Datei – zum endgültigen Entfernen dient das Schwärzen.
+Die Entfernungsbereiche solcher Zeilen tragen `/DoxeraPixels`; MuPDF wendet sie einzeln an und löscht dabei
+auch die Bildpixel darunter (`REDACT_IMAGE_PIXELS`), sodass der alte Scantext nicht mehr in der Datei steht.
 
 **Originalschrift:** Im Bearbeitungsmodus liest pdf-lib die Schriften der Seite (`pageFonts`): Type0 mit
 Identity-H und ToUnicode oder einfache Schriften (Type1/TrueType) mit /Widths und WinAnsi-/Differences-Kodierung

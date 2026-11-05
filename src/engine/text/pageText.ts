@@ -59,6 +59,8 @@ export function pageTextLines(
 
   const result: TextLine[] = []
   for (const line of lines) {
+    // Text running up, down or upside down (margins, stamps) isn't part of the reading flow
+    if (line.turns) continue
     if (!visible(line.rect)) continue
     if (redactions.some((redaction) => overlaps(redaction, line.rect))) continue
     // An edited line: its new text, if any, is added with the text boxes below

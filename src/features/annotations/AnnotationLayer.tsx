@@ -20,7 +20,10 @@ import {
   TEXT_ASCENT,
   TEXT_FONT_FAMILY,
   textFontCss,
+  layoutText,
   layoutTextLines,
+  placeRuns,
+  type TextRun,
   textLineHeight,
   textDisplayAngle,
   toDisplay,
@@ -103,6 +106,19 @@ function annotationTextLines(
     { text, wrapWidth: annotation.wrapWidth },
     textMeasure(annotation, text),
     frameWidth,
+  )
+}
+
+/** The lines of a text annotation split into runs as the export draws them (alignment). */
+function annotationRuns(
+  annotation: TextAnnotation,
+  storedSize: { width: number; height: number },
+): TextRun[][] {
+  const frameWidth = ((annotation.turns % 4) + 4) % 2 === 0 ? storedSize.width : storedSize.height
+  const measure = textMeasure(annotation)
+  const max = annotation.wrapWidth ? annotation.wrapWidth * frameWidth : undefined
+  return layoutText(annotation, measure, frameWidth).map((line) =>
+    placeRuns(line, annotation.align, max, measure),
   )
 }
 
@@ -797,10 +813,14 @@ function boundingBox(
     const fontSize = annotation.fontSize * scale
     const lines = annotationTextLines(annotation, storedSize)
     const font = textFontCss(annotation)
-    const w = Math.max(
-      fontSize * 0.5,
-      ...lines.map((line) => measureText(line, fontSize, font.weight, font.family, font.style)),
-    )
+    const frameWidth = ((annotation.turns % 4) + 4) % 2 === 0 ? storedSize.width : storedSize.height
+    // Paragraphs span their wrap width (alignment places lines within it)
+    const w = annotation.wrapWidth
+      ? annotation.wrapWidth * frameWidth * scale
+      : Math.max(
+          fontSize * 0.5,
+          ...lines.map((line) => measureText(line, fontSize, font.weight, font.family, font.style)),
+        )
     const h = lines.length * fontSize * textLineHeight(annotation)
     const angle = (textDisplayAngle(annotation, turns) * Math.PI) / 180
     const corners = [
@@ -921,30 +941,32 @@ export function AnnotationShape({ annotation, px, scale, turns, storedSize }: Sh
     const font = textFontCss(annotation)
     return (
       <g transform={`rotate(${textDisplayAngle(annotation, turns)} ${anchor.x} ${anchor.y})`}>
-        {annotationTextLines(annotation, storedSize).map((line, index) => (
-          <text
-            key={index}
-            x={anchor.x}
-            y={anchor.y + fontSize * (TEXT_ASCENT + index * textLineHeight(annotation))}
-            // With the original font, each line gets the width it has in the export
-            {...(annotation.sourceFont &&
-              sourceFontCovers(annotation.sourceFont, annotation.text) &&
-              line.trim() && {
-                textLength:
-                  (measureSourceFont(annotation.sourceFont, line, annotation.fontSize) ?? 0) *
-                  scale,
-                lengthAdjust: 'spacing',
-              })}
-            fill={color}
-            fontSize={fontSize}
-            fontFamily={font.family}
-            fontWeight={font.weight}
-            fontStyle={font.style}
-            style={{ whiteSpace: 'pre' }}
-          >
-            {line}
-          </text>
-        ))}
+        {annotationRuns(annotation, storedSize).flatMap((runs, index) =>
+          runs.map((run, part) => (
+            <text
+              key={`${index}-${part}`}
+              x={anchor.x + run.x * scale}
+              y={anchor.y + fontSize * (TEXT_ASCENT + index * textLineHeight(annotation))}
+              // With the original font, each run gets the width it has in the export
+              {...(annotation.sourceFont &&
+                sourceFontCovers(annotation.sourceFont, annotation.text) &&
+                run.text.trim() && {
+                  textLength:
+                    (measureSourceFont(annotation.sourceFont, run.text, annotation.fontSize) ?? 0) *
+                    scale,
+                  lengthAdjust: 'spacing',
+                })}
+              fill={color}
+              fontSize={fontSize}
+              fontFamily={font.family}
+              fontWeight={font.weight}
+              fontStyle={font.style}
+              style={{ whiteSpace: 'pre' }}
+            >
+              {run.text}
+            </text>
+          )),
+        )}
       </g>
     )
   }
@@ -1359,6 +1381,7 @@ function TextEditor({
         transform: `rotate(${angle}deg)`,
         transformOrigin: '0 0',
         whiteSpace: annotation.wrapWidth ? 'pre-wrap' : 'pre',
+        textAlign: annotation.wrapWidth ? (annotation.align ?? 'left') : undefined,
         overflowWrap: annotation.wrapWidth ? 'break-word' : undefined,
       }}
       onChange={(event) => setValue(event.target.value)}

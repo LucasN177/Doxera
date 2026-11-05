@@ -4,7 +4,8 @@ import type * as Mupdf from 'mupdf'
  * - `redact`: everything below the areas is removed (text, image pixels,
  *   fully covered line art) and a black box is drawn in their place.
  * - `text`: only the text below is removed, nothing is drawn (used to
- *   replace existing text with edited text).
+ *   replace existing text with edited text). Areas marked `/DoxeraPixels`
+ *   (recognized text on scans) also lose the image pixels below them.
  * - `clean`: nothing is redacted; the file is only rewritten without
  *   unreferenced objects (e.g. the data of removed images).
  */
@@ -36,12 +37,16 @@ export function applyRedactions(
             PDFPage.REDACT_TEXT_REMOVE,
           )
         } else {
-          page.applyRedactions(
-            false,
-            PDFPage.REDACT_IMAGE_NONE,
-            PDFPage.REDACT_LINE_ART_NONE,
-            PDFPage.REDACT_TEXT_REMOVE,
-          )
+          // One by one: scanned lines clear the pixels below them as well
+          for (const redaction of redactions) {
+            const pixels = redaction.getObject().get('DoxeraPixels').valueOf() === true
+            redaction.applyRedaction(
+              0,
+              pixels ? PDFPage.REDACT_IMAGE_PIXELS : PDFPage.REDACT_IMAGE_NONE,
+              PDFPage.REDACT_LINE_ART_NONE,
+              PDFPage.REDACT_TEXT_REMOVE,
+            )
+          }
         }
       } finally {
         page.destroy()

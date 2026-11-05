@@ -25,7 +25,7 @@ Comprehensive tools for viewing and editing existing PDF documents.
 - [x] Select and copy text
 - [x] Full-text search with highlighted matches
 - [x] Select and edit existing text (line by line: change, restyle or delete a line; exported in place of the original)
-- [x] Add, modify and delete text (new text boxes; existing text as whole paragraphs that rewrap automatically, kept in the original embedded font whenever it has all characters)
+- [x] Add, modify and delete text (new text boxes; existing text as whole paragraphs that rewrap automatically – left, centered, right-aligned or justified, also text running up, down or upside down – kept in the original embedded font whenever it has all characters)
 - [x] Change font size, font family, bold/italic and text color
 - [x] Move and resize existing elements (images and edited text lines)
 - [x] Select, move, resize and remove existing images (removed image data is dropped from the file)
@@ -78,7 +78,7 @@ Make documents understandable and turn unstructured information into useful data
 Extract information from scanned documents and image-based PDFs.
 
 - [x] Optical Character Recognition (OCR), entirely in the browser
-- [x] Correct recognized text on scanned pages (the scan is painted over in its paper color, the new text matches the ink color)
+- [x] Correct recognized text on scanned pages (the old scan pixels are removed from the file and painted over in the paper color; the new text matches the ink color)
 - [x] Convert scanned documents into searchable PDFs (invisible text layer: search, select, copy)
 - [x] Detect text positions and document structure (blocks, paragraphs, lines, words)
 - [x] Recognize headings, paragraphs and lists; export the text as Markdown or plain text (redacted lines are left out)

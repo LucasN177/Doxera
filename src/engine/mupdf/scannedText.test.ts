@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { zlibSync } from 'fflate'
 import * as mupdf from 'mupdf'
 import {
   beginText,
@@ -60,7 +61,111 @@ function pageContentText(data: Uint8Array): string {
   }
 }
 
+/** A gray PNG (8-bit gray, no filter) with dark "ink" rows, written by hand. */
+function grayPng(width: number, height: number, ink: (x: number, y: number) => boolean) {
+  const crcTable = Array.from({ length: 256 }, (_, n) => {
+    let c = n
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1
+    return c >>> 0
+  })
+  const crc = (bytes: Uint8Array) => {
+    let c = 0xffffffff
+    for (const byte of bytes) c = crcTable[(c ^ byte) & 0xff]! ^ (c >>> 8)
+    return (c ^ 0xffffffff) >>> 0
+  }
+  const chunk = (type: string, data: Uint8Array) => {
+    const out = new Uint8Array(12 + data.length)
+    const view = new DataView(out.buffer)
+    view.setUint32(0, data.length)
+    out.set(
+      Array.from(type, (char) => char.charCodeAt(0)),
+      4,
+    )
+    out.set(data, 8)
+    view.setUint32(8 + data.length, crc(out.subarray(4, 8 + data.length)))
+    return out
+  }
+  const header = new Uint8Array(13)
+  const view = new DataView(header.buffer)
+  view.setUint32(0, width)
+  view.setUint32(4, height)
+  header.set([8, 0, 0, 0, 0], 8)
+  const raw = new Uint8Array((width + 1) * height)
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) raw[y * (width + 1) + 1 + x] = ink(x, y) ? 30 : 235
+  }
+  const parts = [
+    new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    chunk('IHDR', header),
+    chunk('IDAT', zlibSync(raw)),
+    chunk('IEND', new Uint8Array()),
+  ]
+  const png = new Uint8Array(parts.reduce((sum, part) => sum + part.length, 0))
+  let offset = 0
+  for (const part of parts) {
+    png.set(part, offset)
+    offset += part.length
+  }
+  return png
+}
+
+/** Gray value of the scan image (first image of the page) at a pixel. */
+function scanPixel(data: Uint8Array, x: number, y: number): number {
+  const document = new mupdf.PDFDocument(data)
+  try {
+    const page = document.loadPage(0)
+    const text = page.toStructuredText('preserve-images')
+    let value = -1
+    text.walk({
+      onImageBlock(_bbox, _transform, image) {
+        if (value >= 0) return
+        const pixmap = image.toPixmap()
+        const components = pixmap.getNumberOfComponents() + (pixmap.getAlpha() ? 1 : 0)
+        value = pixmap.getPixels()[y * pixmap.getStride() + x * components]!
+        pixmap.destroy()
+      },
+    })
+    text.destroy()
+    return value
+  } finally {
+    document.destroy()
+  }
+}
+
 describe('editing scanned text', { timeout: 30_000 }, () => {
+  it('removes the scan pixels below an edited line from the file', async () => {
+    // 60 × 80 px scan on a 600 × 800 pt page: 10 pt per pixel; ink in rows 9–10 (y 90–110 pt)
+    const pdf = await PDFDocument.create()
+    const font = await pdf.embedFont(StandardFonts.Helvetica)
+    const page = pdf.addPage([600, 800])
+    const scan = await pdf.embedPng(
+      grayPng(60, 80, (x, y) => (y === 9 || y === 10) && x >= 6 && x < 20),
+    )
+    page.drawImage(scan, { x: 0, y: 0, width: 600, height: 800 })
+    const key = page.node.newFontDictionary(font.name, font.ref)
+    page.pushOperators(
+      beginText(),
+      setTextRenderingMode(TextRenderingMode.Invisible),
+      setFontAndSize(key, 14),
+      moveText(60, 800 - 106),
+      showText(font.encodeText('Erkannter Text')),
+      endText(),
+    )
+    const data = await pdf.save()
+    expect(scanPixel(data, 10, 10)).toBe(30)
+
+    const line = readLines(data).find((item) => item.invisible)!
+    const replacement = { ...replacementFor(line, 'edit'), text: 'Neu' }
+    const result = await buildPdf(
+      [{ id: 'p', sourceId: 's', sourceIndex: 0, rotation: 0, annotations: [replacement] }],
+      new Map([['s', { data }]]),
+      { redact: async (bytes, mode) => applyRedactions(mupdf, bytes, mode) },
+    )
+    // The ink below the line is gone from the image itself, the rest is untouched
+    expect(scanPixel(result, 10, 10)).not.toBe(30)
+    expect(scanPixel(result, 30, 40)).toBe(235)
+  })
+
   it('tells recognized (invisible) text from visible text', async () => {
     const lines = readLines(await scanPdf())
     expect(lines.map((line) => [line.text, !!line.invisible])).toEqual([

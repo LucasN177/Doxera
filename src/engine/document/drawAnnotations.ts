@@ -20,7 +20,8 @@ import {
   MARKUP_OPACITY,
   markupPieces,
   TEXT_ASCENT,
-  layoutTextLines,
+  layoutText,
+  placeRuns,
   textLineHeight,
   textLines,
   toDisplay,
@@ -337,6 +338,8 @@ export function addRedactAnnotations(
       // Upper left, upper right, lower left, lower right
       QuadPoints: [x0, y1, x1, y1, x0, y0, x1, y0],
       IC: [0, 0, 0],
+      // Read by applyRedactions: also clear the image pixels when replacing text
+      ...(redaction.pixels && { DoxeraPixels: true }),
     })
     page.node.addAnnot(context.register(annotation))
   }
@@ -436,39 +439,38 @@ function drawText(
 ) {
   const turns = ((text.turns % 4) + 4) % 4
   const frameWidth = turns % 2 === 0 ? box.width : box.height
-  const lines = layoutTextLines(
+  const measure = (line: string) => font.widthOfTextAtSize(encodable(font, line), text.fontSize)
+  const laidOut = layoutText(text, measure, frameWidth)
+  const max = text.wrapWidth ? text.wrapWidth * frameWidth : undefined
+  const baselines = textBaselines(
     text,
-    (line) => font.widthOfTextAtSize(encodable(font, line), text.fontSize),
-    frameWidth,
+    box,
+    laidOut.map((line) => line.text),
   )
-  for (const { line, x, y, rotate } of textBaselines(text, box, lines)) {
+  for (const [index, { line, x, y, rotate }] of baselines.entries()) {
     if (!line) continue
+    let runs = placeRuns(laidOut[index]!, text.align, max, measure)
     if (wordByWordFonts.has(font)) {
       // The font has no space glyph: place each word on its own
-      const angle = (rotate * Math.PI) / 180
-      let offset = 0
-      for (const word of line.split(' ')) {
-        if (word) {
-          page.drawText(word, {
-            x: x + offset * Math.cos(angle),
-            y: y + offset * Math.sin(angle),
-            size: text.fontSize,
-            font,
-            color,
-            rotate: degrees(rotate),
-          })
-        }
-        offset += font.widthOfTextAtSize(`${word} `, text.fontSize)
-      }
-      continue
+      runs = runs.flatMap((run) => {
+        let offset = run.x
+        return run.text.split(' ').flatMap((word) => {
+          const piece = word ? [{ text: word, x: offset }] : []
+          offset += font.widthOfTextAtSize(`${word} `, text.fontSize)
+          return piece
+        })
+      })
     }
-    page.drawText(encodable(font, line), {
-      x,
-      y,
-      size: text.fontSize,
-      font,
-      color,
-      rotate: degrees(rotate),
-    })
+    const angle = (rotate * Math.PI) / 180
+    for (const run of runs) {
+      page.drawText(encodable(font, run.text), {
+        x: x + run.x * Math.cos(angle),
+        y: y + run.x * Math.sin(angle),
+        size: text.fontSize,
+        font,
+        color,
+        rotate: degrees(rotate),
+      })
+    }
   }
 }

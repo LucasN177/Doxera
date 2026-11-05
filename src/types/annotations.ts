@@ -71,6 +71,8 @@ export interface TextAnnotation extends AnnotationBase {
   wrapWidth?: number
   /** Distance between baselines as a multiple of the font size (default 1.2). */
   lineHeight?: number
+  /** Alignment within the wrap width (paragraphs only; left if missing). */
+  align?: TextAlign
   /**
    * The embedded font of the replaced text: used on export (and for line
    * breaks) as long as it has every character of the text.
@@ -79,6 +81,8 @@ export interface TextAnnotation extends AnnotationBase {
 }
 
 export type TextFont = 'sans' | 'serif' | 'mono'
+
+export type TextAlign = 'left' | 'center' | 'right' | 'justify'
 
 /**
  * A font of the original document as stored with an edited text: the
@@ -197,6 +201,11 @@ export interface RedactAnnotation extends AnnotationBase {
   type: 'redact'
   a: PagePoint
   b: PagePoint
+  /**
+   * Internal (text replacement on scans): when only text is removed, the
+   * image pixels below this area are removed too.
+   */
+  pixels?: boolean
 }
 
 export type Annotation =
