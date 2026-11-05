@@ -108,7 +108,7 @@ Privacy and data security are important design principles of Doxera.
 - [x] Edits are saved locally and restored when a document is opened again (with "show original")
 - [x] Open password-protected PDFs (the password is never stored; protected files stay protected in the library)
 - [x] Protect PDFs with a password (AES-256, optional limits on printing, copying and editing)
-- [x] Offline support
+- [x] Offline support (all features; editing, redaction and OCR are loaded once with one click – the installed app does it on its own)
 - [x] No mandatory user registration
 - [x] No automatic document uploads
 - [ ] Optional external AI integrations

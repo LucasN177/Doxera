@@ -34,6 +34,12 @@ function connect(): Promise<Connection> {
   return connection
 }
 
+/** Loads MuPDF ahead of use (e.g. to have it available offline). */
+export async function loadMupdf(): Promise<void> {
+  const { api, failed } = await connect()
+  await Promise.race([api.ready(), failed])
+}
+
 /** Applies all redaction annotations of a PDF for good (see `applyRedactions`). */
 export async function redactPdf(
   data: Uint8Array,

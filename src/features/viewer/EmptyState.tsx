@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import { pickBatchFiles } from '@/features/batch/pickBatchFiles'
 import { pickImagesForPdf } from '@/features/convert/pickImages'
 import { RecentDocuments } from '@/features/library/RecentDocuments'
+import { OfflineReady } from '@/features/pwa/OfflineReady'
 import { useOpenDocument } from '@/hooks/useOpenDocument'
 import { useUiStore } from '@/stores/uiStore'
 
@@ -38,6 +39,7 @@ export function EmptyState() {
             <ShieldCheck className="size-3.5 shrink-0" aria-hidden />
             Deine Dokumente werden ausschließlich lokal in deinem Browser verarbeitet.
           </p>
+          <OfflineReady />
         </div>
         <RecentDocuments />
       </div>

@@ -351,7 +351,7 @@ Einzelfunktionen (`ocrPdf`, `watermarkPdf`, `compressPdfData`, `pdfToImageFiles`
 | --- | ----------------- | ----------------------------------------------------------------------------------- | ------ |
 | F1  | Öffnen mit Doxera | Dateizuordnung (`file_handlers`) und Launch Queue für die installierte App          | ✅     |
 | F2  | E2E-Tests         | Playwright-Tests der wichtigsten Abläufe im echten Browser                          | ✅     |
-| F3  | Offline-Test      | Alle Funktionen ohne Netz (Service Worker, nachgeladene MuPDF-/OCR-Dateien) geprüft | offen  |
+| F3  | Offline-Test      | Alle Funktionen ohne Netz (Service Worker, nachgeladene MuPDF-/OCR-Dateien) geprüft | ✅     |
 | F4  | Große PDFs        | Speicher und Geschwindigkeit bei vielen Seiten (Vorschaubilder, Rendering, Export)  | offen  |
 | F5  | Barrierefreiheit  | Tastaturbedienung, Fokus, Beschriftungen, Kontraste, Screenreader-Durchgang         | offen  |
 | F6  | Englisch (i18n)   | Oberfläche auf Deutsch und Englisch, Sprache nach Browser, umschaltbar              | offen  |
@@ -369,6 +369,14 @@ wird mit MuPDF geprüft), lokale Wiederherstellung nach Neuladen, Suche, passwor
 und Seitenübersicht. Der Smartphone-Test fand einen echten Fehler: Die Werkzeugleiste war ab 412 px zu breit (Schließen
 abgeschnitten) – auf Telefonen entfallen jetzt Logo und Trenner, die Leiste ist notfalls waagerecht scrollbar. Der
 Deploy-Workflow führt die E2E-Tests vor dem Veröffentlichen aus.
+
+**Offline-Test (F3):** Ein E2E-Test lädt die App, schaltet den Browser offline, lädt neu und prüft Öffnen,
+Bearbeiten vorhandenen Texts samt Speichern, „Bilder zu PDF“ und Texterkennung. Er fand eine echte Lücke: MuPDF
+(~10 MB) und Tesseract (~8 MB mit Deutsch/Englisch) werden erst bei Benutzung zwischengespeichert – wer sie online
+nie benutzt hatte, konnte offline weder Text bearbeiten noch schwärzen, komprimieren oder Text erkennen. Neu:
+„Alles offline verfügbar machen (ca. 19 MB)“ auf dem Startbildschirm lädt beides einmal vorab (`prepareOffline`;
+der Service Worker speichert die Dateien), der Status wird aus den Caches gelesen. Die installierte App erledigt das
+selbst im Leerlauf, wenn sie online ist.
 
 ---
 

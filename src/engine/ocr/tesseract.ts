@@ -56,6 +56,11 @@ function getWorker(languages: readonly OcrLanguage[]): Promise<Worker> {
   return worker
 }
 
+/** Loads the recognition engine and languages ahead of use (e.g. for offline use). */
+export async function prepareOcr(languages: readonly OcrLanguage[]): Promise<void> {
+  await getWorker(languages)
+}
+
 /** Stops the recognition worker (e.g. to cancel); the next call starts a new one. */
 export async function terminateOcr() {
   const running = current

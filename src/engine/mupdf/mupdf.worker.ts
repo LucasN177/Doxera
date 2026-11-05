@@ -58,6 +58,12 @@ const api = {
   },
 
   /** Text lines and images of a page; `data` is needed the first time a key is used. */
+  /** Loads MuPDF (its WebAssembly gets cached by the service worker for offline use). */
+  async ready(): Promise<true> {
+    await loadMupdf()
+    return true
+  },
+
   async pageContent(key: string, index: number, data?: Uint8Array): Promise<RawPageText> {
     return extractPageContent(await openDocument(key, data), index, await loadMupdf())
   },
