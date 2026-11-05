@@ -34,6 +34,7 @@ Comprehensive tools for viewing and editing existing PDF documents.
 - [x] Highlight, underline and strike through text (from a text selection)
 - [x] Add comments and notes (sticky notes with a comment list; exported as standard PDF comments)
 - [x] Insert signatures (draw, type or upload; saved locally for reuse)
+- [x] Fill in PDF forms (text fields, checkboxes, radio buttons, lists; stay fillable on export)
 - [x] Draw freehand with pen and marker (smoothed strokes; move, recolor, delete)
 - [x] Add watermarks (text or image, size, opacity, angle; all, selected or current pages)
 - [x] Permanently redact sensitive information (areas or selected text; the content below is removed from the exported file)

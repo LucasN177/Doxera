@@ -1,5 +1,6 @@
 import { ArrowRight, Download, FileCheck2 } from 'lucide-react'
 import { useState } from 'react'
+import { documentBytes } from '@/features/document/documentBytes'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
@@ -10,14 +11,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { buildPdf } from '@/engine/document/buildPdf'
-import { isUnmodified } from '@/engine/document/pageOps'
 import type { CompressionLevel, CompressionResult } from '@/engine/mupdf/compress'
 import { useOpenDocument } from '@/hooks/useOpenDocument'
 import { createPdfFile, saveFile } from '@/lib/download'
 import { formatFileSize } from '@/lib/file'
 import { cn } from '@/lib/utils'
-import { getPrimarySource, useDocumentStore } from '@/stores/documentStore'
+import { useDocumentStore } from '@/stores/documentStore'
 import { useUiStore } from '@/stores/uiStore'
 
 const LEVELS: Array<{ level: CompressionLevel; name: string; hint: string }> = [
@@ -63,14 +62,8 @@ function CompressContent({ onDone }: { onDone: () => void }) {
   const compress = async () => {
     setBusy(true)
     try {
-      const state = useDocumentStore.getState()
-      const document = state.document
-      const primary = getPrimarySource(state)
-      if (!document || !primary) return
-      // The document as it would be exported (edits, annotations, redactions)
-      const data = isUnmodified(document.pages, primary)
-        ? document.data
-        : await buildPdf(document.pages, state.sources, { assets: state.assets })
+      // The document as it would be exported (edits, annotations, redactions, forms)
+      const data = await documentBytes()
       const { compressPdfData } = await import('@/engine/mupdf/client')
       setResult(await compressPdfData(data, level))
     } catch (error) {

@@ -324,7 +324,7 @@ Nach Phase 6 erkannte Lücken, die vor den KI-Funktionen geschlossen werden:
 | #   | Lücke                     | Inhalt                                                                                                | Status |
 | --- | ------------------------- | ----------------------------------------------------------------------------------------------------- | ------ |
 | G1  | Bearbeitungen speichern   | Bearbeitungsstand lokal sichern und beim erneuten Öffnen wiederherstellen                             | ✅     |
-| G2  | Formulare                 | PDF-Formularfelder ausfüllen und mit exportieren                                                      | offen  |
+| G2  | Formulare                 | PDF-Formularfelder ausfüllen und mit exportieren                                                      | ✅     |
 | G3  | Passwortschutz            | Geschützte PDFs öffnen, PDFs mit Passwort verschlüsseln                                               | offen  |
 | G4  | Seitenzahlen & Kopfzeilen | Seitenzahlen, Kopf- und Fußzeilen einfügen (auch als Workflow-Schritt)                                | offen  |
 | G5  | Lesezeichen               | Lesezeichen (Outline) beim Export erhalten                                                            | offen  |
@@ -339,6 +339,13 @@ Seite, nur wenn „Dokumente lokal merken“ aktiv ist; ein unverändertes Dokum
 Öffnen derselben Datei (aus der Bibliothek oder erneut vom Gerät) wird der Stand mit Hinweis wiederhergestellt;
 „Original anzeigen“ ist ein rückgängig machbarer Schritt. Entfernen eines Bibliothekseintrags löscht seine
 Bearbeitungen mit.
+
+**Formulare (G2):** pdf.js liefert die Felder der geöffneten Datei (Text, mehrzeilig, Checkbox, Radio,
+Auswahl); darüber liegen echte HTML-Eingabefelder (Tastatur, Autofill, Screenreader). Werte gelten pro
+Feldname (gleichnamige Felder teilen sie) und werden mit G1 gespeichert. Export: Sind die Seiten
+unverändert, wird das Original mit gefüllten Feldern ausgegeben und bleibt ausfüllbar; bei geänderten
+Seiten werden die Werte eingezeichnet (`flatten`), weil die Formularstruktur kopierten Seiten nicht folgt.
+Alle Wege zu den Dokument-Bytes (Export, Komprimieren, Bilder, Workflows) laufen über `documentBytes`.
 
 ## 5. Querschnittsthemen
 

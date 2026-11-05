@@ -1,5 +1,6 @@
 import type { PDFFont, PDFImage } from 'pdf-lib'
 import type { PageRef } from '@/types/document'
+import type { FormValues } from '@/types/forms'
 import { standardFontName } from './annotations'
 import { hasImageReplacements, hasTextReplacements, textRemovalPages } from './contentEditing'
 import {
@@ -24,6 +25,8 @@ export interface BuildOptions {
    * MuPDF in a worker; tests pass MuPDF directly.
    */
   redact?: (data: Uint8Array, mode: 'redact' | 'text' | 'clean') => Promise<Uint8Array>
+  /** Form values for the fields of one source; they are drawn into its pages (flattened). */
+  forms?: { sourceId: string; values: FormValues }
 }
 
 /** Source id of the intermediate file with replaced text removed. */
@@ -45,7 +48,7 @@ export interface ImageData {
 export async function buildPdf(
   pages: readonly PageRef[],
   sources: ReadonlyMap<string, SourceData>,
-  { title, assets = new Map(), redact = defaultRedact }: BuildOptions = {},
+  { title, assets = new Map(), redact = defaultRedact, forms }: BuildOptions = {},
 ): Promise<Uint8Array> {
   if (pages.length === 0) throw new Error('Ein PDF braucht mindestens eine Seite.')
 
@@ -54,6 +57,8 @@ export async function buildPdf(
   if (hasTextReplacements(pages)) {
     const removed = await buildPdf(textRemovalPages(pages), sources, {
       redact: (data) => redact(data, 'text'),
+      // Form values are drawn in here: later stages read the intermediate file
+      forms,
     })
     return buildPdf(
       pages.map((page, index) => ({
@@ -82,6 +87,16 @@ export async function buildPdf(
   let boldFont: PDFFont | null = null
   const textFonts = new Map<string, PDFFont>()
 
+  /** Loads a source; the one with form values gets them filled in and flattened first. */
+  const loadSource = async (sourceId: string, data: Uint8Array) => {
+    const document = await PDFDocument.load(data, { ignoreEncryption: true })
+    if (forms && forms.sourceId === sourceId && Object.keys(forms.values).length > 0) {
+      const { fillForm } = await import('@/engine/forms/fill')
+      await fillForm(lib, document, forms.values, true)
+    }
+    return document
+  }
+
   // Load every used source once and copy all its needed pages in one call
   const sourceIds = [...new Set(pages.map((page) => page.sourceId))]
   const copied = new Map<string, Map<number, number>>() // sourceId → sourceIndex → position in copies
@@ -90,7 +105,7 @@ export async function buildPdf(
   for (const sourceId of sourceIds) {
     const source = sources.get(sourceId)
     if (!source) throw new Error(`Quelle ${sourceId} fehlt.`)
-    const document = await PDFDocument.load(source.data, { ignoreEncryption: true })
+    const document = await loadSource(sourceId, source.data)
     const indices = [
       ...new Set(pages.filter((p) => p.sourceId === sourceId).map((p) => p.sourceIndex)),
     ]
@@ -125,7 +140,7 @@ export async function buildPdf(
     // A page object can only be added once; duplicates need their own copy
     if (used.has(page)) {
       const source = sources.get(ref.sourceId)!
-      const document = await PDFDocument.load(source.data, { ignoreEncryption: true })
+      const document = await loadSource(ref.sourceId, source.data)
       ;[page] = await output.copyPages(document, [ref.sourceIndex])
     }
     used.add(page)

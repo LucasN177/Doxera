@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react'
 import { AnnotationLayer } from '@/features/annotations/AnnotationLayer'
+import { FormLayer } from '@/features/forms/FormLayer'
 import type { ResolvedPage } from '@/types/document'
 import { PageCanvas } from './PageCanvas'
 import { TextLayerView } from './TextLayerView'
@@ -58,6 +59,7 @@ export function PageSurface({
       )}
       {/* Editable only in the main view (where the text layer is shown) */}
       <AnnotationLayer page={page} scale={scale} interactive={textLayer} />
+      {textLayer && <FormLayer page={page} scale={scale} />}
     </div>
   )
 }

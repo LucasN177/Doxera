@@ -1,6 +1,7 @@
 import { deleteDB, openDB, type DBSchema, type IDBPDatabase } from 'idb'
 import type { ImageAsset } from '@/types/annotations'
 import type { PageRef } from '@/types/document'
+import type { FormValues } from '@/types/forms'
 import type { Workflow } from '@/types/workflow'
 
 /** Metadata of a document kept in the local library (without file contents). */
@@ -62,6 +63,8 @@ export interface StoredEdits {
   sources: Array<{ id: string; name: string; data: ArrayBuffer }>
   /** Pictures used by image annotations and watermarks. */
   assets: Array<Omit<ImageAsset, 'url' | 'data'> & { data: ArrayBuffer }>
+  /** Entered form values of the opened file's fields. */
+  formValues?: FormValues
   savedAt: number
 }
 

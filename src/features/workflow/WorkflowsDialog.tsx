@@ -13,6 +13,7 @@ import {
   X,
 } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
+import { documentBytes } from '@/features/document/documentBytes'
 import { toast } from 'sonner'
 import { IconButton } from '@/components/layout/IconButton'
 import { Button } from '@/components/ui/button'
@@ -25,8 +26,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { buildPdf } from '@/engine/document/buildPdf'
-import { isUnmodified } from '@/engine/document/pageOps'
 import { OCR_LANGUAGES } from '@/engine/ocr/tesseract'
 import { defaultStep, describeWorkflow, WORKFLOW_TEMPLATES } from '@/engine/workflow/templates'
 import { useOpenDocument } from '@/hooks/useOpenDocument'
@@ -112,9 +111,7 @@ function WorkflowsContent({ onClose }: { onClose: () => void }) {
     if (!document || !primary) return
     setView({ type: 'run', workflow, progress: 0 })
     try {
-      const data = isUnmodified(document.pages, primary)
-        ? document.data
-        : await buildPdf(document.pages, state.sources, { assets: state.assets })
+      const data = await documentBytes()
       const result = await runWorkflow(document.name, data, workflow, {
         signal: new AbortController().signal,
         onProgress: (progress) =>

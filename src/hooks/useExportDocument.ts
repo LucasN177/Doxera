@@ -1,8 +1,8 @@
 import { useCallback, useMemo } from 'react'
 import { toast } from 'sonner'
+import { documentBytes, isDocumentUnchanged } from '@/features/document/documentBytes'
 import { deliverGeneratedFiles } from '@/lib/deliverFiles'
 import { buildPdf } from '@/engine/document/buildPdf'
-import { isUnmodified } from '@/engine/document/pageOps'
 import { canShareFile, createPdfFile, downloadFile, isAppleMobile, shareFile } from '@/lib/download'
 import { getPrimarySource, useDocumentStore } from '@/stores/documentStore'
 import type { PageRef } from '@/types/document'
@@ -75,7 +75,7 @@ export function useExportDocument() {
       const name = fileName ?? current.name
 
       // Fast path: nothing changed, hand out the original file untouched
-      if (isUnmodified(selected, primary)) {
+      if (isDocumentUnchanged(selected)) {
         await deliver(createPdfFile(current.data, name), mode, false)
         return
       }
@@ -87,10 +87,7 @@ export function useExportDocument() {
         redacting ? 'Schwärzungen werden angewendet …' : 'PDF wird erstellt …',
       )
       try {
-        const data = await buildPdf(selected, state.sources, {
-          title: baseName(name),
-          assets: state.assets,
-        })
+        const data = await documentBytes({ pages: selected, title: baseName(name) })
         toast.dismiss(progress)
         await deliver(createPdfFile(data, name), mode, true)
       } catch (error) {

@@ -1,6 +1,7 @@
 import { PRIMARY_SOURCE, type StoredEdits } from '@/storage/db'
 import type { ImageAsset } from '@/types/annotations'
 import type { PageRef, PdfSource } from '@/types/document'
+import type { FormValues } from '@/types/forms'
 import { isUnmodified } from './pageOps'
 
 type SourceLike = Pick<PdfSource, 'id' | 'name' | 'data' | 'pageSizes'>
@@ -32,8 +33,10 @@ export function captureEdits(
   sources: ReadonlyMap<string, SourceLike>,
   assets: ReadonlyMap<string, ImageAsset>,
   now: number,
+  formValues: FormValues = {},
 ): StoredEdits | null {
-  if (isUnmodified(pages, primary)) return null
+  const hasForms = Object.keys(formValues).length > 0
+  if (isUnmodified(pages, primary) && !hasForms) return null
   const used = new Set(pages.map((page) => page.sourceId))
   used.delete(primary.id)
   const assetIds = usedAssetIds(pages)
@@ -59,6 +62,7 @@ export function captureEdits(
         },
       ]
     }),
+    ...(hasForms && { formValues }),
     savedAt: now,
   }
 }

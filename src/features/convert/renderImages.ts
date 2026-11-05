@@ -1,6 +1,5 @@
 import type { PDFDocumentProxy } from 'pdfjs-dist'
-import { buildPdf } from '@/engine/document/buildPdf'
-import { isUnmodified } from '@/engine/document/pageOps'
+import { documentBytes, isDocumentUnchanged } from '@/features/document/documentBytes'
 import { closePdf, MAX_CANVAS_PIXELS, openPdf } from '@/engine/render/pdfjs'
 import { getPrimarySource, useDocumentStore } from '@/stores/documentStore'
 
@@ -54,13 +53,12 @@ export async function renderPagesAsImages({
   if (refs.length === 0) return []
 
   // Unchanged pages render straight from the opened file
-  const unchanged = refs.length === document.pages.length && isUnmodified(refs, primary)
+  const unchanged = refs.length === document.pages.length && isDocumentUnchanged(refs)
   let pdf: PDFDocumentProxy
   if (unchanged) {
     pdf = primary.pdf
   } else {
-    const data = await buildPdf(refs, state.sources, { assets: state.assets })
-    pdf = await openPdf(data)
+    pdf = await openPdf(await documentBytes({ pages: refs }))
   }
 
   try {

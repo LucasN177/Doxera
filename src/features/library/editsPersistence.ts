@@ -24,12 +24,12 @@ function libraryId(data: Uint8Array): Promise<string> {
 
 /** Saves (or clears) the edit state of the open document. */
 async function save() {
-  const { document, sources, assets } = useDocumentStore.getState()
+  const { document, sources, assets, formValues } = useDocumentStore.getState()
   const primary = getPrimarySource(useDocumentStore.getState())
   const library = useLibraryStore.getState()
   if (!document || !primary || !library.rememberDocuments || !library.available) return
   const id = await libraryId(document.data)
-  const edits = captureEdits(id, document.pages, primary, sources, assets, Date.now())
+  const edits = captureEdits(id, document.pages, primary, sources, assets, Date.now(), formValues)
   if (edits) await saveEdits(edits)
   else await deleteEdits(id)
 }
@@ -52,6 +52,7 @@ export function startEditsPersistence(): () => void {
     const changed =
       state.document?.pages !== previous.document?.pages ||
       state.assets !== previous.assets ||
+      state.formValues !== previous.formValues ||
       state.sources !== previous.sources
     // Opening another file: nothing changed in the previous one
     if (!changed || !state.document || state.document.id !== previous.document?.id) return

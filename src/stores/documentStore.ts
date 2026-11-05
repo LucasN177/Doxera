@@ -7,6 +7,7 @@ import type { ImageAsset } from '@/types/annotations'
 import { restorePages } from '@/engine/document/editState'
 import type { StoredEdits } from '@/storage/db'
 import type { OpenDocument, PageRef, PdfSource } from '@/types/document'
+import type { FormValues } from '@/types/forms'
 
 export type OpenResult = { ok: true } | { ok: false; cancelled?: boolean; message: string }
 
@@ -33,6 +34,9 @@ interface DocumentState {
   sources: ReadonlyMap<string, PdfSource>
   /** pdf.js handle of the opened file (the primary source). */
   pdf: PDFDocumentProxy | null
+  /** Values entered into the opened file's form fields (by field name). */
+  formValues: FormValues
+  setFormValue: (name: string, value: string | boolean) => void
   /** Images used by image annotations (pictures, signatures). */
   assets: ReadonlyMap<string, ImageAsset>
   history: History
@@ -133,6 +137,7 @@ export const useDocumentStore = create<DocumentState>()((set, get) => {
         pdf: source.pdf,
         sources: new Map([[source.id, source]]),
         assets: new Map(),
+        formValues: {},
         history: EMPTY_HISTORY,
         document: {
           id: crypto.randomUUID(),
@@ -163,7 +168,10 @@ export const useDocumentStore = create<DocumentState>()((set, get) => {
     sources: new Map(),
     pdf: null,
     assets: new Map(),
+    formValues: {},
     history: EMPTY_HISTORY,
+
+    setFormValue: (name, value) => set({ formValues: { ...get().formValues, [name]: value } }),
 
     openFile: async (file) => {
       if (!looksLikePdf(file)) {
@@ -183,6 +191,7 @@ export const useDocumentStore = create<DocumentState>()((set, get) => {
         pdf: null,
         sources: new Map(),
         assets: new Map(),
+        formValues: {},
         history: EMPTY_HISTORY,
       })
     },
@@ -269,6 +278,7 @@ export const useDocumentStore = create<DocumentState>()((set, get) => {
         get().addAsset({ ...asset, data: new Uint8Array(asset.data) })
       }
       setPages(pages, EMPTY_HISTORY)
+      if (edits.formValues) set({ formValues: edits.formValues })
       return true
     },
 
