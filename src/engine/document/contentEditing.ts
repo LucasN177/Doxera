@@ -1,5 +1,5 @@
 import type { RawPageText } from '@/engine/mupdf/pageContent'
-import type { ImageAnnotation, PageRect, TextAnnotation } from '@/types/annotations'
+import type { ImageAnnotation, PageRect, SourceFont, TextAnnotation } from '@/types/annotations'
 import type { PageRef } from '@/types/document'
 import { joinLines } from '@/engine/text/structure'
 import { classifyFont, REDACT_COLOR, TEXT_ASCENT, toDisplay, toStored } from './annotations'
@@ -25,6 +25,10 @@ export interface EditableLine {
   paragraph?: { lines: PageRect[]; wrapWidth: number; lineHeight: number }
   /** Invisible text, e.g. recognized text over a scan (see `RawTextLine.invisible`). */
   invisible?: boolean
+  /** Name of the font as MuPDF reports it. */
+  fontName?: string
+  /** The embedded font, if new text can be written with it (see `sourceFontFor`). */
+  sourceFont?: SourceFont
 }
 
 const SAME_SIZE = 0.35
@@ -176,6 +180,7 @@ export function toEditableLines(raw: RawPageText, rotate = 0): EditableLine[] {
       color: toHex(line.color),
       ...classifyFont(line.fontName),
       ...(line.invisible && { invisible: true }),
+      fontName: line.fontName,
       segments: (line.segments ?? []).map((segment) => {
         const along = (t: number) =>
           stored(line.origin[0] + line.direction[0] * t, line.origin[1] + line.direction[1] * t).x
@@ -200,6 +205,7 @@ export function sameRect(first: PageRect, second: PageRect, tolerance = 0.002): 
 export function replacementFor(line: EditableLine, id: string): TextAnnotation {
   return {
     ...(line.invisible && { coverOriginal: true }),
+    ...(line.sourceFont && !line.invisible && { sourceFont: line.sourceFont }),
     ...(line.paragraph && {
       replacesLines: line.paragraph.lines,
       wrapWidth: line.paragraph.wrapWidth,

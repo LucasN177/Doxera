@@ -50,6 +50,56 @@ export function loadPageContent(
   return content
 }
 
+const parsed = new WeakMap<Uint8Array, Promise<import('pdf-lib').PDFDocument>>()
+
+/**
+ * The paragraphs of a page with their original font where new text can be
+ * written with it (read with pdf-lib, once per source). Failures leave the
+ * paragraphs as they are: text then falls back to a standard font.
+ */
+async function withSourceFonts(
+  ref: Pick<PageRef, 'sourceId' | 'sourceIndex'>,
+  content: EditableContent,
+): Promise<EditableContent> {
+  const source = useDocumentStore.getState().sources.get(ref.sourceId)
+  if (!source || content.paragraphs.length === 0) return content
+  try {
+    const lib = await import('pdf-lib')
+    const { pageFonts, sourceFontFor } = await import('@/engine/fonts/pdfFontInfo')
+    let document = parsed.get(source.data)
+    if (!document) {
+      document = lib.PDFDocument.load(source.data, {
+        ignoreEncryption: true,
+        updateMetadata: false,
+      })
+      parsed.set(source.data, document)
+    }
+    const fonts = pageFonts(lib, await document, ref.sourceIndex)
+    if (fonts.length === 0) return content
+    const found = new Map<string, ReturnType<typeof sourceFontFor>>()
+    const fontOf = (name: string) => {
+      if (!found.has(name)) {
+        const used = content.lines
+          .filter((line) => line.fontName === name)
+          .map((line) => line.text)
+          .join(' ')
+        found.set(name, sourceFontFor(fonts, name, used))
+      }
+      return found.get(name) ?? undefined
+    }
+    return {
+      ...content,
+      paragraphs: content.paragraphs.map((line) => {
+        const sourceFont = line.fontName && !line.invisible ? fontOf(line.fontName) : undefined
+        return sourceFont ? { ...line, sourceFont } : line
+      }),
+    }
+  } catch (error) {
+    console.warn('Schriften der Seite konnten nicht gelesen werden', error)
+    return content
+  }
+}
+
 export type ContentState =
   { status: 'loading' } | { status: 'ready'; content: EditableContent } | { status: 'error' }
 
@@ -61,8 +111,9 @@ export function useEditableContent(page: ResolvedPage, enabled: boolean): Conten
   useEffect(() => {
     if (!enabled) return
     let cancelled = false
-    const content = loadPageContent(page.ref)
-    if (!content) return
+    const loaded = loadPageContent(page.ref)
+    if (!loaded) return
+    const content = loaded.then((value) => withSourceFonts(page.ref, value))
     content.then(
       (value) => !cancelled && setState({ key, value: { status: 'ready', content: value } }),
       (error: unknown) => {

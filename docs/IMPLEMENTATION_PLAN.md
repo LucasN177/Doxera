@@ -190,6 +190,16 @@ Zeilen, die überwiegend daraus bestehen, als `invisible` (erkannter Text auf Sc
 über die Scanpixel gemalt. Die Textfarbe wird im Editor aus den dunkelsten Pixeln der Zeile übernommen.
 Die Scanpixel bleiben unter der Abdeckung in der Datei – zum endgültigen Entfernen dient das Schwärzen.
 
+**Originalschrift:** Im Bearbeitungsmodus liest pdf-lib die Schriften der Seite (`pageFonts`): Type0 mit
+Identity-H und ToUnicode oder einfache Schriften (Type1/TrueType) mit /Widths und WinAnsi-/Differences-Kodierung
+bzw. ToUnicode. `sourceFontFor` wählt zur MuPDF-Schrift einer Zeile die passende und speichert in der Annotation
+(`sourceFont`) die verfügbaren Zeichen samt Breiten – bei Teilmengen-Schriften nur Zeichen, die auf der Seite
+vorkommen. Hat die Schrift alle Zeichen des neuen Texts, kopiert der Export ihr Font-Dictionary einmal in die
+neue PDF und schreibt die Zeichencodes der Originalkodierung (eigener Embedder hinter `PDFFont`; ohne
+Leerzeichen-Glyph Wort für Wort). Editor und Export brechen mit denselben Breiten um, auf dem Bildschirm sorgt
+`textLength` für gleiche Zeilenbreiten. Fehlt ein Zeichen, gilt wie bisher die ähnlichste Standardschrift
+(bzw. die Unicode-Schrift).
+
 **Bilder bearbeiten (E4):** MuPDF liefert die Bilder einer Seite (Box, Transformation, Pixel); über die
 Reihenfolge der `/Name Do`-Aufrufe im Content-Stream wird das zugehörige Bild-XObject bestimmt. Ein
 angeklicktes Bild wird zur Bild-Annotation mit `xobject` (Original) und lässt sich verschieben,

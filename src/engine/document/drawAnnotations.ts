@@ -1,3 +1,4 @@
+import { wordByWordFonts } from '@/engine/fonts/pdfFontInfo'
 import { replacedLines } from './contentEditing'
 import { needsUnicode, unicodeFontKey, unicodeStyle } from '@/engine/fonts/unicodeFont'
 import type { PDFFont, PDFImage, PDFPage } from 'pdf-lib'
@@ -211,7 +212,10 @@ export function drawAnnotations(
           })
         }
       }
-      const textFont = textFonts.get(textFontKey(annotation)) ?? font
+      const textFont =
+        textFonts.get(sourceFontKey(annotation.id)) ??
+        textFonts.get(textFontKey(annotation)) ??
+        font
       drawText(page, annotation, box, textFont, color, degrees)
     }
   }
@@ -409,6 +413,9 @@ export function textBaselines(
   })
 }
 
+/** Key of an edited text's original font in the export's text fonts. */
+export const sourceFontKey = (id: string) => `doxera:source-${id}`
+
 /**
  * Key of a text annotation's font in the export's text fonts: its standard
  * font, or the Unicode font for characters the standard fonts lack.
@@ -436,6 +443,25 @@ function drawText(
   )
   for (const { line, x, y, rotate } of textBaselines(text, box, lines)) {
     if (!line) continue
+    if (wordByWordFonts.has(font)) {
+      // The font has no space glyph: place each word on its own
+      const angle = (rotate * Math.PI) / 180
+      let offset = 0
+      for (const word of line.split(' ')) {
+        if (word) {
+          page.drawText(word, {
+            x: x + offset * Math.cos(angle),
+            y: y + offset * Math.sin(angle),
+            size: text.fontSize,
+            font,
+            color,
+            rotate: degrees(rotate),
+          })
+        }
+        offset += font.widthOfTextAtSize(`${word} `, text.fontSize)
+      }
+      continue
+    }
     page.drawText(encodable(font, line), {
       x,
       y,

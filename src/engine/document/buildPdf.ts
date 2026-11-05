@@ -1,4 +1,4 @@
-import type { PDFFont, PDFImage } from 'pdf-lib'
+import type { PDFDocument, PDFFont, PDFImage } from 'pdf-lib'
 import type { PageRef } from '@/types/document'
 import type { FormValues } from '@/types/forms'
 import { standardFontName } from './annotations'
@@ -14,8 +14,10 @@ import {
   addRedactAnnotations,
   drawAnnotations,
   hideImageXObjects,
+  sourceFontKey,
   textFontKey,
 } from './drawAnnotations'
+import { embedSourceFont } from '@/engine/fonts/pdfFontInfo'
 import {
   embedUnicodeFont,
   needsUnicode,
@@ -42,6 +44,11 @@ export interface BuildOptions {
   forms?: { sourceId: string; values: FormValues }
   /** Bookmarks of the built PDF (see `mapOutline`). */
   outline?: readonly OutlineEntry[]
+  /**
+   * Internal: where each page (by id) originally comes from, to find the
+   * original fonts of edited text when building from an intermediate file.
+   */
+  fontSources?: ReadonlyMap<string, { sourceId: string; sourceIndex: number }>
 }
 
 /** Source id of the intermediate file with replaced text removed. */
@@ -63,7 +70,14 @@ export interface ImageData {
 export async function buildPdf(
   pages: readonly PageRef[],
   sources: ReadonlyMap<string, SourceData>,
-  { title, assets = new Map(), redact = defaultRedact, forms, outline }: BuildOptions = {},
+  {
+    title,
+    assets = new Map(),
+    redact = defaultRedact,
+    forms,
+    outline,
+    fontSources,
+  }: BuildOptions = {},
 ): Promise<Uint8Array> {
   if (pages.length === 0) throw new Error('Ein PDF braucht mindestens eine Seite.')
 
@@ -91,7 +105,18 @@ export async function buildPdf(
         ),
       })),
       new Map(sources).set(TEXT_REMOVED_SOURCE, { data: removed }),
-      { title, assets, redact, outline },
+      {
+        title,
+        assets,
+        redact,
+        outline,
+        fontSources: new Map(
+          pages.map((page) => [
+            page.id,
+            { sourceId: page.sourceId, sourceIndex: page.sourceIndex },
+          ]),
+        ),
+      },
     )
   }
 
@@ -102,6 +127,8 @@ export async function buildPdf(
   let font: PDFFont | null = null
   let boldFont: PDFFont | null = null
   const textFonts = new Map<string, PDFFont>()
+  /** Source documents as loaded for their fonts (unchanged, no form values). */
+  const originals = new Map<string, Promise<PDFDocument>>()
 
   /** Loads a source; the one with form values gets them filled in and flattened first. */
   const loadSource = async (sourceId: string, data: Uint8Array) => {
@@ -186,6 +213,26 @@ export async function buildPdf(
           }
         }
         if (annotation.type !== 'text') continue
+        if (annotation.sourceFont) {
+          const origin = fontSources?.get(ref.id) ?? ref
+          const data = sources.get(origin.sourceId)?.data
+          if (data) {
+            let original = originals.get(origin.sourceId)
+            if (!original) {
+              original = PDFDocument.load(data, { ignoreEncryption: true, updateMetadata: false })
+              originals.set(origin.sourceId, original)
+            }
+            const embedded = embedSourceFont(
+              lib,
+              output,
+              await original,
+              origin.sourceIndex,
+              annotation.sourceFont,
+              annotation.text,
+            )
+            if (embedded) textFonts.set(sourceFontKey(annotation.id), embedded)
+          }
+        }
         const key = textFontKey(annotation)
         if (textFonts.has(key)) continue
         textFonts.set(

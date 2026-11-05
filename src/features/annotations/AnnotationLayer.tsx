@@ -50,6 +50,7 @@ import type {
   TextAnnotation,
 } from '@/types/annotations'
 import type { PageRef, ResolvedPage } from '@/types/document'
+import { measureSourceFont, sourceFontCovers } from '@/engine/fonts/pdfFontInfo'
 import { useEditableContent } from './useEditableContent'
 
 type Handle = 'a' | 'b' | 'nw' | 'ne' | 'sw' | 'se'
@@ -97,13 +98,26 @@ function annotationTextLines(
   storedSize: { width: number; height: number },
   text = annotation.text,
 ): string[] {
-  const font = textFontCss(annotation)
   const frameWidth = ((annotation.turns % 4) + 4) % 2 === 0 ? storedSize.width : storedSize.height
   return layoutTextLines(
     { text, wrapWidth: annotation.wrapWidth },
-    (line) => measureText(line, annotation.fontSize, font.weight, font.family, font.style),
+    textMeasure(annotation, text),
     frameWidth,
   )
+}
+
+/**
+ * Width of a line in points at the annotation's size: with the original
+ * font's widths when it will be used on export, else as rendered here.
+ */
+function textMeasure(annotation: TextAnnotation, text = annotation.text) {
+  const source = annotation.sourceFont
+  if (source && sourceFontCovers(source, text)) {
+    return (line: string) => measureSourceFont(source, line, annotation.fontSize) ?? 0
+  }
+  const font = textFontCss(annotation)
+  return (line: string) =>
+    measureText(line, annotation.fontSize, font.weight, font.family, font.style)
 }
 
 interface AnnotationLayerProps {
@@ -912,6 +926,15 @@ export function AnnotationShape({ annotation, px, scale, turns, storedSize }: Sh
             key={index}
             x={anchor.x}
             y={anchor.y + fontSize * (TEXT_ASCENT + index * textLineHeight(annotation))}
+            // With the original font, each line gets the width it has in the export
+            {...(annotation.sourceFont &&
+              sourceFontCovers(annotation.sourceFont, annotation.text) &&
+              line.trim() && {
+                textLength:
+                  (measureSourceFont(annotation.sourceFont, line, annotation.fontSize) ?? 0) *
+                  scale,
+                lengthAdjust: 'spacing',
+              })}
             fill={color}
             fontSize={fontSize}
             fontFamily={font.family}

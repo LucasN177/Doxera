@@ -71,9 +71,32 @@ export interface TextAnnotation extends AnnotationBase {
   wrapWidth?: number
   /** Distance between baselines as a multiple of the font size (default 1.2). */
   lineHeight?: number
+  /**
+   * The embedded font of the replaced text: used on export (and for line
+   * breaks) as long as it has every character of the text.
+   */
+  sourceFont?: SourceFont
 }
 
 export type TextFont = 'sans' | 'serif' | 'mono'
+
+/**
+ * A font of the original document as stored with an edited text: the
+ * characters it can show and their widths, so the editor wraps text exactly
+ * as the export does.
+ */
+export interface SourceFont {
+  /** BaseFont without subset prefix, to find the font again on export. */
+  name: string
+  /** Characters the font can show (without space). */
+  chars: string
+  /** Advance width of each of `chars` in 1/1000 em. */
+  widths: number[]
+  /** Width of a space in 1/1000 em (estimated if the font has no space glyph). */
+  space: number
+  /** Whether the font has a space glyph; otherwise words are placed one by one. */
+  hasSpace: boolean
+}
 
 /** Rectangle given by two opposite corners (stored page space). */
 export interface PageRect {
