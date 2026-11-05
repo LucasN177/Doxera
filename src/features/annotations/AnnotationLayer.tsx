@@ -1,5 +1,5 @@
 import { MessageSquareText } from 'lucide-react'
-import { useEffect, useRef, useState, type PointerEvent } from 'react'
+import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from 'react'
 import { toast } from 'sonner'
 import {
   addAnnotation,
@@ -54,6 +54,11 @@ import type {
 } from '@/types/annotations'
 import type { PageRef, ResolvedPage } from '@/types/document'
 import { measureSourceFont, sourceFontCovers } from '@/engine/fonts/pdfFontInfo'
+import {
+  renderSourceFontPreview,
+  usesSourceFont,
+  type SourceFontPreview,
+} from './sourceFontPreview'
 import { useEditableContent } from './useEditableContent'
 
 type Handle = 'a' | 'b' | 'nw' | 'ne' | 'sw' | 'se'
@@ -584,6 +589,7 @@ export function AnnotationLayer({ page, scale, interactive }: AnnotationLayerPro
                 scale={scale}
                 turns={turns}
                 storedSize={storedSize}
+                source={page.ref}
               />
             )
           }
@@ -596,6 +602,7 @@ export function AnnotationLayer({ page, scale, interactive }: AnnotationLayerPro
                 scale={scale}
                 turns={turns}
                 storedSize={storedSize}
+                source={page.ref}
               />
               {active && tool === 'select' && (
                 <rect
@@ -899,9 +906,11 @@ interface ShapeProps {
   turns: number
   /** Unrotated page size in points (for markup line thickness). */
   storedSize: { width: number; height: number }
+  /** Source page, to show edited text in its original font. */
+  source?: { sourceId: string; sourceIndex: number }
 }
 
-export function AnnotationShape({ annotation, px, scale, turns, storedSize }: ShapeProps) {
+export function AnnotationShape({ annotation, px, scale, turns, storedSize, source }: ShapeProps) {
   const { color } = annotation
   const assetUrl = useDocumentStore((state) =>
     annotation.type === 'image' || (annotation.type === 'watermark' && annotation.assetId)
@@ -939,7 +948,7 @@ export function AnnotationShape({ annotation, px, scale, turns, storedSize }: Sh
     const anchor = px(annotation.at)
     const fontSize = annotation.fontSize * scale
     const font = textFontCss(annotation)
-    return (
+    const plain = (
       <g transform={`rotate(${textDisplayAngle(annotation, turns)} ${anchor.x} ${anchor.y})`}>
         {annotationRuns(annotation, storedSize).flatMap((runs, index) =>
           runs.map((run, part) => (
@@ -968,6 +977,19 @@ export function AnnotationShape({ annotation, px, scale, turns, storedSize }: Sh
           )),
         )}
       </g>
+    )
+    if (!source || !usesSourceFont(annotation)) return plain
+    return (
+      <SourceFontText
+        annotation={annotation}
+        source={source}
+        px={px}
+        scale={scale}
+        turns={turns}
+        storedSize={storedSize}
+      >
+        {plain}
+      </SourceFontText>
     )
   }
 
@@ -1272,6 +1294,78 @@ function sampleBackground(
   } catch {
     return undefined
   }
+}
+
+/**
+ * Edited text in its original embedded font: drawn like the export and
+ * shown as an image once ready (the similar screen font until then).
+ */
+function SourceFontText({
+  annotation,
+  source,
+  px,
+  scale,
+  turns,
+  storedSize,
+  children,
+}: {
+  annotation: TextAnnotation
+  source: { sourceId: string; sourceIndex: number }
+  px: (point: PagePoint) => { x: number; y: number }
+  scale: number
+  turns: number
+  storedSize: { width: number; height: number }
+  children: ReactNode
+}) {
+  const key = JSON.stringify([
+    annotation.text,
+    annotation.at,
+    annotation.fontSize,
+    annotation.color,
+    annotation.align,
+    annotation.wrapWidth,
+    annotation.lineHeight,
+    annotation.turns,
+    annotation.sourceFont?.name,
+    source.sourceId,
+    source.sourceIndex,
+    turns,
+  ])
+  // Sharp at the current zoom; steps keep pinch-zooming from re-rendering all the time
+  const resolution = Math.min(8, Math.ceil(scale * (window.devicePixelRatio || 1) * 2) / 2)
+  const [preview, setPreview] = useState<{ key: string; value: SourceFontPreview } | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    const timer = setTimeout(() => {
+      renderSourceFontPreview(annotation, source, storedSize, resolution, turns)
+        .then((value) => {
+          if (!cancelled && value) setPreview({ key, value })
+        })
+        .catch((error: unknown) => console.warn('Originalschrift-Vorschau fehlgeschlagen', error))
+    }, 120)
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+    // The key covers everything the image depends on
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, resolution])
+
+  // A preview of an older version of the text isn't shown
+  if (!preview || preview.key !== key) return <>{children}</>
+  const a = px(preview.value.area.a)
+  const b = px(preview.value.area.b)
+  return (
+    <image
+      href={preview.value.url}
+      x={Math.min(a.x, b.x)}
+      y={Math.min(a.y, b.y)}
+      width={Math.abs(a.x - b.x)}
+      height={Math.abs(a.y - b.y)}
+      preserveAspectRatio="none"
+    />
+  )
 }
 
 /** Darkest color of the rendered page within an area (the ink of scanned text). */

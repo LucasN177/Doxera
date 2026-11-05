@@ -25,7 +25,7 @@ Comprehensive tools for viewing and editing existing PDF documents.
 - [x] Select and copy text
 - [x] Full-text search with highlighted matches
 - [x] Select and edit existing text (line by line: change, restyle or delete a line; exported in place of the original)
-- [x] Add, modify and delete text (new text boxes; existing text as whole paragraphs that rewrap automatically – left, centered, right-aligned or justified, also text running up, down or upside down – kept in the original embedded font whenever it has all characters)
+- [x] Add, modify and delete text (new text boxes; existing text as whole paragraphs that rewrap automatically – left, centered, right-aligned or justified, also text running up, down or upside down – kept in the original embedded font whenever it has all characters, shown in that font in the editor too)
 - [x] Change font size, font family, bold/italic and text color
 - [x] Move and resize existing elements (images and edited text lines)
 - [x] Select, move, resize and remove existing images (removed image data is dropped from the file)

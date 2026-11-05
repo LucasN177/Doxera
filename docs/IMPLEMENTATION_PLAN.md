@@ -205,7 +205,10 @@ bzw. ToUnicode. `sourceFontFor` wählt zur MuPDF-Schrift einer Zeile die passend
 vorkommen. Hat die Schrift alle Zeichen des neuen Texts, kopiert der Export ihr Font-Dictionary einmal in die
 neue PDF und schreibt die Zeichencodes der Originalkodierung (eigener Embedder hinter `PDFFont`; ohne
 Leerzeichen-Glyph Wort für Wort). Editor und Export brechen mit denselben Breiten um, auf dem Bildschirm sorgt
-`textLength` für gleiche Zeilenbreiten. Fehlt ein Zeichen, gilt wie bisher die ähnlichste Standardschrift
+`textLength` für gleiche Zeilenbreiten. Nach dem Bearbeiten zeigt der Editor den Text in der echten Originalschrift:
+`renderSourceFontPreview` zeichnet ihn wie der Export (pdf-lib, kopierte Schrift) auf eine auf den Textbereich
+zugeschnittene Seite und lässt pdf.js sie transparent rendern – Browser können die eingebetteten
+Teilmengen-Schriften selbst nicht verwenden. Während des Tippens steht eine ähnliche Bildschirmschrift. Fehlt ein Zeichen, gilt wie bisher die ähnlichste Standardschrift
 (bzw. die Unicode-Schrift).
 
 **Bilder bearbeiten (E4):** MuPDF liefert die Bilder einer Seite (Box, Transformation, Pixel); über die
