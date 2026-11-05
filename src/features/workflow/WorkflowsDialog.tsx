@@ -13,7 +13,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { documentBytes } from '@/features/document/documentBytes'
 import { toast } from 'sonner'
 import { IconButton } from '@/components/layout/IconButton'
@@ -29,6 +29,9 @@ import {
 import { Input } from '@/components/ui/input'
 import { HEADER_FOOTER_PRESETS } from '@/engine/document/headerFooter'
 import { OCR_LANGUAGES } from '@/engine/ocr/tesseract'
+import { IMAGE_ACCEPT } from '@/features/convert/pickImages'
+import { pickFiles } from '@/lib/file'
+import { dataUrl, prepareImage } from '@/lib/images'
 import { defaultStep, describeWorkflow, WORKFLOW_TEMPLATES } from '@/engine/workflow/templates'
 import { useOpenDocument } from '@/hooks/useOpenDocument'
 import { saveFilesNow } from '@/lib/deliverFiles'
@@ -36,7 +39,7 @@ import { cn } from '@/lib/utils'
 import { getPrimarySource, useDocumentStore } from '@/stores/documentStore'
 import { useUiStore } from '@/stores/uiStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
-import type { Workflow, WorkflowOutput, WorkflowStep } from '@/types/workflow'
+import type { Workflow, WorkflowImage, WorkflowOutput, WorkflowStep } from '@/types/workflow'
 import { runWorkflow } from './runWorkflow'
 
 type View =
@@ -428,15 +431,63 @@ function StepOptions({
       </div>
     )
   }
+  const pickImage = async () => {
+    const [file] = await pickFiles(IMAGE_ACCEPT)
+    if (!file) return
+    try {
+      const { mimeType, data, width, height } = await prepareImage(file)
+      onChange({ ...step, image: { mimeType, data, width, height } })
+    } catch {
+      toast.error(`„${file.name}“ konnte nicht als Bild gelesen werden.`)
+    }
+  }
   return (
     <div className="space-y-1.5">
-      <Input
-        value={step.text}
-        maxLength={60}
-        aria-label="Text des Wasserzeichens"
-        className="h-8 text-base sm:text-sm"
-        onChange={(event) => onChange({ ...step, text: event.target.value })}
+      <Choice
+        label="Art"
+        value={step.image ? 'image' : 'text'}
+        onChange={(kind) => {
+          if (kind === 'text') onChange({ ...step, image: undefined })
+          else void pickImage()
+        }}
+        options={[
+          ['text', 'Text'],
+          ['image', 'Bild …'],
+        ]}
       />
+      {step.image ? (
+        <div className="flex items-center gap-2">
+          <ImagePreview image={step.image} />
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 px-2 text-xs"
+            onClick={() => void pickImage()}
+          >
+            Anderes Bild …
+          </Button>
+        </div>
+      ) : (
+        <Input
+          value={step.text}
+          maxLength={60}
+          aria-label="Text des Wasserzeichens"
+          className="h-8 text-base sm:text-sm"
+          onChange={(event) => onChange({ ...step, text: event.target.value })}
+        />
+      )}
+      {step.image && (
+        <Choice
+          label="Größe"
+          value={step.size}
+          onChange={(size) => onChange({ ...step, size })}
+          options={[
+            [0.3, 'Klein'],
+            [0.5, 'Mittel'],
+            [0.7, 'Groß'],
+          ]}
+        />
+      )}
       <Choice
         label="Ausrichtung"
         value={step.angle}
@@ -447,17 +498,29 @@ function StepOptions({
           [-45, 'Absteigend'],
         ]}
       />
-      <Choice
-        label="Farbe"
-        value={step.color}
-        onChange={(color) => onChange({ ...step, color })}
-        options={[
-          ['#64748b', 'Grau'],
-          ['#dc2626', 'Rot'],
-          ['#1d4ed8', 'Blau'],
-        ]}
-      />
+      {!step.image && (
+        <Choice
+          label="Farbe"
+          value={step.color}
+          onChange={(color) => onChange({ ...step, color })}
+          options={[
+            ['#64748b', 'Grau'],
+            ['#dc2626', 'Rot'],
+            ['#1d4ed8', 'Blau'],
+          ]}
+        />
+      )}
     </div>
+  )
+}
+
+/** Small preview of a workflow's watermark picture. */
+function ImagePreview({ image }: { image: WorkflowImage }) {
+  const src = useMemo(() => dataUrl(image.data, image.mimeType), [image])
+  return (
+    <span className="bg-muted flex h-10 w-16 items-center justify-center overflow-hidden rounded border">
+      <img src={src} alt="Wasserzeichen-Bild" className="max-h-full max-w-full" />
+    </span>
   )
 }
 
@@ -484,7 +547,7 @@ function WorkflowEditor({
     draft.steps.some(
       (step) =>
         (step.type === 'ocr' && step.languages.length === 0) ||
-        (step.type === 'watermark' && !step.text.trim()),
+        (step.type === 'watermark' && !step.image && !step.text.trim()),
     ) ||
     (draft.steps.length === 0 && draft.output.type === 'pdf')
 

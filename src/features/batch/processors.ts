@@ -205,6 +205,7 @@ export async function documentData(
       pageCount: sizes.length,
       pages: pages.map(({ number, lines }) => ({ number, blocks: structureLines(lines, body) })),
       comments: [],
+      highlights: [],
     }
   } finally {
     void closePdf(pdf)
@@ -228,7 +229,7 @@ export async function pdfToDataFiles(
   }
   const files = await buildDataFiles(
     extracted,
-    { text: true, tables: true, comments: false },
+    { text: true, tables: true, comments: false, highlights: false },
     format,
     baseName(name),
   )

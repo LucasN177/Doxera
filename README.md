@@ -88,12 +88,12 @@ Extract information from scanned documents and image-based PDFs.
 
 Automate repetitive document-related tasks.
 
-- [x] Batch processing of multiple PDF files and pictures (compress, OCR, images, data export, merge)
+- [x] Batch processing of multiple PDF files and pictures (compress, OCR, images, data export, merge; drop files into the dialog)
 - [x] Compress PDF documents (images scaled to 150 or 96 dpi for their displayed size, font subsetting, or lossless)
 - [x] Convert PDFs to images (PNG or JPEG, 72–300 dpi, with all edits; ZIP or share sheet)
 - [x] Convert images to PDFs (A4, Letter or image size; open as new PDF or insert as pages; HEIC supported)
-- [x] Export extracted data to CSV, Excel and JSON (text, tables with real numbers, comments)
-- [x] Create reusable processing workflows (OCR, watermark, page numbers, compression → PDF, images or data; saved locally)
+- [x] Export extracted data to CSV, Excel and JSON (text, tables with real numbers, comments with real dates, highlighted text)
+- [x] Create reusable processing workflows (OCR, text or picture watermark, page numbers, compression → PDF, images or data; saved locally)
 - [ ] Automate document classification and extraction
 - [ ] Process invoices and extract relevant information
 - [x] Custom document processing templates (ready-made workflows to start from)
@@ -244,6 +244,7 @@ The main objectives are:
 - ✅ **Phase 4 – Real editing:** permanent redaction, editing existing text and moving, resizing or removing existing images with MuPDF.js
 - ✅ **Phase 5 – OCR:** scanned pages become searchable PDFs; text export with headings, paragraphs, lists and tables (Markdown, text, CSV)
 - ✅ **Phase 6 – Processing:** converting, compression, data export (Excel, JSON, CSV), batch processing and reusable workflows
+- ✅ **Closing the gaps:** saved edits, forms, password protection, page numbers and headers, bookmarks, document comparison, Unicode text and smaller improvements
 - 🔜 **Next phase:** AI features
 
 The full roadmap is in the [implementation plan](docs/IMPLEMENTATION_PLAN.md).

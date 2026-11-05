@@ -449,7 +449,7 @@ function BatchContent({
         ))}
         {shown.length === 0 && (
           <li className="text-muted-foreground rounded-md border border-dashed p-4 text-center text-sm">
-            Noch keine Dateien – PDFs oder Bilder hinzufügen.
+            Noch keine Dateien – PDFs oder Bilder hinzufügen oder hierher ziehen.
           </li>
         )}
       </ol>

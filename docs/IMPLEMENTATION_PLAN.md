@@ -330,7 +330,7 @@ Nach Phase 6 erkannte Lücken, die vor den KI-Funktionen geschlossen werden:
 | G5  | Lesezeichen               | Lesezeichen (Outline) beim Export erhalten                                                            | ✅     |
 | G6  | Dokumentvergleich         | Textunterschiede zweier Dokumente ohne KI hervorheben                                                 | ✅     |
 | G7  | Unicode-Schrift           | Eingebettete Unicode-Schrift statt „?“ für Zeichen außerhalb von WinAnsi                              | ✅     |
-| G8  | Kleinigkeiten             | Ablegen im Stapel-Dialog, Bild-Wasserzeichen im Workflow, Excel-Datumswerte, Markierungen exportieren | offen  |
+| G8  | Kleinigkeiten             | Ablegen im Stapel-Dialog, Bild-Wasserzeichen im Workflow, Excel-Datumswerte, Markierungen exportieren | ✅     |
 
 **Bearbeitungen speichern (G1):** IndexedDB-Store `edits` (DB-Version 4) je Bibliothekseintrag (Datei-Hash):
 Seitenliste (Quelle der geöffneten Datei als Platzhalter `primary`), zusätzlich geladene Quellen (eingefügte
@@ -381,6 +381,15 @@ Sans (metrisch wie Helvetica; Regular/Bold/Italic/BoldItalic) als Teilmenge per 
 Textfelder und bearbeitete Zeilen, Text-Wasserzeichen, Kopf-/Fußzeilen, Formularwerte und die OCR-Textebene. Die
 Schrift liegt ohnehin bei pdf.js (`/pdfjs/standard_fonts/`, offline vorgehalten) und wird nur bei Bedarf geladen.
 Zeichen ohne Glyphe (z. B. Emoji) werden weiterhin zu „?“; geprüft über `getCharacterSet()` der Schrift.
+
+**Kleinigkeiten (G8):** Ist der Stapel- oder „Bilder zu PDF“-Dialog offen, nimmt er abgelegte Dateien auf
+(Hinweis im Ablege-Overlay; Unpassendes wird gefiltert). Workflow-Wasserzeichen können ein Bild sein – es wird
+im gespeicherten Workflow mitgesichert (IndexedDB). Excel-Kommentare haben echte Datumszellen
+(Seriennummer, Format `dd.mm.yyyy hh:mm`). Der Datenexport enthält „Markierter Text“: für Hervorhebungen,
+Unterstreichungen und Durchstreichungen die Wörter, deren Mitte in den Markierungsrechtecken liegt (JSON, eigenes
+Blatt, eigene CSV).
+
+Damit sind alle Lücken G1–G8 geschlossen; als Nächstes folgt Phase 7 (KI).
 
 ## 5. Querschnittsthemen
 

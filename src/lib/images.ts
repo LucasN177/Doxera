@@ -162,3 +162,12 @@ export async function canvasToPng(canvas: HTMLCanvasElement): Promise<PreparedIm
     height: canvas.height,
   }
 }
+
+/** A data: URL of image bytes (for small previews that need no cleanup). */
+export function dataUrl(data: Uint8Array, mimeType: string): string {
+  let binary = ''
+  for (let i = 0; i < data.length; i += 0x8000) {
+    binary += String.fromCharCode(...data.subarray(i, i + 0x8000))
+  }
+  return `data:${mimeType};base64,${btoa(binary)}`
+}

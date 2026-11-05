@@ -1,6 +1,6 @@
 import type { TextBlock } from '@/engine/text/structure'
 import { tableToCsv } from '@/engine/text/tables'
-import { cellText, toCell, type Cell } from './cells'
+import { cellText, dateCell, toCell, type Cell } from './cells'
 import type { Sheet } from './xlsx'
 
 export interface ExportComment {
@@ -11,6 +11,14 @@ export interface ExportComment {
   updatedAt: number
 }
 
+/** Text marked with a highlight, underline or strike-out. */
+export interface ExportHighlight {
+  page: number
+  type: 'highlight' | 'underline' | 'strikeout'
+  text: string
+  color: string
+}
+
 /** Everything that can be exported from a document. */
 export interface DocumentData {
   name: string
@@ -18,12 +26,25 @@ export interface DocumentData {
   /** Structured text of the chosen pages. */
   pages: Array<{ number: number; blocks: TextBlock[] }>
   comments: ExportComment[]
+  highlights: ExportHighlight[]
 }
 
 export interface DataContent {
   text: boolean
   tables: boolean
   comments: boolean
+  highlights: boolean
+}
+
+const MARKUP_NAMES = {
+  highlight: 'Hervorgehoben',
+  underline: 'Unterstrichen',
+  strikeout: 'Durchgestrichen',
+} as const
+const HIGHLIGHT_HEADER = ['Seite', 'Art', 'Text']
+
+function highlightRows(data: DocumentData): string[][] {
+  return data.highlights.map((item) => [String(item.page), MARKUP_NAMES[item.type], item.text])
 }
 
 const TYPE_NAMES = { heading: 'Überschrift', paragraph: 'Absatz', list: 'Listenpunkt' } as const
@@ -102,6 +123,7 @@ export function toJson(data: DocumentData, content: DataContent): string {
       updatedAt: new Date(comment.updatedAt).toISOString(),
     }))
   }
+  if (content.highlights) result.highlights = data.highlights
   return `${JSON.stringify(result, null, 2)}\n`
 }
 
@@ -130,8 +152,23 @@ export function toSheets(data: DocumentData, content: DataContent): Sheet[] {
     sheets.push({
       name: 'Kommentare',
       header: true,
-      rows: [['Seite', 'Kommentar', 'Erstellt', 'Geändert'], ...commentRows(data)].map(
-        (row, index) => (index === 0 ? row : [toCell(row[0]), ...row.slice(1)]),
+      rows: [
+        ['Seite', 'Kommentar', 'Erstellt', 'Geändert'],
+        ...data.comments.map((comment) => [
+          toCell(String(comment.page)),
+          comment.text,
+          dateCell(comment.createdAt),
+          dateCell(comment.updatedAt),
+        ]),
+      ],
+    })
+  }
+  if (content.highlights) {
+    sheets.push({
+      name: 'Markierungen',
+      header: true,
+      rows: [HIGHLIGHT_HEADER, ...highlightRows(data)].map((row, index) =>
+        index === 0 ? row : [toCell(row[0]), ...row.slice(1)],
       ),
     })
   }
@@ -165,6 +202,12 @@ export function toCsvFiles(
       text: tableToCsv([['Seite', 'Kommentar', 'Erstellt', 'Geändert'], ...commentRows(data)]),
     })
   }
+  if (content.highlights) {
+    files.push({
+      name: `${base}-markierungen.csv`,
+      text: tableToCsv([HIGHLIGHT_HEADER, ...highlightRows(data)]),
+    })
+  }
   return files
 }
 
@@ -174,5 +217,6 @@ export function dataSummary(data: DocumentData) {
     blocks: textRows(data).length,
     tables: tablesOf(data).length,
     comments: data.comments.length,
+    highlights: data.highlights.length,
   }
 }

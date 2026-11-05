@@ -4,9 +4,11 @@ import type { WorkflowStep } from '@/types/workflow'
 
 type WatermarkStep = Extract<WorkflowStep, { type: 'watermark' }>
 
+const IMAGE_ASSET = 'workflow-watermark'
+
 /**
- * Puts a text watermark on every page of a PDF, upright as each page is
- * displayed (its own rotation is taken into account).
+ * Puts a text or picture watermark on every page of a PDF, upright as each
+ * page is displayed (its own rotation is taken into account).
  */
 export async function watermarkPdf(data: Uint8Array, step: WatermarkStep): Promise<Uint8Array> {
   const { PDFDocument } = await import('pdf-lib')
@@ -22,6 +24,7 @@ export async function watermarkPdf(data: Uint8Array, step: WatermarkStep): Promi
         type: 'watermark',
         color: step.color,
         text: step.text,
+        ...(step.image && { assetId: IMAGE_ASSET }),
         size: step.size,
         opacity: step.opacity,
         angle: step.angle,
@@ -29,5 +32,8 @@ export async function watermarkPdf(data: Uint8Array, step: WatermarkStep): Promi
       },
     ],
   }))
-  return buildPdf(pages, new Map([['source', { data }]]))
+  const assets = step.image
+    ? new Map([[IMAGE_ASSET, { mimeType: step.image.mimeType, data: step.image.data }]])
+    : undefined
+  return buildPdf(pages, new Map([['source', { data }]]), { assets })
 }

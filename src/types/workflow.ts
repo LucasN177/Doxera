@@ -9,6 +9,8 @@ export type WorkflowStep =
   | {
       type: 'watermark'
       text: string
+      /** Picture instead of the text. */
+      image?: WorkflowImage
       color: string
       /** Width as fraction of the page width. */
       size: number
@@ -17,6 +19,14 @@ export type WorkflowStep =
     }
   | { type: 'compress'; level: CompressionLevel }
   | { type: 'headerFooter'; settings: HeaderFooter }
+
+/** A picture kept inside a saved workflow. */
+export interface WorkflowImage {
+  mimeType: 'image/png' | 'image/jpeg'
+  data: Uint8Array
+  width: number
+  height: number
+}
 
 /** What a workflow hands out at the end. */
 export type WorkflowOutput =

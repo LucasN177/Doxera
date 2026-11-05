@@ -1,7 +1,16 @@
 /** A spreadsheet cell: text, or a number with a display format. */
 export type Cell = string | { value: number; format: NumberFormat }
 
-export type NumberFormat = 'integer' | 'decimal' | 'euro' | 'percent'
+export type NumberFormat = 'integer' | 'decimal' | 'euro' | 'percent' | 'datetime'
+
+/**
+ * A date and time cell (local time): spreadsheets store days since
+ * 30 December 1899, so they can sort and calculate with it.
+ */
+export function dateCell(time: number): Cell {
+  const local = time - new Date(time).getTimezoneOffset() * 60_000
+  return { value: local / 86_400_000 + 25_569, format: 'datetime' }
+}
 
 /**
  * Turns a cell text into a number where it is clearly one, so spreadsheets

@@ -52,7 +52,12 @@ function DataExportContent({ onDone }: { onDone: () => void }) {
   const selectedIds = useViewerStore((state) => state.selectedIds)
   const [format, setFormat] = useState<Format>('xlsx')
   const [target, setTarget] = useState<Target>(selectedIds.length > 1 ? 'selected' : 'all')
-  const [content, setContent] = useState<DataContent>({ text: true, tables: true, comments: true })
+  const [content, setContent] = useState<DataContent>({
+    text: true,
+    tables: true,
+    comments: true,
+    highlights: true,
+  })
   const [result, setResult] = useState<{ key: string; data: DocumentData } | null>(null)
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null)
   const [failed, setFailed] = useState(false)
@@ -91,7 +96,8 @@ function DataExportContent({ onDone }: { onDone: () => void }) {
     !!summary &&
     ((content.text && summary.blocks > 0) ||
       (content.tables && summary.tables > 0) ||
-      (content.comments && summary.comments > 0))
+      (content.comments && summary.comments > 0) ||
+      (content.highlights && summary.highlights > 0))
 
   const exportData = async () => {
     if (!data || !document) return
@@ -120,8 +126,8 @@ function DataExportContent({ onDone }: { onDone: () => void }) {
       <DialogHeader>
         <DialogTitle>Daten exportieren</DialogTitle>
         <DialogDescription>
-          Text, erkannte Tabellen und Kommentare für Tabellenkalkulation oder Weiterverarbeitung.
-          Geschwärzte Zeilen werden ausgelassen.
+          Text, erkannte Tabellen, Kommentare und markierten Text für Tabellenkalkulation oder
+          Weiterverarbeitung. Geschwärzte Zeilen werden ausgelassen.
         </DialogDescription>
       </DialogHeader>
 
@@ -165,6 +171,7 @@ function DataExportContent({ onDone }: { onDone: () => void }) {
                   ['text', 'Text', `${summary.blocks} Abschnitte`],
                   ['tables', 'Tabellen', `${summary.tables} gefunden`],
                   ['comments', 'Kommentare', `${summary.comments} vorhanden`],
+                  ['highlights', 'Markierter Text', `${summary.highlights} vorhanden`],
                 ] as const
               ).map(([part, label, count]) => (
                 <label key={part} className="flex items-center gap-2 text-sm">

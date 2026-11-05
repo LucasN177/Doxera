@@ -21,7 +21,13 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { pickFiles } from '@/lib/file'
-import { canvasToPng, removeWhiteBackground, trimCanvas, type PreparedImage } from '@/lib/images'
+import {
+  canvasToPng,
+  removeWhiteBackground,
+  trimCanvas,
+  type PreparedImage,
+  dataUrl,
+} from '@/lib/images'
 import { cn } from '@/lib/utils'
 import type { StoredSignature } from '@/storage/db'
 import { deleteSignature, listSignatures, saveSignature } from '@/storage/signatures'
@@ -319,14 +325,7 @@ function SignatureDialogContent({ onDone }: { onDone: () => void }) {
 }
 
 function SavedSignatureImage({ signature }: { signature: StoredSignature }) {
-  const src = useMemo(() => {
-    const bytes = new Uint8Array(signature.data)
-    let binary = ''
-    for (let i = 0; i < bytes.length; i += 0x8000) {
-      binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000))
-    }
-    return `data:image/png;base64,${btoa(binary)}`
-  }, [signature])
+  const src = useMemo(() => dataUrl(new Uint8Array(signature.data), 'image/png'), [signature])
   return <img src={src} alt="" className="max-h-full max-w-full object-contain" />
 }
 
