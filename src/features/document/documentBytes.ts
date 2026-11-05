@@ -9,6 +9,7 @@ import {
 import { isUnmodified } from '@/engine/document/pageOps'
 import { getPrimarySource, useDocumentStore } from '@/stores/documentStore'
 import type { PageRef, PdfSource } from '@/types/document'
+import { t } from '@/i18n'
 
 /**
  * The open document (or some of its pages) as PDF bytes, exactly as it is
@@ -36,7 +37,7 @@ async function editedBytes({
   const state = useDocumentStore.getState()
   const document = state.document
   const primary = getPrimarySource(state)
-  if (!document || !primary) throw new Error('Kein Dokument geöffnet.')
+  if (!document || !primary) throw new Error(t('Kein Dokument geöffnet.'))
   const selected = pages ?? document.pages
   const values = state.formValues
   const hasForms = Object.keys(values).length > 0

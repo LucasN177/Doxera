@@ -5,6 +5,7 @@ import { addImagesForPdf } from '@/features/convert/pickImages'
 import { useOpenDocument } from '@/hooks/useOpenDocument'
 import { looksLikePdf } from '@/lib/file'
 import { looksLikeImage } from '@/lib/images'
+import { t } from '@/i18n'
 
 /** What the Launch Handler API hands over (not yet in TypeScript's DOM types). */
 interface LaunchParams {
@@ -31,7 +32,7 @@ export async function handleLaunchedFiles(
   } else if (images.length > 0) {
     addImagesForPdf(images)
   } else if (files.length > 0) {
-    toast.error('Doxera öffnet PDFs und Bilder.')
+    toast.error(t('Doxera öffnet PDFs und Bilder.'))
   }
 }
 
@@ -51,7 +52,7 @@ export function useLaunchQueue() {
         .then((files) => handleLaunchedFiles(files, open))
         .catch((error: unknown) => {
           console.error('Übergebene Dateien konnten nicht gelesen werden', error)
-          toast.error('Die Datei konnte nicht geöffnet werden.')
+          toast.error(t('Die Datei konnte nicht geöffnet werden.'))
         })
     })
   }, [open])

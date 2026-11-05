@@ -10,6 +10,7 @@ import { Kbd } from '@/components/ui/kbd'
 import { formatShortcut } from '@/lib/platform'
 import { useUiStore } from '@/stores/uiStore'
 import { SHORTCUT_GROUPS } from './shortcuts'
+import { t } from '@/i18n'
 
 export function ShortcutsDialog() {
   const open = useUiStore((state) => state.shortcutsOpen)
@@ -19,8 +20,10 @@ export function ShortcutsDialog() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="max-h-[85svh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Tastenkürzel</DialogTitle>
-          <DialogDescription>Auch auf dem iPad mit angeschlossener Tastatur.</DialogDescription>
+          <DialogTitle>{t('Tastenkürzel')}</DialogTitle>
+          <DialogDescription>
+            {t('Auch auf dem iPad mit angeschlossener Tastatur.')}
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-5">
           {SHORTCUT_GROUPS.map((group) => (

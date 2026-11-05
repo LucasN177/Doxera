@@ -18,6 +18,7 @@ import { useDocumentStore } from '@/stores/documentStore'
 import { useUiStore } from '@/stores/uiStore'
 import { useViewerStore } from '@/stores/viewerStore'
 import { collectData } from './collectData'
+import { t } from '@/i18n'
 
 type Format = DataFormat
 type Target = 'all' | 'selected' | 'current'
@@ -25,12 +26,17 @@ type Target = 'all' | 'selected' | 'current'
 const FORMATS = [
   {
     value: 'xlsx',
-    label: 'Excel',
-    hint: 'Ein Blatt je Tabelle, Zahlen rechenbar',
+    label: t('Excel'),
+    hint: t('Ein Blatt je Tabelle, Zahlen rechenbar'),
     icon: FileSpreadsheet,
   },
-  { value: 'json', label: 'JSON', hint: 'Für Programme und Automatisierung', icon: Braces },
-  { value: 'csv', label: 'CSV', hint: 'Eine Datei je Teil, bei mehreren als ZIP', icon: FileText },
+  { value: 'json', label: 'JSON', hint: t('Für Programme und Automatisierung'), icon: Braces },
+  {
+    value: 'csv',
+    label: 'CSV',
+    hint: t('Eine Datei je Teil, bei mehreren als ZIP'),
+    icon: FileText,
+  },
 ] as const
 
 export function DataExportDialog() {
@@ -44,7 +50,7 @@ export function DataExportDialog() {
 }
 
 function baseName(name: string) {
-  return name.replace(/\.pdf$/i, '') || 'Dokument'
+  return name.replace(/\.pdf$/i, '') || t('Dokument')
 }
 
 function DataExportContent({ onDone }: { onDone: () => void }) {
@@ -102,18 +108,18 @@ function DataExportContent({ onDone }: { onDone: () => void }) {
   const exportData = async () => {
     if (!data || !document) return
     const base = baseName(document.name)
-    const toastId = toast.loading('Daten werden exportiert …')
+    const toastId = toast.loading(t('Daten werden exportiert …'))
     try {
       const files = await buildDataFiles(data, content, format, base)
       onDone()
       await deliverGeneratedFiles(files, {
-        archiveName: `${base} (Daten)`,
+        archiveName: t('{base} (Daten)', { base }),
         toastId,
-        noun: ['Die Datei', 'Dateien'],
+        noun: [t('Die Datei ist bereit.'), (count) => t('{count} Dateien sind bereit.', { count })],
       })
     } catch (error) {
       console.error('Datenexport fehlgeschlagen', error)
-      toast.error('Die Daten konnten nicht exportiert werden.', { id: toastId })
+      toast.error(t('Die Daten konnten nicht exportiert werden.'), { id: toastId })
     }
   }
 
@@ -124,16 +130,17 @@ function DataExportContent({ onDone }: { onDone: () => void }) {
   return (
     <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-lg">
       <DialogHeader>
-        <DialogTitle>Daten exportieren</DialogTitle>
+        <DialogTitle>{t('Daten exportieren')}</DialogTitle>
         <DialogDescription>
-          Text, erkannte Tabellen, Kommentare und markierten Text für Tabellenkalkulation oder
-          Weiterverarbeitung. Geschwärzte Zeilen werden ausgelassen.
+          {t(
+            'Text, erkannte Tabellen, Kommentare und markierten Text für Tabellenkalkulation oder Weiterverarbeitung. Geschwärzte Zeilen werden ausgelassen.',
+          )}
         </DialogDescription>
       </DialogHeader>
 
       <div className="space-y-4">
         <fieldset className="space-y-1.5">
-          <legend className="text-sm font-medium">Format</legend>
+          <legend className="text-sm font-medium">{t('Format')}</legend>
           <div className="grid gap-2 sm:grid-cols-3" role="radiogroup">
             {FORMATS.map(({ value, label, hint, icon: Icon }) => (
               <button
@@ -157,21 +164,33 @@ function DataExportContent({ onDone }: { onDone: () => void }) {
         </fieldset>
 
         <fieldset className="space-y-1.5">
-          <legend className="text-sm font-medium">Inhalt</legend>
+          <legend className="text-sm font-medium">{t('Inhalt')}</legend>
           {failed ? (
-            <p className="text-destructive text-sm">Der Inhalt konnte nicht gelesen werden.</p>
+            <p className="text-destructive text-sm">
+              {t('Der Inhalt konnte nicht gelesen werden.')}
+            </p>
           ) : !summary ? (
             <p className="text-muted-foreground text-sm" aria-live="polite">
-              Inhalt wird gelesen …{progress && ` Seite ${progress.done} von ${progress.total}`}
+              {t('Inhalt wird gelesen …')}
+              {progress &&
+                t(' Seite {done} von {total}', { done: progress.done, total: progress.total })}
             </p>
           ) : (
             <div className="space-y-1.5">
               {(
                 [
-                  ['text', 'Text', `${summary.blocks} Abschnitte`],
-                  ['tables', 'Tabellen', `${summary.tables} gefunden`],
-                  ['comments', 'Kommentare', `${summary.comments} vorhanden`],
-                  ['highlights', 'Markierter Text', `${summary.highlights} vorhanden`],
+                  ['text', t('Text'), t('{blocks} Abschnitte', { blocks: summary.blocks })],
+                  ['tables', t('Tabellen'), t('{tables} gefunden', { tables: summary.tables })],
+                  [
+                    'comments',
+                    t('Kommentare'),
+                    t('{comments} vorhanden', { comments: summary.comments }),
+                  ],
+                  [
+                    'highlights',
+                    t('Markierter Text'),
+                    t('{highlights} vorhanden', { highlights: summary.highlights }),
+                  ],
                 ] as const
               ).map(([part, label, count]) => (
                 <label key={part} className="flex items-center gap-2 text-sm">
@@ -187,7 +206,9 @@ function DataExportContent({ onDone }: { onDone: () => void }) {
               ))}
               {summary.blocks === 0 && summary.tables === 0 && (
                 <p className="text-muted-foreground text-xs">
-                  Kein Text gefunden – bei gescannten Seiten zuerst die Texterkennung ausführen.
+                  {t(
+                    'Kein Text gefunden – bei gescannten Seiten zuerst die Texterkennung ausführen.',
+                  )}
                 </p>
               )}
             </div>
@@ -195,15 +216,20 @@ function DataExportContent({ onDone }: { onDone: () => void }) {
         </fieldset>
 
         <fieldset className="space-y-1.5">
-          <legend className="text-sm font-medium">Seiten</legend>
+          <legend className="text-sm font-medium">{t('Seiten')}</legend>
           <div className="flex flex-wrap gap-2" role="radiogroup">
             {(
               [
-                ['all', `Alle (${document?.pages.length ?? 0})`],
+                ['all', t('Alle ({value0})', { value0: document?.pages.length ?? 0 })],
                 ...(selectedIds.length > 0
-                  ? [['selected', `Ausgewählte (${selectedIds.length})`] as const]
+                  ? [
+                      [
+                        'selected',
+                        t('Ausgewählte ({length})', { length: selectedIds.length }),
+                      ] as const,
+                    ]
                   : []),
-                ['current', 'Aktuelle Seite'],
+                ['current', t('Aktuelle Seite')],
               ] as const
             ).map(([value, label]) => (
               <Button
@@ -224,10 +250,10 @@ function DataExportContent({ onDone }: { onDone: () => void }) {
 
       <DialogFooter>
         <Button variant="outline" onClick={onDone}>
-          Abbrechen
+          {t('Abbrechen')}
         </Button>
         <Button onClick={() => void exportData()} disabled={!chosen}>
-          Exportieren
+          {t('Exportieren')}
         </Button>
       </DialogFooter>
     </DialogContent>

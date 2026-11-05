@@ -16,6 +16,7 @@ import { documentBytes } from '@/features/document/documentBytes'
 import { createPdfFile, saveFile } from '@/lib/download'
 import { useDocumentStore } from '@/stores/documentStore'
 import { useUiStore } from '@/stores/uiStore'
+import { t } from '@/i18n'
 
 export function ProtectDialog() {
   const open = useUiStore((state) => state.protectOpen)
@@ -28,7 +29,7 @@ export function ProtectDialog() {
 }
 
 function ProtectContent({ onDone }: { onDone: () => void }) {
-  const name = useDocumentStore((state) => state.document?.name ?? 'Dokument.pdf')
+  const name = useDocumentStore((state) => state.document?.name ?? t('Dokument.pdf'))
   const [password, setPassword] = useState('')
   const [repeat, setRepeat] = useState('')
   const [allowPrint, setAllowPrint] = useState(true)
@@ -38,9 +39,9 @@ function ProtectContent({ onDone }: { onDone: () => void }) {
   const [file, setFile] = useState<File | null>(null)
 
   let problem: string | null = null
-  if (password && !validPassword(password)) problem = 'Das Passwort darf kein Komma enthalten.'
-  else if (password && password.length < 4) problem = 'Bitte mindestens 4 Zeichen verwenden.'
-  else if (repeat && repeat !== password) problem = 'Die Passwörter stimmen nicht überein.'
+  if (password && !validPassword(password)) problem = t('Das Passwort darf kein Komma enthalten.')
+  else if (password && password.length < 4) problem = t('Bitte mindestens 4 Zeichen verwenden.')
+  else if (repeat && repeat !== password) problem = t('Die Passwörter stimmen nicht überein.')
   const ready = !!password && repeat === password && !problem
 
   const protect = async () => {
@@ -55,10 +56,15 @@ function ProtectContent({ onDone }: { onDone: () => void }) {
         allowEdit,
       })
       // Saving needs a fresh tap on iPhone/iPad (share sheet): offer a button
-      setFile(createPdfFile(encrypted, `${name.replace(/\.pdf$/i, '')} (geschützt).pdf`))
+      setFile(
+        createPdfFile(
+          encrypted,
+          t('{value0} (geschützt).pdf', { value0: name.replace(/\.pdf$/i, '') }),
+        ),
+      )
     } catch (error) {
       console.error('Verschlüsseln fehlgeschlagen', error)
-      toast.error('Die PDF konnte nicht geschützt werden.')
+      toast.error(t('Die PDF konnte nicht geschützt werden.'))
     } finally {
       setBusy(false)
     }
@@ -70,7 +76,7 @@ function ProtectContent({ onDone }: { onDone: () => void }) {
       await saveFile(file)
     } catch (error) {
       if ((error as Error).name !== 'AbortError') {
-        toast.error('Die Datei konnte nicht gespeichert werden.')
+        toast.error(t('Die Datei konnte nicht gespeichert werden.'))
       }
     }
   }
@@ -90,10 +96,11 @@ function ProtectContent({ onDone }: { onDone: () => void }) {
   return (
     <DialogContent className="sm:max-w-md">
       <DialogHeader>
-        <DialogTitle>Mit Passwort schützen</DialogTitle>
+        <DialogTitle>{t('Mit Passwort schützen')}</DialogTitle>
         <DialogDescription>
-          Erstellt eine mit AES-256 verschlüsselte Kopie, die sich nur mit dem Passwort öffnen
-          lässt. Doxera speichert das Passwort nicht – gut aufheben!
+          {t(
+            'Erstellt eine mit AES-256 verschlüsselte Kopie, die sich nur mit dem Passwort öffnen lässt. Doxera speichert das Passwort nicht – gut aufheben!',
+          )}
         </DialogDescription>
       </DialogHeader>
 
@@ -101,14 +108,14 @@ function ProtectContent({ onDone }: { onDone: () => void }) {
         <div className="space-y-3">
           <p className="flex items-center gap-2 text-sm">
             <ShieldCheck className="size-5 text-green-600" aria-hidden />
-            {file.name} ist bereit.
+            {t('{name} ist bereit.', { name: file.name })}
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={onDone}>
-              Schließen
+              {t('Schließen')}
             </Button>
             <Button onClick={() => void save()}>
-              <Download /> Speichern
+              <Download /> {t('Speichern')}
             </Button>
           </DialogFooter>
         </div>
@@ -123,8 +130,8 @@ function ProtectContent({ onDone }: { onDone: () => void }) {
           <Input
             type="password"
             autoComplete="new-password"
-            placeholder="Passwort"
-            aria-label="Passwort"
+            placeholder={t('Passwort')}
+            aria-label={t('Passwort')}
             className="text-base sm:text-sm"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
@@ -132,8 +139,8 @@ function ProtectContent({ onDone }: { onDone: () => void }) {
           <Input
             type="password"
             autoComplete="new-password"
-            placeholder="Passwort wiederholen"
-            aria-label="Passwort wiederholen"
+            placeholder={t('Passwort wiederholen')}
+            aria-label={t('Passwort wiederholen')}
             className="text-base sm:text-sm"
             value={repeat}
             onChange={(event) => setRepeat(event.target.value)}
@@ -144,21 +151,22 @@ function ProtectContent({ onDone }: { onDone: () => void }) {
             </p>
           )}
           <fieldset className="space-y-1.5">
-            <legend className="text-sm font-medium">Erlauben</legend>
-            {checkbox('Drucken', allowPrint, setAllowPrint)}
-            {checkbox('Text kopieren', allowCopy, setAllowCopy)}
-            {checkbox('Ändern, Kommentieren, Formulare', allowEdit, setAllowEdit)}
+            <legend className="text-sm font-medium">{t('Erlauben')}</legend>
+            {checkbox(t('Drucken'), allowPrint, setAllowPrint)}
+            {checkbox(t('Text kopieren'), allowCopy, setAllowCopy)}
+            {checkbox(t('Ändern, Kommentieren, Formulare'), allowEdit, setAllowEdit)}
             <p className="text-muted-foreground text-xs">
-              Diese Einschränkungen beachten die meisten PDF-Programme, sie sind aber kein harter
-              Schutz – das Passwort zum Öffnen schon.
+              {t(
+                'Diese Einschränkungen beachten die meisten PDF-Programme, sie sind aber kein harter Schutz – das Passwort zum Öffnen schon.',
+              )}
             </p>
           </fieldset>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onDone}>
-              Abbrechen
+              {t('Abbrechen')}
             </Button>
             <Button type="submit" disabled={!ready || busy}>
-              {busy ? 'Wird verschlüsselt …' : 'Schützen'}
+              {busy ? t('Wird verschlüsselt …') : t('Schützen')}
             </Button>
           </DialogFooter>
         </form>

@@ -5,6 +5,7 @@ import { restoreSavedEdits } from '@/features/library/editsPersistence'
 import { looksLikePdf, pickFiles } from '@/lib/file'
 import { useDocumentStore, type OpenResult } from '@/stores/documentStore'
 import { useLibraryStore } from '@/stores/libraryStore'
+import { t } from '@/i18n'
 
 const PDF_ACCEPT = 'application/pdf,.pdf'
 /** The picker also offers images: they are turned into a PDF. */
@@ -20,7 +21,7 @@ function rememberOpenDocument() {
     .catch((error: unknown) => {
       console.warn('Dokument konnte nicht lokal gespeichert werden', error)
       if ((error as Error | undefined)?.name === 'QuotaExceededError') {
-        toast.warning('Nicht genug Speicherplatz, um das Dokument lokal zu merken.')
+        toast.warning(t('Nicht genug Speicherplatz, um das Dokument lokal zu merken.'))
       }
     })
 }
@@ -46,7 +47,7 @@ export function useOpenDocument() {
     const files = await pickFiles(OPEN_ACCEPT, true)
     const pdf = files.find(looksLikePdf)
     if (pdf) {
-      if (files.length > 1) toast.info('Es wird nur die erste PDF geöffnet.')
+      if (files.length > 1) toast.info(t('Es wird nur die erste PDF geöffnet.'))
       await open(pdf)
     } else {
       addImagesForPdf(files)
@@ -60,7 +61,7 @@ export function useOpenDocument() {
         .loadData(id)
         .catch(() => null)
       if (!data) {
-        toast.error(`„${name}“ ist nicht mehr im lokalen Speicher vorhanden.`)
+        toast.error(t('„{name}“ ist nicht mehr im lokalen Speicher vorhanden.', { name }))
         void useLibraryStore.getState().load()
         return false
       }

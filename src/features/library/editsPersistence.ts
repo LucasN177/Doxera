@@ -6,6 +6,7 @@ import { hashBytes } from '@/storage/documentLibrary'
 import { deleteEdits, loadEdits, saveEdits } from '@/storage/edits'
 import { getPrimarySource, useDocumentStore } from '@/stores/documentStore'
 import { useLibraryStore } from '@/stores/libraryStore'
+import { t } from '@/i18n'
 
 /** Wait this long after the last change before saving. */
 const SAVE_DELAY = 800
@@ -88,11 +89,11 @@ export async function restoreSavedEdits() {
     const edits = await loadEdits(await libraryId(document.data))
     if (!edits || useDocumentStore.getState().document?.id !== document.id) return
     if (!(await useDocumentStore.getState().restoreEdits(edits))) return
-    toast.success('Deine Bearbeitungen wurden wiederhergestellt', {
-      description: `Zuletzt geändert ${formatRelativeTime(edits.savedAt)}.`,
+    toast.success(t('Deine Bearbeitungen wurden wiederhergestellt'), {
+      description: t('Zuletzt geändert {value0}.', { value0: formatRelativeTime(edits.savedAt) }),
       duration: 8000,
       action: {
-        label: 'Original anzeigen',
+        label: t('Original anzeigen'),
         onClick: () => {
           const primary = getPrimarySource(useDocumentStore.getState())
           // Undoable, so the changes can be brought back with Undo

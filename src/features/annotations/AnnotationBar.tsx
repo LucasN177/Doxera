@@ -40,24 +40,25 @@ import {
 import { useDocumentStore } from '@/stores/documentStore'
 import { useUiStore } from '@/stores/uiStore'
 import { insertImage } from './insertImage'
+import { t } from '@/i18n'
 
 const TOOLS: Array<{ tool: AnnotationTool; label: string; icon: LucideIcon; key: string }> = [
-  { tool: 'select', label: 'Auswählen und verschieben', icon: MousePointer2, key: 'V' },
-  { tool: 'rect', label: 'Rechteck', icon: Square, key: 'R' },
-  { tool: 'ellipse', label: 'Ellipse', icon: Circle, key: 'E' },
-  { tool: 'line', label: 'Linie', icon: Minus, key: 'L' },
-  { tool: 'arrow', label: 'Pfeil', icon: MoveUpRight, key: 'P' },
-  { tool: 'ink', label: 'Stift (freihand)', icon: Pencil, key: 'D' },
-  { tool: 'marker', label: 'Marker (freihand)', icon: Highlighter, key: 'M' },
-  { tool: 'text', label: 'Text', icon: Type, key: 'T' },
+  { tool: 'select', label: t('Auswählen und verschieben'), icon: MousePointer2, key: 'V' },
+  { tool: 'rect', label: t('Rechteck'), icon: Square, key: 'R' },
+  { tool: 'ellipse', label: t('Ellipse'), icon: Circle, key: 'E' },
+  { tool: 'line', label: t('Linie'), icon: Minus, key: 'L' },
+  { tool: 'arrow', label: t('Pfeil'), icon: MoveUpRight, key: 'P' },
+  { tool: 'ink', label: t('Stift (freihand)'), icon: Pencil, key: 'D' },
+  { tool: 'marker', label: t('Marker (freihand)'), icon: Highlighter, key: 'M' },
+  { tool: 'text', label: t('Text'), icon: Type, key: 'T' },
   {
     tool: 'edittext',
-    label: 'Vorhandenen Text & Bilder bearbeiten',
+    label: t('Vorhandenen Text & Bilder bearbeiten'),
     icon: TextCursorInput,
     key: 'B',
   },
-  { tool: 'note', label: 'Notiz / Kommentar', icon: StickyNote, key: 'K' },
-  { tool: 'redact', label: 'Schwärzen (dauerhaft)', icon: EyeOff, key: 'X' },
+  { tool: 'note', label: t('Notiz / Kommentar'), icon: StickyNote, key: 'K' },
+  { tool: 'redact', label: t('Schwärzen (dauerhaft)'), icon: EyeOff, key: 'X' },
 ]
 
 /** Picks an image file and places it on the current page. */
@@ -68,7 +69,7 @@ async function pickAndInsertImage() {
     insertImage(await prepareImage(file))
   } catch (error) {
     console.error('Bild konnte nicht eingefügt werden', error)
-    toast.error(`„${file.name}“ konnte nicht als Bild gelesen werden.`)
+    toast.error(t('„{name}“ konnte nicht als Bild gelesen werden.', { name: file.name }))
   }
 }
 const STROKE_WIDTHS = [1, 2, 3, 5, 8]
@@ -79,13 +80,13 @@ const TEXT_FONTS: Array<{ value: TextFont; name: string }> = [
   { value: 'mono', name: 'Courier' },
 ]
 const COLOR_NAMES: Record<string, string> = {
-  '#e11d48': 'Rot',
-  '#f59e0b': 'Gelb',
-  '#16a34a': 'Grün',
-  '#2563eb': 'Blau',
-  '#7c3aed': 'Violett',
-  '#0f172a': 'Schwarz',
-  '#ffffff': 'Weiß',
+  '#e11d48': t('Rot'),
+  '#f59e0b': t('Gelb'),
+  '#16a34a': t('Grün'),
+  '#2563eb': t('Blau'),
+  '#7c3aed': t('Violett'),
+  '#0f172a': t('Schwarz'),
+  '#ffffff': t('Weiß'),
 }
 
 function isTyping(target: EventTarget | null) {
@@ -211,7 +212,7 @@ export function AnnotationBar() {
     <div
       className="bg-background flex shrink-0 items-center gap-1 overflow-x-auto border-b px-2 py-1 pl-[max(0.5rem,env(safe-area-inset-left))]"
       role="toolbar"
-      aria-label="Zeichnen und beschriften"
+      aria-label={t('Zeichnen und beschriften')}
       data-annotation-bar
     >
       <div className="flex items-center">
@@ -229,17 +230,17 @@ export function AnnotationBar() {
         ))}
       </div>
 
-      <IconButton label="Bild einfügen" onClick={() => void pickAndInsertImage()}>
+      <IconButton label={t('Bild einfügen')} onClick={() => void pickAndInsertImage()}>
         <ImagePlus />
       </IconButton>
       <IconButton
-        label="Wasserzeichen"
+        label={t('Wasserzeichen')}
         onClick={() => useUiStore.getState().setWatermarkOpen(true)}
       >
         <Stamp />
       </IconButton>
       <IconButton
-        label="Signatur einfügen"
+        label={t('Signatur einfügen')}
         onClick={() => useUiStore.getState().setSignatureOpen(true)}
       >
         <Signature />
@@ -248,7 +249,7 @@ export function AnnotationBar() {
       <Separator orientation="vertical" className="mx-1 data-[orientation=vertical]:h-6" />
 
       {kind !== 'redact' && (
-        <div className="flex items-center gap-1" role="radiogroup" aria-label="Farbe">
+        <div className="flex items-center gap-1" role="radiogroup" aria-label={t('Farbe')}>
           {ANNOTATION_COLORS.map((value) => (
             <button
               key={value}
@@ -280,7 +281,7 @@ export function AnnotationBar() {
         <>
           <Separator orientation="vertical" className="mx-1 data-[orientation=vertical]:h-6" />
           <select
-            aria-label="Linienstärke"
+            aria-label={t('Linienstärke')}
             className="border-input bg-background h-8 rounded-md border px-1.5 text-sm"
             value={strokeWidth}
             onChange={(event) => setStyle({ strokeWidth: Number(event.target.value) })}
@@ -295,7 +296,7 @@ export function AnnotationBar() {
       )}
       {showFill && (
         <IconButton
-          label={filled ? 'Füllung aus' : 'Füllung an'}
+          label={filled ? t('Füllung aus') : t('Füllung an')}
           aria-pressed={filled}
           className={cn(filled && 'bg-accent text-accent-foreground')}
           onClick={() => setStyle({ filled: !filled })}
@@ -307,7 +308,7 @@ export function AnnotationBar() {
         <>
           <Separator orientation="vertical" className="mx-1 data-[orientation=vertical]:h-6" />
           <select
-            aria-label="Schriftgröße"
+            aria-label={t('Schriftgröße')}
             className="border-input bg-background h-8 rounded-md border px-1.5 text-sm"
             value={fontSize}
             onChange={(event) => setStyle({ fontSize: Number(event.target.value) })}
@@ -319,7 +320,7 @@ export function AnnotationBar() {
             ))}
           </select>
           <select
-            aria-label="Schriftart"
+            aria-label={t('Schriftart')}
             className="border-input bg-background h-8 rounded-md border px-1.5 text-sm"
             value={font}
             onChange={(event) => setStyle({ font: event.target.value as TextFont })}
@@ -331,7 +332,7 @@ export function AnnotationBar() {
             ))}
           </select>
           <IconButton
-            label="Fett"
+            label={t('Fett')}
             aria-pressed={bold}
             className={cn(bold && 'bg-accent text-accent-foreground')}
             onClick={() => setStyle({ bold: !bold })}
@@ -339,7 +340,7 @@ export function AnnotationBar() {
             <Bold />
           </IconButton>
           <IconButton
-            label="Kursiv"
+            label={t('Kursiv')}
             aria-pressed={italic}
             className={cn(italic && 'bg-accent text-accent-foreground')}
             onClick={() => setStyle({ italic: !italic })}
@@ -350,7 +351,7 @@ export function AnnotationBar() {
       )}
 
       {selectedImage?.xobject && (
-        <IconButton label="Original wiederherstellen" onClick={restoreOriginal}>
+        <IconButton label={t('Original wiederherstellen')} onClick={restoreOriginal}>
           <RotateCcw />
         </IconButton>
       )}
@@ -358,12 +359,12 @@ export function AnnotationBar() {
         <IconButton
           label={
             selectedText?.replaces
-              ? 'Änderung verwerfen (Originaltext)'
+              ? t('Änderung verwerfen (Originaltext)')
               : selectedImage?.xobject
-                ? 'Bild entfernen'
-                : 'Auswahl löschen'
+                ? t('Bild entfernen')
+                : t('Auswahl löschen')
           }
-          shortcut="Entf"
+          shortcut={t('Entf')}
           onClick={deleteSelected}
         >
           <Trash2 />
@@ -372,7 +373,7 @@ export function AnnotationBar() {
 
       {/* The toolbar hides its comments button on phones */}
       <IconButton
-        label="Kommentare"
+        label={t('Kommentare')}
         className="sm:hidden"
         onClick={() => useUiStore.getState().setCommentsOpen(true)}
       >
@@ -382,21 +383,21 @@ export function AnnotationBar() {
       <div className="flex-1" />
       <span className="text-muted-foreground px-2 text-xs whitespace-nowrap max-2xl:hidden">
         {tool === 'select'
-          ? 'Element anklicken zum Bearbeiten, Doppelklick auf Text zum Ändern'
+          ? t('Element anklicken zum Bearbeiten, Doppelklick auf Text zum Ändern')
           : tool === 'text'
-            ? 'Auf die Seite klicken und schreiben'
+            ? t('Auf die Seite klicken und schreiben')
             : tool === 'edittext'
-              ? 'Textzeile oder Bild anklicken – Text ändern, Bild verschieben oder entfernen'
+              ? t('Textzeile oder Bild anklicken – Text ändern, Bild verschieben oder entfernen')
               : tool === 'redact'
-                ? 'Bereich aufziehen – Inhalt darunter wird beim Export entfernt'
+                ? t('Bereich aufziehen – Inhalt darunter wird beim Export entfernt')
                 : tool === 'ink' || tool === 'marker'
-                  ? 'Auf der Seite zeichnen – zwei Finger zoomen'
+                  ? t('Auf der Seite zeichnen – zwei Finger zoomen')
                   : tool === 'note'
-                    ? 'Auf die Seite klicken, um eine Notiz zu setzen'
-                    : 'Auf der Seite ziehen zum Zeichnen'}
+                    ? t('Auf die Seite klicken, um eine Notiz zu setzen')
+                    : t('Auf der Seite ziehen zum Zeichnen')}
       </span>
       <Button size="sm" onClick={() => setActive(false)}>
-        Fertig
+        {t('Fertig')}
       </Button>
     </div>
   )

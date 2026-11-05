@@ -8,13 +8,14 @@ import { cn } from '@/lib/utils'
 import { useAnnotationStore } from '@/stores/annotationStore'
 import { useDocumentStore } from '@/stores/documentStore'
 import type { NoteAnnotation } from '@/types/annotations'
+import { localeTag, t } from '@/i18n'
 
 const NOTE_COLORS = [
-  { value: '#facc15', name: 'Gelb' },
-  { value: '#4ade80', name: 'Grün' },
-  { value: '#60a5fa', name: 'Blau' },
-  { value: '#f472b6', name: 'Pink' },
-  { value: '#fb923c', name: 'Orange' },
+  { value: '#facc15', name: t('Gelb') },
+  { value: '#4ade80', name: t('Grün') },
+  { value: '#60a5fa', name: t('Blau') },
+  { value: '#f472b6', name: t('Pink') },
+  { value: '#fb923c', name: t('Orange') },
 ]
 const WIDTH = 288
 
@@ -140,7 +141,7 @@ function NotePopoverContent({
     <div
       ref={panelRef}
       role="dialog"
-      aria-label={`Notiz auf Seite ${pageNumber}`}
+      aria-label={t('Notiz auf Seite {pageNumber}', { pageNumber })}
       data-annotation
       className={cn(
         'bg-popover text-popover-foreground fixed z-40 flex flex-col gap-2 rounded-lg border p-3 shadow-xl',
@@ -149,22 +150,24 @@ function NotePopoverContent({
       style={phone ? undefined : { left: Math.max(8, left), top, width: WIDTH }}
     >
       <div className="flex items-center gap-2">
-        <span className="text-sm font-medium">Notiz · Seite {pageNumber}</span>
+        <span className="text-sm font-medium">
+          {t('Notiz · Seite')} {pageNumber}
+        </span>
         <span
           className="text-muted-foreground text-xs"
-          title={new Date(note.updatedAt).toLocaleString('de-DE')}
+          title={new Date(note.updatedAt).toLocaleString(localeTag)}
         >
           {formatRelativeTime(note.updatedAt)}
         </span>
         <div className="flex-1" />
-        <IconButton label="Schließen" className="-mr-1" onClick={close}>
+        <IconButton label={t('Schließen')} className="-mr-1" onClick={close}>
           <X />
         </IconButton>
       </div>
       <textarea
-        aria-label="Notiztext"
+        aria-label={t('Notiztext')}
         className="border-input bg-background focus-visible:ring-ring/50 min-h-28 resize-y rounded-md border p-2 text-base outline-none focus-visible:ring-[3px] sm:text-sm"
-        placeholder="Kommentar schreiben …"
+        placeholder={t('Kommentar schreiben …')}
         value={text}
         autoFocus={isNew || !note.text}
         onChange={(event) => {
@@ -179,7 +182,11 @@ function NotePopoverContent({
         }}
       />
       <div className="flex items-center gap-1.5">
-        <div className="flex items-center gap-1" role="radiogroup" aria-label="Farbe der Notiz">
+        <div
+          className="flex items-center gap-1"
+          role="radiogroup"
+          aria-label={t('Farbe der Notiz')}
+        >
           {NOTE_COLORS.map(({ value, name }) => (
             <button
               key={value}
@@ -198,11 +205,11 @@ function NotePopoverContent({
           ))}
         </div>
         <div className="flex-1" />
-        <IconButton label="Notiz löschen" onClick={remove}>
+        <IconButton label={t('Notiz löschen')} onClick={remove}>
           <Trash2 />
         </IconButton>
         <Button size="sm" onClick={close}>
-          Fertig
+          {t('Fertig')}
         </Button>
       </div>
     </div>

@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils'
 import { unlock, useDocumentStore } from '@/stores/documentStore'
 import { useUiStore } from '@/stores/uiStore'
 import { useViewerStore } from '@/stores/viewerStore'
+import { t } from '@/i18n'
 
 export function CompareDialog() {
   const compare = useUiStore((state) => state.compare)
@@ -65,7 +66,7 @@ type State =
 const MAX_SHOWN = 500
 
 function CompareContent({ file }: { file: File }) {
-  const name = useDocumentStore((state) => state.document?.name ?? 'Dokument')
+  const name = useDocumentStore((state) => state.document?.name ?? t('Dokument'))
   const [state, setState] = useState<State>({ status: 'loading' })
   // false: the picked file is the older version, the open document the newer one
   const [swapped, setSwapped] = useState(false)
@@ -83,8 +84,8 @@ function CompareContent({ file }: { file: File }) {
         setState({
           status: 'error',
           message: cancelledByUser
-            ? 'Ohne Passwort lässt sich die Datei nicht vergleichen.'
-            : 'Die Dateien konnten nicht verglichen werden.',
+            ? t('Ohne Passwort lässt sich die Datei nicht vergleichen.')
+            : t('Die Dateien konnten nicht verglichen werden.'),
         })
       })
     return () => {
@@ -115,15 +116,15 @@ function CompareContent({ file }: { file: File }) {
     <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-3xl">
       <DialogHeader>
         <DialogTitle className="flex items-center gap-2">
-          <GitCompareArrows className="size-5" aria-hidden /> Dokumente vergleichen
+          <GitCompareArrows className="size-5" aria-hidden /> {t('Dokumente vergleichen')}
         </DialogTitle>
         <DialogDescription className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <span>
-            Vorher: <strong className="text-foreground">{oldName}</strong>
+            {t('Vorher:')} <strong className="text-foreground">{oldName}</strong>
           </span>
           <span aria-hidden>→</span>
           <span>
-            Nachher: <strong className="text-foreground">{newName}</strong>
+            {t('Nachher:')} <strong className="text-foreground">{newName}</strong>
           </span>
           <Button
             size="sm"
@@ -131,13 +132,15 @@ function CompareContent({ file }: { file: File }) {
             className="h-7 px-2 text-xs"
             onClick={() => setSwapped((value) => !value)}
           >
-            <ArrowLeftRight /> Tauschen
+            <ArrowLeftRight /> {t('Tauschen')}
           </Button>
         </DialogDescription>
       </DialogHeader>
 
       {state.status === 'loading' && (
-        <p className="text-muted-foreground py-6 text-center text-sm">Texte werden verglichen …</p>
+        <p className="text-muted-foreground py-6 text-center text-sm">
+          {t('Texte werden verglichen …')}
+        </p>
       )}
       {state.status === 'error' && (
         <p className="text-destructive py-6 text-center text-sm" role="alert">
@@ -146,27 +149,35 @@ function CompareContent({ file }: { file: File }) {
       )}
       {noText && (
         <p className="text-muted-foreground py-6 text-center text-sm">
-          In {state.status === 'ready' && state.file.length === 0 ? file.name : name} wurde kein
-          Text gefunden. Bei Scans bitte zuerst die Texterkennung ausführen.
+          {t(
+            'In {name} wurde kein Text gefunden. Bei Scans bitte zuerst die Texterkennung ausführen.',
+            { name: state.status === 'ready' && state.file.length === 0 ? file.name : name },
+          )}
         </p>
       )}
       {result && !noText && (
         <>
           <p className="text-sm" role="status">
             {result.changes.length === 0 ? (
-              'Der Text ist identisch.'
+              t('Der Text ist identisch.')
             ) : (
               <>
                 <strong>
-                  {result.changes.length} {result.changes.length === 1 ? 'Änderung' : 'Änderungen'}
+                  {result.changes.length === 1
+                    ? t('1 Änderung')
+                    : t('{count} Änderungen', { count: result.changes.length })}
                 </strong>
                 {' · '}
                 <span className="text-red-700 dark:text-red-400">
-                  {result.removedWords} {result.removedWords === 1 ? 'Wort' : 'Wörter'} entfernt
+                  {result.removedWords === 1
+                    ? t('1 Wort entfernt')
+                    : t('{count} Wörter entfernt', { count: result.removedWords })}
                 </span>
                 {' · '}
                 <span className="text-green-700 dark:text-green-400">
-                  {result.addedWords} {result.addedWords === 1 ? 'Wort' : 'Wörter'} hinzugefügt
+                  {result.addedWords === 1
+                    ? t('1 Wort hinzugefügt')
+                    : t('{count} Wörter hinzugefügt', { count: result.addedWords })}
                 </span>
               </>
             )}
@@ -179,10 +190,10 @@ function CompareContent({ file }: { file: File }) {
                     type="button"
                     className="hover:bg-accent focus-visible:ring-ring flex w-full gap-3 rounded-md border p-2 text-left text-sm focus-visible:ring-2 focus-visible:outline-none"
                     onClick={() => show(change)}
-                    title="In der geöffneten PDF zeigen"
+                    title={t('In der geöffneten PDF zeigen')}
                   >
                     <span className="text-muted-foreground w-12 shrink-0 text-xs tabular-nums">
-                      S. {currentPage(change) + 1}
+                      {t('S. {page}', { page: currentPage(change) + 1 })}
                     </span>
                     <span className="min-w-0 flex-1 break-words">
                       {change.before && (
@@ -210,14 +221,17 @@ function CompareContent({ file }: { file: File }) {
               ))}
               {result.changes.length > MAX_SHOWN && (
                 <li className="text-muted-foreground py-2 text-center text-xs">
-                  … und {result.changes.length - MAX_SHOWN} weitere Änderungen
+                  {t('… und {count} weitere Änderungen', {
+                    count: result.changes.length - MAX_SHOWN,
+                  })}
                 </li>
               )}
             </ol>
           )}
           <p className="text-muted-foreground text-xs">
-            Verglichen wird der Text (ohne Formatierung und Bilder). Ein Klick zeigt die Stelle in
-            der geöffneten PDF.
+            {t(
+              'Verglichen wird der Text (ohne Formatierung und Bilder). Ein Klick zeigt die Stelle in der geöffneten PDF.',
+            )}
           </p>
         </>
       )}

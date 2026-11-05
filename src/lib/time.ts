@@ -1,3 +1,4 @@
+import { locale } from '@/i18n'
 const UNITS: Array<[Intl.RelativeTimeFormatUnit, number]> = [
   ['year', 365 * 24 * 60 * 60 * 1000],
   ['month', 30 * 24 * 60 * 60 * 1000],
@@ -7,7 +8,7 @@ const UNITS: Array<[Intl.RelativeTimeFormatUnit, number]> = [
   ['minute', 60 * 1000],
 ]
 
-const formatter = new Intl.RelativeTimeFormat('de', { numeric: 'auto' })
+const formatter = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' })
 
 /** "gerade eben", "vor 5 Minuten", "gestern", … */
 export function formatRelativeTime(timestamp: number, now = Date.now()): string {

@@ -18,22 +18,23 @@ import { formatFileSize } from '@/lib/file'
 import { cn } from '@/lib/utils'
 import { useDocumentStore } from '@/stores/documentStore'
 import { useUiStore } from '@/stores/uiStore'
+import { t } from '@/i18n'
 
 const LEVELS: Array<{ level: CompressionLevel; name: string; hint: string }> = [
   {
     level: 'medium',
-    name: 'Ausgewogen',
-    hint: 'Bilder auf 150 dpi – gut lesbar und druckbar. Empfohlen.',
+    name: t('Ausgewogen'),
+    hint: t('Bilder auf 150 dpi – gut lesbar und druckbar. Empfohlen.'),
   },
   {
     level: 'strong',
-    name: 'Stark',
-    hint: 'Bilder auf 96 dpi – am kleinsten, für Bildschirm und E-Mail.',
+    name: t('Stark'),
+    hint: t('Bilder auf 96 dpi – am kleinsten, für Bildschirm und E-Mail.'),
   },
   {
     level: 'lossless',
-    name: 'Verlustfrei',
-    hint: 'Bilder bleiben unverändert; nur die Datei wird effizienter gespeichert.',
+    name: t('Verlustfrei'),
+    hint: t('Bilder bleiben unverändert; nur die Datei wird effizienter gespeichert.'),
   },
 ]
 
@@ -48,11 +49,11 @@ export function CompressDialog() {
 }
 
 function baseName(name: string) {
-  return name.replace(/\.pdf$/i, '') || 'Dokument'
+  return name.replace(/\.pdf$/i, '') || t('Dokument')
 }
 
 function CompressContent({ onDone }: { onDone: () => void }) {
-  const name = useDocumentStore((state) => state.document?.name ?? 'Dokument.pdf')
+  const name = useDocumentStore((state) => state.document?.name ?? t('Dokument.pdf'))
   const [level, setLevel] = useState<CompressionLevel>('medium')
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<CompressionResult | null>(null)
@@ -68,7 +69,7 @@ function CompressContent({ onDone }: { onDone: () => void }) {
       setResult(await compressPdfData(data, level))
     } catch (error) {
       console.error('Komprimieren fehlgeschlagen', error)
-      toast.error('Die PDF konnte nicht komprimiert werden.')
+      toast.error(t('Die PDF konnte nicht komprimiert werden.'))
     } finally {
       setBusy(false)
     }
@@ -80,7 +81,7 @@ function CompressContent({ onDone }: { onDone: () => void }) {
       await saveFile(createPdfFile(result.data, fileName))
     } catch (error) {
       console.error('Speichern fehlgeschlagen', error)
-      toast.error('Die Datei konnte nicht gespeichert werden.')
+      toast.error(t('Die Datei konnte nicht gespeichert werden.'))
     }
   }
 
@@ -95,10 +96,11 @@ function CompressContent({ onDone }: { onDone: () => void }) {
   return (
     <DialogContent className="sm:max-w-md">
       <DialogHeader>
-        <DialogTitle>PDF komprimieren</DialogTitle>
+        <DialogTitle>{t('PDF komprimieren')}</DialogTitle>
         <DialogDescription>
-          Verkleinert große Bilder auf die Auflösung, in der sie angezeigt werden, und speichert die
-          Datei effizienter. Läuft lokal im Browser.
+          {t(
+            'Verkleinert große Bilder auf die Auflösung, in der sie angezeigt werden, und speichert die Datei effizienter. Läuft lokal im Browser.',
+          )}
         </DialogDescription>
       </DialogHeader>
 
@@ -113,25 +115,28 @@ function CompressContent({ onDone }: { onDone: () => void }) {
             {saved >= 0.01 ? (
               <>
                 <FileCheck2 className="mr-1 inline size-4 text-green-600" aria-hidden />
-                {Math.round(saved * 100)} % kleiner
+                {t('{percent} % kleiner', { percent: Math.round(saved * 100) })}
                 {result.images.recompressed > 0 &&
-                  ` · ${result.images.recompressed} von ${result.images.total} Bildern verkleinert`}
+                  t(' · {recompressed} von {total} Bildern verkleinert', {
+                    recompressed: result.images.recompressed,
+                    total: result.images.total,
+                  })}
               </>
             ) : (
-              'Die Datei ist bereits gut komprimiert – kleiner geht es nicht.'
+              t('Die Datei ist bereits gut komprimiert – kleiner geht es nicht.')
             )}
           </p>
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setResult(null)}>
-              Andere Stufe
+              {t('Andere Stufe')}
             </Button>
             {saved >= 0.01 && (
               <>
                 <Button variant="outline" onClick={() => void openResult()}>
-                  Öffnen
+                  {t('Öffnen')}
                 </Button>
                 <Button onClick={() => void save()}>
-                  <Download /> Speichern
+                  <Download /> {t('Speichern')}
                 </Button>
               </>
             )}
@@ -139,7 +144,7 @@ function CompressContent({ onDone }: { onDone: () => void }) {
         </div>
       ) : (
         <>
-          <div className="space-y-2" role="radiogroup" aria-label="Stufe">
+          <div className="space-y-2" role="radiogroup" aria-label={t('Stufe')}>
             {LEVELS.map((option) => (
               <button
                 key={option.level}
@@ -159,10 +164,10 @@ function CompressContent({ onDone }: { onDone: () => void }) {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={onDone} disabled={busy}>
-              Abbrechen
+              {t('Abbrechen')}
             </Button>
             <Button onClick={() => void compress()} disabled={busy}>
-              {busy ? 'Wird komprimiert …' : 'Komprimieren'}
+              {busy ? t('Wird komprimiert …') : t('Komprimieren')}
             </Button>
           </DialogFooter>
         </>

@@ -2,10 +2,11 @@ import { ZoomIn, ZoomOut } from 'lucide-react'
 import { IconButton } from '@/components/layout/IconButton'
 import { formatZoom, MAX_ZOOM, MIN_ZOOM, ZOOM_STEPS } from '@/lib/zoom'
 import { useViewerStore } from '@/stores/viewerStore'
+import { t } from '@/i18n'
 
 const FIT_OPTIONS = [
-  { value: 'fit-width', label: 'Seitenbreite' },
-  { value: 'fit-page', label: 'Ganze Seite' },
+  { value: 'fit-width', label: t('Seitenbreite') },
+  { value: 'fit-page', label: t('Ganze Seite') },
 ] as const
 
 export function ZoomControls() {
@@ -26,11 +27,11 @@ export function ZoomControls() {
 
   return (
     <div className="flex items-center gap-1 max-sm:hidden">
-      <IconButton label="Verkleinern" disabled={scale <= MIN_ZOOM} onClick={zoomOut}>
+      <IconButton label={t('Verkleinern')} disabled={scale <= MIN_ZOOM} onClick={zoomOut}>
         <ZoomOut />
       </IconButton>
       <select
-        aria-label="Zoomstufe"
+        aria-label={t('Zoomstufe')}
         className="border-input bg-background focus-visible:ring-ring/50 h-8 rounded-md border px-2 text-sm shadow-xs outline-none focus-visible:ring-[3px] max-sm:hidden"
         value={value}
         onChange={(event) => onChange(event.target.value)}
@@ -50,7 +51,7 @@ export function ZoomControls() {
           </option>
         ))}
       </select>
-      <IconButton label="Vergrößern" disabled={scale >= MAX_ZOOM} onClick={zoomIn}>
+      <IconButton label={t('Vergrößern')} disabled={scale >= MAX_ZOOM} onClick={zoomIn}>
         <ZoomIn />
       </IconButton>
     </div>

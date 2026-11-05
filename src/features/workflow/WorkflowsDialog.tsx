@@ -41,6 +41,7 @@ import { useUiStore } from '@/stores/uiStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import type { Workflow, WorkflowImage, WorkflowOutput, WorkflowStep } from '@/types/workflow'
 import { runWorkflow } from './runWorkflow'
+import { t } from '@/i18n'
 
 type View =
   | { type: 'list' }
@@ -48,10 +49,10 @@ type View =
   | { type: 'run'; workflow: Workflow; progress: number; files?: File[]; note?: string }
 
 const STEP_INFO = {
-  ocr: { label: 'Texterkennung', icon: ScanText },
-  watermark: { label: 'Wasserzeichen', icon: Stamp },
-  compress: { label: 'Komprimieren', icon: FileArchive },
-  headerFooter: { label: 'Seitenzahlen', icon: Hash },
+  ocr: { label: t('Texterkennung'), icon: ScanText },
+  watermark: { label: t('Wasserzeichen'), icon: Stamp },
+  compress: { label: t('Komprimieren'), icon: FileArchive },
+  headerFooter: { label: t('Seitenzahlen'), icon: Hash },
 } as const
 
 const timestamp = () => Date.now()
@@ -64,7 +65,7 @@ function newWorkflow(template?: Pick<Workflow, 'name' | 'steps' | 'output'>): Wo
   const now = timestamp()
   return {
     id: crypto.randomUUID(),
-    name: template?.name ?? 'Neuer Workflow',
+    name: template?.name ?? t('Neuer Workflow'),
     steps: template ? structuredClone(template.steps) : [],
     output: template ? structuredClone(template.output) : { type: 'pdf' },
     createdAt: now,
@@ -97,16 +98,16 @@ function WorkflowsContent({ onClose }: { onClose: () => void }) {
     try {
       await useWorkflowStore.getState().save({ ...workflow, updatedAt: timestamp() })
       setView({ type: 'list' })
-      toast.success(`„${workflow.name}“ gespeichert`)
+      toast.success(t('„{name}“ gespeichert', { name: workflow.name }))
     } catch (error) {
       console.error('Workflow konnte nicht gespeichert werden', error)
-      toast.error('Der Workflow konnte nicht gespeichert werden.')
+      toast.error(t('Der Workflow konnte nicht gespeichert werden.'))
     }
   }
 
   const remove = async (workflow: Workflow) => {
     await useWorkflowStore.getState().remove(workflow.id)
-    toast.success(`„${workflow.name}“ gelöscht`)
+    toast.success(t('„{name}“ gelöscht', { name: workflow.name }))
   }
 
   /** Runs on the open document as it would be exported. */
@@ -126,7 +127,7 @@ function WorkflowsContent({ onClose }: { onClose: () => void }) {
       setView({ type: 'run', workflow, progress: 1, files: result.files, note: result.note })
     } catch (error) {
       console.error('Workflow fehlgeschlagen', error)
-      toast.error('Der Workflow ist fehlgeschlagen.')
+      toast.error(t('Der Workflow ist fehlgeschlagen.'))
       setView({ type: 'list' })
     }
   }
@@ -167,22 +168,22 @@ function WorkflowsContent({ onClose }: { onClose: () => void }) {
           <p className="text-sm">
             {done
               ? view.files!.length > 0
-                ? `Fertig: ${view.note}`
-                : `Kein Ergebnis: ${view.note}`
-              : 'Wird ausgeführt …'}
+                ? t('Fertig: {note}', { note: view.note })
+                : t('Kein Ergebnis: {note}', { note: view.note })
+              : t('Wird ausgeführt …')}
           </p>
         </div>
         {done && (
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setView({ type: 'list' })}>
-              Zurück
+              {t('Zurück')}
             </Button>
             {pdf && (
               <Button
                 variant="outline"
                 onClick={() => void open(view.files![0]).then((ok) => ok && onClose())}
               >
-                Öffnen
+                {t('Öffnen')}
               </Button>
             )}
             {view.files!.length > 0 && (
@@ -190,12 +191,12 @@ function WorkflowsContent({ onClose }: { onClose: () => void }) {
                 onClick={() =>
                   void saveFilesNow(view.files!, view.workflow.name).catch((error: unknown) => {
                     if ((error as Error).name !== 'AbortError') {
-                      toast.error('Die Ergebnisse konnten nicht gespeichert werden.')
+                      toast.error(t('Die Ergebnisse konnten nicht gespeichert werden.'))
                     }
                   })
                 }
               >
-                Speichern
+                {t('Speichern')}
               </Button>
             )}
           </DialogFooter>
@@ -207,27 +208,28 @@ function WorkflowsContent({ onClose }: { onClose: () => void }) {
   return (
     <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-xl">
       <DialogHeader>
-        <DialogTitle>Workflows</DialogTitle>
+        <DialogTitle>{t('Workflows')}</DialogTitle>
         <DialogDescription>
-          Wiederverwendbare Abläufe aus mehreren Schritten – auf das offene Dokument oder viele
-          Dateien auf einmal anwenden. Sie werden lokal in diesem Browser gespeichert.
+          {t(
+            'Wiederverwendbare Abläufe aus mehreren Schritten – auf das offene Dokument oder viele Dateien auf einmal anwenden. Sie werden lokal in diesem Browser gespeichert.',
+          )}
         </DialogDescription>
       </DialogHeader>
 
       <section className="space-y-2">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium">Meine Workflows</h3>
+          <h3 className="text-sm font-medium">{t('Meine Workflows')}</h3>
           <Button
             size="sm"
             variant="outline"
             onClick={() => setView({ type: 'edit', workflow: newWorkflow() })}
           >
-            <Plus /> Neu
+            <Plus /> {t('Neu')}
           </Button>
         </div>
         {workflows.length === 0 ? (
           <p className="text-muted-foreground rounded-md border border-dashed p-3 text-sm">
-            Noch keine eigenen Workflows – lege einen neuen an oder übernimm eine Vorlage.
+            {t('Noch keine eigenen Workflows – lege einen neuen an oder übernimm eine Vorlage.')}
           </p>
         ) : (
           <ul className="space-y-1.5">
@@ -241,26 +243,26 @@ function WorkflowsContent({ onClose }: { onClose: () => void }) {
                 </span>
                 {hasDocument && (
                   <IconButton
-                    label="Auf dieses Dokument anwenden"
+                    label={t('Auf dieses Dokument anwenden')}
                     onClick={() => void runOnDocument(workflow)}
                   >
                     <Play />
                   </IconButton>
                 )}
                 <IconButton
-                  label="Auf mehrere Dateien anwenden"
+                  label={t('Auf mehrere Dateien anwenden')}
                   onClick={() => runOnFiles(workflow)}
                 >
                   <Layers />
                 </IconButton>
                 <IconButton
-                  label="Bearbeiten"
+                  label={t('Bearbeiten')}
                   onClick={() => setView({ type: 'edit', workflow: structuredClone(workflow) })}
                 >
                   <Pencil />
                 </IconButton>
                 <IconButton
-                  label="Duplizieren"
+                  label={t('Duplizieren')}
                   onClick={() =>
                     setView({
                       type: 'edit',
@@ -270,7 +272,7 @@ function WorkflowsContent({ onClose }: { onClose: () => void }) {
                 >
                   <Copy />
                 </IconButton>
-                <IconButton label="Löschen" onClick={() => void remove(workflow)}>
+                <IconButton label={t('Löschen')} onClick={() => void remove(workflow)}>
                   <Trash2 />
                 </IconButton>
               </li>
@@ -280,7 +282,7 @@ function WorkflowsContent({ onClose }: { onClose: () => void }) {
       </section>
 
       <section className="space-y-2">
-        <h3 className="text-sm font-medium">Vorlagen</h3>
+        <h3 className="text-sm font-medium">{t('Vorlagen')}</h3>
         <ul className="grid gap-2 sm:grid-cols-2">
           {WORKFLOW_TEMPLATES.map((template) => (
             <li key={template.name}>
@@ -302,7 +304,7 @@ function WorkflowsContent({ onClose }: { onClose: () => void }) {
 
       <DialogFooter>
         <Button variant="outline" onClick={onClose}>
-          Schließen
+          {t('Schließen')}
         </Button>
       </DialogFooter>
     </DialogContent>
@@ -349,13 +351,13 @@ function StepOptions({
   if (step.type === 'compress') {
     return (
       <Choice
-        label="Stufe"
+        label={t('Stufe')}
         value={step.level}
         onChange={(level) => onChange({ ...step, level })}
         options={[
-          ['medium', 'Ausgewogen'],
-          ['strong', 'Stark'],
-          ['lossless', 'Verlustfrei'],
+          ['medium', t('Ausgewogen')],
+          ['strong', t('Stark')],
+          ['lossless', t('Verlustfrei')],
         ]}
       />
     )
@@ -370,7 +372,7 @@ function StepOptions({
     return (
       <div className="space-y-1.5">
         <Choice
-          label="Layout"
+          label={t('Layout')}
           value={preset}
           onChange={(index) => {
             const { header, footer } = HEADER_FOOTER_PRESETS[index]!
@@ -387,7 +389,7 @@ function StepOptions({
               onChange({ ...step, settings: { ...settings, skipFirstPage: event.target.checked } })
             }
           />
-          Nicht auf der ersten Seite (Deckblatt)
+          {t('Nicht auf der ersten Seite (Deckblatt)')}
         </label>
       </div>
     )
@@ -426,7 +428,7 @@ function StepOptions({
             checked={step.skipPagesWithText}
             onChange={(event) => onChange({ ...step, skipPagesWithText: event.target.checked })}
           />
-          Seiten mit vorhandenem Text überspringen
+          {t('Seiten mit vorhandenem Text überspringen')}
         </label>
       </div>
     )
@@ -438,21 +440,21 @@ function StepOptions({
       const { mimeType, data, width, height } = await prepareImage(file)
       onChange({ ...step, image: { mimeType, data, width, height } })
     } catch {
-      toast.error(`„${file.name}“ konnte nicht als Bild gelesen werden.`)
+      toast.error(t('„{name}“ konnte nicht als Bild gelesen werden.', { name: file.name }))
     }
   }
   return (
     <div className="space-y-1.5">
       <Choice
-        label="Art"
+        label={t('Art')}
         value={step.image ? 'image' : 'text'}
         onChange={(kind) => {
           if (kind === 'text') onChange({ ...step, image: undefined })
           else void pickImage()
         }}
         options={[
-          ['text', 'Text'],
-          ['image', 'Bild …'],
+          ['text', t('Text')],
+          ['image', t('Bild …')],
         ]}
       />
       {step.image ? (
@@ -464,49 +466,49 @@ function StepOptions({
             className="h-7 px-2 text-xs"
             onClick={() => void pickImage()}
           >
-            Anderes Bild …
+            {t('Anderes Bild …')}
           </Button>
         </div>
       ) : (
         <Input
           value={step.text}
           maxLength={60}
-          aria-label="Text des Wasserzeichens"
+          aria-label={t('Text des Wasserzeichens')}
           className="h-8 text-base sm:text-sm"
           onChange={(event) => onChange({ ...step, text: event.target.value })}
         />
       )}
       {step.image && (
         <Choice
-          label="Größe"
+          label={t('Größe')}
           value={step.size}
           onChange={(size) => onChange({ ...step, size })}
           options={[
-            [0.3, 'Klein'],
-            [0.5, 'Mittel'],
-            [0.7, 'Groß'],
+            [0.3, t('Klein')],
+            [0.5, t('Mittel')],
+            [0.7, t('Groß')],
           ]}
         />
       )}
       <Choice
-        label="Ausrichtung"
+        label={t('Ausrichtung')}
         value={step.angle}
         onChange={(angle) => onChange({ ...step, angle })}
         options={[
-          [45, 'Aufsteigend'],
-          [0, 'Waagerecht'],
-          [-45, 'Absteigend'],
+          [45, t('Aufsteigend')],
+          [0, t('Waagerecht')],
+          [-45, t('Absteigend')],
         ]}
       />
       {!step.image && (
         <Choice
-          label="Farbe"
+          label={t('Farbe')}
           value={step.color}
           onChange={(color) => onChange({ ...step, color })}
           options={[
-            ['#64748b', 'Grau'],
-            ['#dc2626', 'Rot'],
-            ['#1d4ed8', 'Blau'],
+            ['#64748b', t('Grau')],
+            ['#dc2626', t('Rot')],
+            ['#1d4ed8', t('Blau')],
           ]}
         />
       )}
@@ -519,7 +521,7 @@ function ImagePreview({ image }: { image: WorkflowImage }) {
   const src = useMemo(() => dataUrl(image.data, image.mimeType), [image])
   return (
     <span className="bg-muted flex h-10 w-16 items-center justify-center overflow-hidden rounded border">
-      <img src={src} alt="Wasserzeichen-Bild" className="max-h-full max-w-full" />
+      <img src={src} alt={t('Wasserzeichen-Bild')} className="max-h-full max-w-full" />
     </span>
   )
 }
@@ -554,22 +556,22 @@ function WorkflowEditor({
   return (
     <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-xl">
       <DialogHeader>
-        <DialogTitle>Workflow bearbeiten</DialogTitle>
+        <DialogTitle>{t('Workflow bearbeiten')}</DialogTitle>
         <DialogDescription>{describeWorkflow(draft)}</DialogDescription>
       </DialogHeader>
 
       <Input
         value={draft.name}
         maxLength={60}
-        aria-label="Name"
+        aria-label={t('Name')}
         className="text-base sm:text-sm"
         onChange={(event) => setDraft({ ...draft, name: event.target.value })}
       />
 
       <section className="space-y-2">
-        <h3 className="text-sm font-medium">Schritte</h3>
+        <h3 className="text-sm font-medium">{t('Schritte')}</h3>
         {draft.steps.length === 0 && (
-          <p className="text-muted-foreground text-xs">Noch keine Schritte.</p>
+          <p className="text-muted-foreground text-xs">{t('Noch keine Schritte.')}</p>
         )}
         <ol className="space-y-2">
           {draft.steps.map((step, index) => {
@@ -583,21 +585,21 @@ function WorkflowEditor({
                   <Icon className="size-4" aria-hidden />
                   <span className="flex-1 text-sm font-medium">{label}</span>
                   <IconButton
-                    label="Nach oben"
+                    label={t('Nach oben')}
                     disabled={index === 0}
                     onClick={() => move(index, -1)}
                   >
                     <ArrowUp />
                   </IconButton>
                   <IconButton
-                    label="Nach unten"
+                    label={t('Nach unten')}
                     disabled={index === draft.steps.length - 1}
                     onClick={() => move(index, 1)}
                   >
                     <ArrowDown />
                   </IconButton>
                   <IconButton
-                    label="Schritt entfernen"
+                    label={t('Schritt entfernen')}
                     onClick={() => setSteps(draft.steps.filter((_, other) => other !== index))}
                   >
                     <X />
@@ -633,9 +635,9 @@ function WorkflowEditor({
       </section>
 
       <section className="space-y-2">
-        <h3 className="text-sm font-medium">Ausgabe</h3>
+        <h3 className="text-sm font-medium">{t('Ausgabe')}</h3>
         <Choice
-          label="Ausgabe"
+          label={t('Ausgabe')}
           value={draft.output.type}
           onChange={(type) =>
             setOutput(
@@ -648,14 +650,14 @@ function WorkflowEditor({
           }
           options={[
             ['pdf', 'PDF'],
-            ['images', 'Bilder'],
-            ['data', 'Daten'],
+            ['images', t('Bilder')],
+            ['data', t('Daten')],
           ]}
         />
         {draft.output.type === 'images' && (
           <div className="flex flex-wrap gap-3">
             <Choice
-              label="Format"
+              label={t('Format')}
               value={draft.output.format}
               onChange={(format) =>
                 setOutput({ type: 'images', format, dpi: imageOutput(draft.output).dpi })
@@ -666,26 +668,26 @@ function WorkflowEditor({
               ]}
             />
             <Choice
-              label="Auflösung"
+              label={t('Auflösung')}
               value={draft.output.dpi}
               onChange={(dpi) =>
                 setOutput({ type: 'images', format: imageOutput(draft.output).format, dpi })
               }
               options={[
-                [72, '72 dpi'],
-                [150, '150 dpi'],
-                [300, '300 dpi'],
+                [72, t('72 dpi')],
+                [150, t('150 dpi')],
+                [300, t('300 dpi')],
               ]}
             />
           </div>
         )}
         {draft.output.type === 'data' && (
           <Choice
-            label="Format"
+            label={t('Format')}
             value={draft.output.format}
             onChange={(format) => setOutput({ type: 'data', format })}
             options={[
-              ['xlsx', 'Excel'],
+              ['xlsx', t('Excel')],
               ['json', 'JSON'],
               ['csv', 'CSV'],
             ]}
@@ -695,10 +697,10 @@ function WorkflowEditor({
 
       <DialogFooter className="gap-2">
         <Button variant="outline" onClick={onCancel}>
-          Abbrechen
+          {t('Abbrechen')}
         </Button>
         <Button onClick={() => onSave({ ...draft, name: draft.name.trim() })} disabled={invalid}>
-          Speichern
+          {t('Speichern')}
         </Button>
       </DialogFooter>
     </DialogContent>

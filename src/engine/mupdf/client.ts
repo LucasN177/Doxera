@@ -4,6 +4,7 @@ import type { DecryptResult, ProtectOptions } from './encryption'
 import type { MupdfWorkerApi } from './mupdf.worker'
 import type { RedactionMode } from './redact'
 import type { ImagePixels, RawPageText } from './pageContent'
+import { t } from '@/i18n'
 
 interface Connection {
   api: Remote<MupdfWorkerApi>
@@ -25,7 +26,13 @@ function connect(): Promise<Connection> {
         // Start over next time (e.g. once the device is back online)
         connection = null
         worker.terminate()
-        reject(new Error(`MuPDF konnte nicht geladen werden: ${event.message || 'Worker-Fehler'}`))
+        reject(
+          new Error(
+            t('MuPDF konnte nicht geladen werden: {value0}', {
+              value0: event.message || t('Worker-Fehler'),
+            }),
+          ),
+        )
       })
     })
     failed.catch(() => {}) // handled where it is awaited

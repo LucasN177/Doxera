@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import { LanguageToggle } from '@/features/settings/LanguageToggle'
 import { ThemeToggle } from '@/features/settings/ThemeToggle'
 import { TextMenu } from '@/features/text/TextMenu'
 import { ToolsMenu } from '@/features/convert/ToolsMenu'
@@ -32,6 +33,7 @@ import { useSearchStore } from '@/stores/searchStore'
 import { useUiStore } from '@/stores/uiStore'
 import { useViewerStore } from '@/stores/viewerStore'
 import { IconButton } from './IconButton'
+import { t } from '@/i18n'
 
 const separator = 'mx-1 data-[orientation=vertical]:h-6'
 
@@ -58,7 +60,7 @@ export function Toolbar() {
   return (
     <header className="bg-background box-content flex h-12 shrink-0 [scrollbar-width:none] items-center gap-1 overflow-x-auto border-b px-2 pt-[env(safe-area-inset-top)] pr-[max(0.5rem,env(safe-area-inset-right))] pl-[max(0.5rem,env(safe-area-inset-left))] max-sm:gap-0.5">
       <IconButton
-        label={sidebarOpen ? 'Seitenleiste ausblenden' : 'Seitenleiste einblenden'}
+        label={sidebarOpen ? t('Seitenleiste ausblenden') : t('Seitenleiste einblenden')}
         aria-pressed={sidebarOpen}
         disabled={!document || grid}
         className="max-sm:hidden"
@@ -78,12 +80,12 @@ export function Toolbar() {
       <Button
         variant="ghost"
         size="sm"
-        aria-label="PDF öffnen"
-        title={`PDF öffnen (${formatShortcut('mod+O')})`}
+        aria-label={t('PDF öffnen')}
+        title={t('PDF öffnen ({value0})', { value0: formatShortcut('mod+O') })}
         onClick={() => void openFromPicker()}
       >
         <FolderOpen />
-        <span className="max-lg:hidden">Öffnen</span>
+        <span className="max-lg:hidden">{t('Öffnen')}</span>
       </Button>
 
       {document && (
@@ -99,7 +101,7 @@ export function Toolbar() {
         // On phones undo/redo only show in the page overview, where pages are edited
         <div className={cn('flex items-center', !grid && 'max-sm:hidden')}>
           <IconButton
-            label="Rückgängig"
+            label={t('Rückgängig')}
             shortcut={formatShortcut('mod+Z')}
             disabled={!canUndo}
             onClick={undo}
@@ -107,7 +109,7 @@ export function Toolbar() {
             <Undo2 />
           </IconButton>
           <IconButton
-            label="Wiederholen"
+            label={t('Wiederholen')}
             shortcut={formatShortcut('mod+Y')}
             disabled={!canRedo}
             onClick={redo}
@@ -122,7 +124,7 @@ export function Toolbar() {
       {document && (
         <>
           <IconButton
-            label={grid ? 'Zur Dokumentansicht' : 'Seitenübersicht'}
+            label={grid ? t('Zur Dokumentansicht') : t('Seitenübersicht')}
             shortcut="G"
             aria-pressed={grid}
             className={cn(grid && 'bg-accent text-accent-foreground')}
@@ -132,7 +134,9 @@ export function Toolbar() {
           </IconButton>
           {grid ? (
             <span className="text-muted-foreground px-1 text-sm whitespace-nowrap">
-              {document.pages.length === 1 ? '1 Seite' : `${document.pages.length} Seiten`}
+              {document.pages.length === 1
+                ? t('1 Seite')
+                : t('{length} Seiten', { length: document.pages.length })}
             </span>
           ) : (
             <>
@@ -145,7 +149,7 @@ export function Toolbar() {
           {!grid && (
             <>
               <IconButton
-                label={annotating ? 'Zeichnen beenden' : 'Zeichnen & beschriften'}
+                label={annotating ? t('Zeichnen beenden') : t('Zeichnen & beschriften')}
                 aria-pressed={annotating}
                 className={cn(annotating && 'bg-accent text-accent-foreground')}
                 onClick={() => setAnnotating(!annotating)}
@@ -153,7 +157,11 @@ export function Toolbar() {
                 <PenLine />
               </IconButton>
               <IconButton
-                label={commentsOpen ? 'Kommentare ausblenden' : `Kommentare (${commentCount})`}
+                label={
+                  commentsOpen
+                    ? t('Kommentare ausblenden')
+                    : t('Kommentare ({commentCount})', { commentCount })
+                }
                 aria-pressed={commentsOpen}
                 className={cn(
                   'relative max-sm:hidden',
@@ -168,7 +176,11 @@ export function Toolbar() {
                   </span>
                 )}
               </IconButton>
-              <IconButton label="Suchen" shortcut={formatShortcut('mod+F')} onClick={openSearch}>
+              <IconButton
+                label={t('Suchen')}
+                shortcut={formatShortcut('mod+F')}
+                onClick={openSearch}
+              >
                 <Search />
               </IconButton>
             </>
@@ -176,23 +188,25 @@ export function Toolbar() {
           <TextMenu />
           <ToolsMenu />
           <IconButton
-            label={savesViaShareSheet ? 'Sichern oder teilen' : 'Herunterladen'}
+            label={savesViaShareSheet ? t('Sichern oder teilen') : t('Herunterladen')}
             shortcut={formatShortcut('mod+S')}
             onClick={() => void save()}
           >
             {savesViaShareSheet ? <Share /> : <Download />}
           </IconButton>
           {canShare && (
-            <IconButton label="Teilen" className="max-sm:hidden" onClick={() => void share()}>
+            <IconButton label={t('Teilen')} className="max-sm:hidden" onClick={() => void share()}>
               <Share />
             </IconButton>
           )}
         </>
       )}
 
+      {/* On phones with a document open the bar has no room left; the start screen has */}
+      <LanguageToggle className={cn(document && 'max-sm:hidden')} />
       <ThemeToggle className="max-sm:hidden" />
       <IconButton
-        label="Tastenkürzel"
+        label={t('Tastenkürzel')}
         shortcut="?"
         className="max-lg:hidden"
         onClick={openShortcuts}
@@ -201,7 +215,7 @@ export function Toolbar() {
       </IconButton>
 
       {document && (
-        <IconButton label="Dokument schließen" onClick={close}>
+        <IconButton label={t('Dokument schließen')} onClick={close}>
           <X />
         </IconButton>
       )}

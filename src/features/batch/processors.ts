@@ -12,6 +12,7 @@ import { formatFileSize, hasPdfSignature, looksLikePdf } from '@/lib/file'
 import { looksLikeImage, prepareImage } from '@/lib/images'
 import type { OcrPage } from '@/types/ocr'
 import type { Workflow } from '@/types/workflow'
+import { t } from '@/i18n'
 
 export type BatchAction =
   | { type: 'compress'; level: CompressionLevel }
@@ -36,7 +37,7 @@ export interface BatchContext {
 const EMPTY_OCR: OcrPage = { blocks: [], confidence: 0 }
 
 export function baseName(name: string) {
-  return name.replace(/\.[^.]+$/, '') || 'Dokument'
+  return name.replace(/\.[^.]+$/, '') || t('Dokument')
 }
 
 function aborted(signal: AbortSignal) {
@@ -47,14 +48,15 @@ function aborted(signal: AbortSignal) {
 export async function toPdfBytes(file: File): Promise<Uint8Array> {
   if (looksLikePdf(file)) {
     const data = new Uint8Array(await file.arrayBuffer())
-    if (!hasPdfSignature(data)) throw new Error(`„${file.name}“ ist keine gültige PDF-Datei.`)
+    if (!hasPdfSignature(data))
+      throw new Error(t('„{name}“ ist keine gültige PDF-Datei.', { name: file.name }))
     return data
   }
   if (looksLikeImage(file)) {
     const { imagesToPdf } = await import('@/engine/convert/imagesToPdf')
     return imagesToPdf([await prepareImage(file)], { format: 'a4', margin: 28 })
   }
-  throw new Error(`„${file.name}“ ist weder PDF noch Bild.`)
+  throw new Error(t('„{name}“ ist weder PDF noch Bild.', { name: file.name }))
 }
 
 export function pdfFile(data: Uint8Array, name: string) {
@@ -71,14 +73,14 @@ async function compress(
   const saved = 1 - result.after / result.before
   // An unchanged copy of a PDF is no result (a picture turned into a PDF is)
   if (saved < 0.01 && looksLikePdf(file)) {
-    return { files: [], note: 'Bereits gut komprimiert – keine neue Datei' }
+    return { files: [], note: t('Bereits gut komprimiert – keine neue Datei') }
   }
   return {
     files: [pdfFile(result.data, `${baseName(file.name)} (komprimiert).pdf`)],
     note:
       saved >= 0.01
         ? `${formatFileSize(result.before)} → ${formatFileSize(result.after)} (−${Math.round(saved * 100)} %)`
-        : 'Bereits gut komprimiert',
+        : t('Bereits gut komprimiert'),
   }
 }
 
@@ -122,8 +124,15 @@ export async function ocrPdf(
   }
 }
 
+/** "1 Bild" / "3 Bilder". */
+export function countImages(count: number): string {
+  return count === 1 ? t('1 Bild') : t('{count} Bilder', { count })
+}
+
 export function ocrNote(recognized: number, pages: number) {
-  return `Text auf ${recognized} von ${pages} ${pages === 1 ? 'Seite' : 'Seiten'} erkannt`
+  return pages === 1
+    ? t('Text auf {recognized} von 1 Seite erkannt', { recognized })
+    : t('Text auf {recognized} von {pages} Seiten erkannt', { recognized, pages })
 }
 
 async function recognize(
@@ -134,7 +143,7 @@ async function recognize(
 ): Promise<BatchResult> {
   const result = await ocrPdf(data, action, context)
   if (result.recognized === 0) {
-    return { files: [], note: 'Kein neuer Text erkannt (schon Text vorhanden oder leer)' }
+    return { files: [], note: t('Kein neuer Text erkannt (schon Text vorhanden oder leer)') }
   }
   return {
     files: [pdfFile(result.data, `${baseName(file.name)} (OCR).pdf`)],
@@ -172,7 +181,7 @@ async function images(
   context: BatchContext,
 ): Promise<BatchResult> {
   const files = await pdfToImageFiles(data, baseName(file.name), action, context)
-  return { files, note: `${files.length} ${files.length === 1 ? 'Bild' : 'Bilder'}` }
+  return { files, note: countImages(files.length) }
 }
 
 /** Structured text and tables of a PDF (read with MuPDF), as for the data export. */
@@ -225,7 +234,7 @@ export async function pdfToDataFiles(
   const extracted = await documentData(name, data, context)
   const summary = dataSummary(extracted)
   if (summary.blocks === 0 && summary.tables === 0) {
-    return { files: [], note: 'Kein Text gefunden – zuerst Texterkennung ausführen' }
+    return { files: [], note: t('Kein Text gefunden – zuerst Texterkennung ausführen') }
   }
   const files = await buildDataFiles(
     extracted,
@@ -235,7 +244,10 @@ export async function pdfToDataFiles(
   )
   return {
     files,
-    note: `${summary.blocks} ${summary.blocks === 1 ? 'Abschnitt' : 'Abschnitte'}, ${summary.tables} ${summary.tables === 1 ? 'Tabelle' : 'Tabellen'}`,
+    note: [
+      summary.blocks === 1 ? t('1 Abschnitt') : t('{count} Abschnitte', { count: summary.blocks }),
+      summary.tables === 1 ? t('1 Tabelle') : t('{count} Tabellen', { count: summary.tables }),
+    ].join(', '),
   }
 }
 
@@ -284,5 +296,5 @@ export async function mergeFiles(
   }
   if (output.getPageCount() === 0) return null
   output.setProducer('Doxera')
-  return pdfFile(await output.save(), 'Zusammengeführt.pdf')
+  return pdfFile(await output.save(), t('Zusammengeführt.pdf'))
 }

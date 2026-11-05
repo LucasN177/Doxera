@@ -6,6 +6,7 @@ import { buildPdf } from '@/engine/document/buildPdf'
 import { canShareFile, createPdfFile, downloadFile, isAppleMobile, shareFile } from '@/lib/download'
 import { getPrimarySource, useDocumentStore } from '@/stores/documentStore'
 import type { PageRef } from '@/types/document'
+import { t } from '@/i18n'
 
 export interface ExportPart {
   name: string
@@ -41,7 +42,7 @@ export function useExportDocument() {
       const share = mode === 'share' || (appleMobile && shareSupported)
       if (!share) {
         downloadFile(file)
-        toast.success(`„${file.name}“ wird heruntergeladen.`)
+        toast.success(t('„{name}“ wird heruntergeladen.', { name: file.name }))
         return
       }
       const openShareSheet = () =>
@@ -50,10 +51,10 @@ export function useExportDocument() {
           downloadFile(file)
         })
       if (generated) {
-        toast.success('Die PDF ist bereit.', {
+        toast.success(t('Die PDF ist bereit.'), {
           duration: 30_000,
           action: {
-            label: appleMobile ? 'Sichern' : 'Teilen',
+            label: appleMobile ? t('Sichern') : t('Teilen'),
             onClick: () => void openShareSheet(),
           },
         })
@@ -84,7 +85,7 @@ export function useExportDocument() {
         page.annotations?.some((annotation) => annotation.type === 'redact'),
       )
       const progress = toast.loading(
-        redacting ? 'Schwärzungen werden angewendet …' : 'PDF wird erstellt …',
+        redacting ? t('Schwärzungen werden angewendet …') : t('PDF wird erstellt …'),
       )
       try {
         const data = await documentBytes({ pages: selected, title: baseName(name) })
@@ -95,8 +96,8 @@ export function useExportDocument() {
         toast.dismiss(progress)
         toast.error(
           redacting
-            ? 'Die Schwärzungen konnten nicht angewendet werden. Die PDF wurde nicht erstellt.'
-            : 'Die PDF konnte nicht erstellt werden.',
+            ? t('Die Schwärzungen konnten nicht angewendet werden. Die PDF wurde nicht erstellt.')
+            : t('Die PDF konnte nicht erstellt werden.'),
         )
       }
     },
@@ -111,11 +112,19 @@ export function useExportDocument() {
   const exportParts = useCallback(async (parts: ExportPart[], archiveName: string) => {
     const state = useDocumentStore.getState()
     if (parts.length === 0) return
-    const progress = toast.loading(`PDF 1 von ${parts.length} wird erstellt …`)
+    const progress = toast.loading(
+      t('PDF 1 von {length} wird erstellt …', { length: parts.length }),
+    )
     try {
       const files: File[] = []
       for (const [index, part] of parts.entries()) {
-        toast.loading(`PDF ${index + 1} von ${parts.length} wird erstellt …`, { id: progress })
+        toast.loading(
+          t('PDF {value0} von {length} wird erstellt …', {
+            value0: index + 1,
+            length: parts.length,
+          }),
+          { id: progress },
+        )
         const data = await buildPdf(part.pages, state.sources, {
           title: baseName(part.name),
           assets: state.assets,
@@ -126,11 +135,11 @@ export function useExportDocument() {
       await deliverGeneratedFiles(files, {
         archiveName: baseName(archiveName),
         toastId: progress,
-        noun: ['PDF', 'PDFs'],
+        noun: [t('Die PDF ist bereit.'), (count) => t('{count} PDFs sind bereit.', { count })],
       })
     } catch (error) {
       console.error('Export fehlgeschlagen', error)
-      toast.error('Die PDFs konnten nicht erstellt werden.', { id: progress })
+      toast.error(t('Die PDFs konnten nicht erstellt werden.'), { id: progress })
     }
   }, [])
 
@@ -146,8 +155,9 @@ export function useExportDocument() {
     /** Exports only the given pages as a new PDF. */
     exportSelection: useCallback(
       (pages: PageRef[]) => {
-        const name = useDocumentStore.getState().document?.name ?? 'Dokument.pdf'
-        const label = pages.length === 1 ? 'Seite' : `${pages.length} Seiten`
+        const name = useDocumentStore.getState().document?.name ?? t('Dokument.pdf')
+        const label =
+          pages.length === 1 ? t('1 Seite') : t('{count} Seiten', { count: pages.length })
         return exportPages('save', pages, `${baseName(name)} (${label}).pdf`)
       },
       [exportPages],

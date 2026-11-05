@@ -6,6 +6,7 @@ import { RecentDocuments } from '@/features/library/RecentDocuments'
 import { OfflineReady } from '@/features/pwa/OfflineReady'
 import { useOpenDocument } from '@/hooks/useOpenDocument'
 import { useUiStore } from '@/stores/uiStore'
+import { t } from '@/i18n'
 
 export function EmptyState() {
   const { openFromPicker } = useOpenDocument()
@@ -18,26 +19,26 @@ export function EmptyState() {
             <FileUp className="size-8" aria-hidden />
           </div>
           <div className="space-y-1">
-            <h2 className="text-lg font-semibold">PDF öffnen</h2>
+            <h2 className="text-lg font-semibold">{t('PDF öffnen')}</h2>
             <p className="text-muted-foreground text-sm">
-              Ziehe eine PDF-Datei oder Bilder hierher oder wähle eine Datei aus.
+              {t('Ziehe eine PDF-Datei oder Bilder hierher oder wähle eine Datei aus.')}
             </p>
           </div>
           <div className="flex flex-wrap justify-center gap-2">
-            <Button onClick={() => void openFromPicker()}>Datei auswählen</Button>
+            <Button onClick={() => void openFromPicker()}>{t('Datei auswählen')}</Button>
             <Button variant="outline" onClick={() => void pickImagesForPdf()}>
-              <Images /> Bilder zu PDF
+              <Images /> {t('Bilder zu PDF')}
             </Button>
             <Button variant="outline" onClick={() => void pickBatchFiles()}>
-              <Layers /> Mehrere Dateien verarbeiten
+              <Layers /> {t('Mehrere Dateien verarbeiten')}
             </Button>
             <Button variant="outline" onClick={() => useUiStore.getState().setWorkflowsOpen(true)}>
-              <Workflow /> Workflows
+              <Workflow /> {t('Workflows')}
             </Button>
           </div>
           <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
             <ShieldCheck className="size-3.5 shrink-0" aria-hidden />
-            Deine Dokumente werden ausschließlich lokal in deinem Browser verarbeitet.
+            {t('Deine Dokumente werden ausschließlich lokal in deinem Browser verarbeitet.')}
           </p>
           <OfflineReady />
         </div>

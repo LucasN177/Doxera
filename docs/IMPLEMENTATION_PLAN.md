@@ -354,7 +354,7 @@ Einzelfunktionen (`ocrPdf`, `watermarkPdf`, `compressPdfData`, `pdfToImageFiles`
 | F3  | Offline-Test      | Alle Funktionen ohne Netz (Service Worker, nachgeladene MuPDF-/OCR-Dateien) geprüft | ✅     |
 | F4  | Große PDFs        | Speicher und Geschwindigkeit bei vielen Seiten (Vorschaubilder, Rendering, Export)  | ✅     |
 | F5  | Barrierefreiheit  | Tastaturbedienung, Fokus, Beschriftungen, Kontraste, Screenreader-Durchgang         | ✅     |
-| F6  | Englisch (i18n)   | Oberfläche auf Deutsch und Englisch, Sprache nach Browser, umschaltbar              | offen  |
+| F6  | Englisch (i18n)   | Oberfläche auf Deutsch und Englisch, Sprache nach Browser, umschaltbar              | ✅     |
 
 **Öffnen mit Doxera (F1):** Das Manifest meldet die installierte App über `file_handlers` für PDFs und
 Bilder an; `launch_handler: focus-existing` übergibt Dateien an ein schon offenes Fenster. `useLaunchQueue`
@@ -397,6 +397,18 @@ Behoben: zu schwacher Kontrast der grauen Nebentexte auf hellgrauen Flächen (`-
 roten Lösch-Links und der Versionszeile; nach dem Schließen eines Dialogs, der aus einem Menü geöffnet wurde, landete
 der Fokus im Nichts – `DialogContent` gibt ihn jetzt an das zuletzt fokussierte Bedienelement außerhalb von Menüs
 zurück (z. B. den Menü-Knopf). Der Schließen-Knopf der Dialoge ist für Screenreader deutsch beschriftet.
+
+**Englisch (F6):** `t()` aus `src/i18n` übersetzt Oberflächentexte; Deutsch ist Quelle und Schlüssel, `en.ts`
+enthält die englischen Texte, `{name}`-Platzhalter werden gefüllt. Die Sprache folgt beim ersten Start dem Browser
+(Deutsch bei `de-*`, sonst Englisch), ist in der Werkzeugleiste umschaltbar (`EN`/`DE`, gespeichert) und gilt für
+die Lebensdauer der Seite – Texte werden teils schon beim Laden der Module gelesen, daher lädt der Wechsel neu.
+Datums- und Zahlenformate folgen der Sprache; Kopf-/Fußzeilen verstehen deutsche und englische Platzhalter.
+Umgestellt wurde per einmaligem Codemod (Babel-AST) mit Nacharbeit: Sätze mit eingesetzten Werten sind ganze
+Texte mit Platzhaltern und eigenen Singular-/Pluralformen. `src/i18n/en.test.ts` prüft, dass jeder `t()`-Text eine
+Übersetzung mit denselben Platzhaltern hat und keine verwaisten Einträge bleiben; Unit-Tests laufen auf Deutsch,
+ein E2E-Test prüft die englische Oberfläche und das Umschalten.
+
+Damit ist Phase 8 abgeschlossen.
 
 ---
 

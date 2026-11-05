@@ -60,6 +60,7 @@ import {
   type SourceFontPreview,
 } from './sourceFontPreview'
 import { useEditableContent } from './useEditableContent'
+import { t } from '@/i18n'
 
 type Handle = 'a' | 'b' | 'nw' | 'ne' | 'sw' | 'se'
 
@@ -473,7 +474,7 @@ export function AnnotationLayer({ page, scale, interactive }: AnnotationLayerPro
       })
       .catch((error: unknown) => {
         console.error('Bild konnte nicht gelesen werden', error)
-        toast.error('Dieses Bild kann nicht bearbeitet werden.')
+        toast.error(t('Dieses Bild kann nicht bearbeitet werden.'))
       })
   }
 
@@ -551,7 +552,7 @@ export function AnnotationLayer({ page, scale, interactive }: AnnotationLayerPro
               onPointerDown={editImage(image)}
               data-annotation
             >
-              <title>Bild bearbeiten: verschieben, Größe ändern oder entfernen</title>
+              <title>{t('Bild bearbeiten: verschieben, Größe ändern oder entfernen')}</title>
             </rect>
           )
         })}
@@ -571,7 +572,7 @@ export function AnnotationLayer({ page, scale, interactive }: AnnotationLayerPro
               onPointerDown={editLine(line)}
               data-annotation
             >
-              <title>{`Bearbeiten: ${line.text}`}</title>
+              <title>{t('Bearbeiten: {text}', { text: line.text })}</title>
             </rect>
           )
         })}
@@ -692,7 +693,7 @@ function NoteIcon({
   onPointerUp: () => void
   onOpen?: () => void
 }) {
-  const preview = note.text.trim() || 'Leere Notiz'
+  const preview = note.text.trim() || t('Leere Notiz')
   if (!interactive) {
     return (
       <span
@@ -713,7 +714,7 @@ function NoteIcon({
       data-annotation
       data-note-id={noteKey}
       title={preview}
-      aria-label={`Notiz: ${preview}`}
+      aria-label={t('Notiz: {preview}', { preview })}
       className={cn(
         'absolute flex items-center justify-center rounded-md border border-black/25 text-black/70 shadow-md transition-transform hover:scale-110',
         selected && 'ring-primary ring-2 ring-offset-1',
@@ -1076,7 +1077,7 @@ export function AnnotationShape({ annotation, px, scale, turns, storedSize, sour
         strokeWidth={1}
         strokeDasharray="4 3"
       >
-        <title>Schwärzung – wird beim Export dauerhaft angewendet</title>
+        <title>{t('Schwärzung – wird beim Export dauerhaft angewendet')}</title>
       </rect>
     )
   }
@@ -1458,7 +1459,7 @@ function TextEditor({
     <textarea
       ref={ref}
       value={value}
-      aria-label="Text"
+      aria-label={t('Text')}
       spellCheck={false}
       className="border-primary absolute resize-none overflow-hidden rounded-none border border-dashed bg-white/70 p-0 outline-none"
       style={{

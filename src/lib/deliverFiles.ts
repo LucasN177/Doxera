@@ -6,6 +6,7 @@ import {
   isAppleMobile,
   shareFiles,
 } from '@/lib/download'
+import { t } from '@/i18n'
 
 interface DeliverOptions {
   /** Name of the ZIP archive (without extension) when several files are downloaded. */
@@ -13,7 +14,11 @@ interface DeliverOptions {
   /** Loading toast to turn into the result message. */
   toastId: string | number
   /** Word for the files in messages, e.g. ["PDF", "PDFs"] or ["Bild", "Bilder"]. */
-  noun: [string, string]
+  /**
+   * What is handed out, as a phrase: one file (e.g. "Das Bild ist bereit.")
+   * and a count (e.g. "3 Bilder sind bereit.").
+   */
+  noun: [one: string, many: (count: number) => string]
 }
 
 /**
@@ -29,17 +34,17 @@ export async function deliverGeneratedFiles(
     toast.dismiss(toastId)
     return
   }
-  const label = files.length === 1 ? `${one} ist` : `${files.length} ${many} sind`
+  const label = files.length === 1 ? one : many(files.length)
   if (isAppleMobile() && canShareFiles(files)) {
-    toast.success(`${label} bereit.`, {
+    toast.success(label, {
       id: toastId,
       duration: 30_000,
       action: {
-        label: 'Sichern',
+        label: t('Sichern'),
         onClick: () =>
           void shareFiles(files, archiveName).catch((error: unknown) => {
             console.error('Teilen fehlgeschlagen', error)
-            toast.error('Die Dateien konnten nicht geteilt werden.')
+            toast.error(t('Die Dateien konnten nicht geteilt werden.'))
           }),
       },
     })
@@ -47,13 +52,16 @@ export async function deliverGeneratedFiles(
   }
   if (files.length === 1) {
     downloadFile(files[0])
-    toast.success(`„${files[0].name}“ wird heruntergeladen.`, { id: toastId })
+    toast.success(t('„{name}“ wird heruntergeladen.', { name: files[0].name }), { id: toastId })
     return
   }
-  toast.loading('ZIP-Archiv wird erstellt …', { id: toastId })
+  toast.loading(t('ZIP-Archiv wird erstellt …'), { id: toastId })
   const zip = await createZipFile(files, `${archiveName}.zip`)
   downloadFile(zip)
-  toast.success(`${files.length} ${many} als „${zip.name}“ heruntergeladen.`, { id: toastId })
+  toast.success(
+    t('„{name}“ heruntergeladen ({label}).', { name: zip.name, label: many(files.length) }),
+    { id: toastId },
+  )
 }
 
 /**

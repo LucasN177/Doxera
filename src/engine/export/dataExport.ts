@@ -2,6 +2,7 @@ import type { TextBlock } from '@/engine/text/structure'
 import { tableToCsv } from '@/engine/text/tables'
 import { cellText, dateCell, toCell, type Cell } from './cells'
 import type { Sheet } from './xlsx'
+import { localeTag, t } from '@/i18n'
 
 export interface ExportComment {
   page: number
@@ -37,17 +38,21 @@ export interface DataContent {
 }
 
 const MARKUP_NAMES = {
-  highlight: 'Hervorgehoben',
-  underline: 'Unterstrichen',
-  strikeout: 'Durchgestrichen',
+  highlight: t('Hervorgehoben'),
+  underline: t('Unterstrichen'),
+  strikeout: t('Durchgestrichen'),
 } as const
-const HIGHLIGHT_HEADER = ['Seite', 'Art', 'Text']
+const HIGHLIGHT_HEADER = [t('Seite'), t('Art'), t('Text')]
 
 function highlightRows(data: DocumentData): string[][] {
   return data.highlights.map((item) => [String(item.page), MARKUP_NAMES[item.type], item.text])
 }
 
-const TYPE_NAMES = { heading: 'Überschrift', paragraph: 'Absatz', list: 'Listenpunkt' } as const
+const TYPE_NAMES = {
+  heading: t('Überschrift'),
+  paragraph: t('Absatz'),
+  list: t('Listenpunkt'),
+} as const
 
 function tablesOf(data: DocumentData) {
   return data.pages.flatMap(({ number, blocks }) =>
@@ -73,7 +78,7 @@ function textRows(data: DocumentData): string[][] {
 }
 
 function formatDate(time: number): string {
-  return new Date(time).toLocaleString('de-DE', {
+  return new Date(time).toLocaleString(localeTag, {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -132,10 +137,11 @@ export function toSheets(data: DocumentData, content: DataContent): Sheet[] {
   const sheets: Sheet[] = []
   if (content.text) {
     sheets.push({
-      name: 'Text',
+      name: t('Text'),
       header: true,
-      rows: [['Seite', 'Typ', 'Ebene', 'Inhalt'], ...textRows(data)].map((row, index) =>
-        index === 0 ? row : [toCell(row[0]), row[1], row[2] ? toCell(row[2]) : '', row[3]],
+      rows: [[t('Seite'), t('Typ'), t('Ebene'), t('Inhalt')], ...textRows(data)].map(
+        (row, index) =>
+          index === 0 ? row : [toCell(row[0]), row[1], row[2] ? toCell(row[2]) : '', row[3]],
       ),
     })
   }
@@ -150,10 +156,10 @@ export function toSheets(data: DocumentData, content: DataContent): Sheet[] {
   }
   if (content.comments) {
     sheets.push({
-      name: 'Kommentare',
+      name: t('Kommentare'),
       header: true,
       rows: [
-        ['Seite', 'Kommentar', 'Erstellt', 'Geändert'],
+        [t('Seite'), t('Kommentar'), t('Erstellt'), t('Geändert')],
         ...data.comments.map((comment) => [
           toCell(String(comment.page)),
           comment.text,
@@ -165,7 +171,7 @@ export function toSheets(data: DocumentData, content: DataContent): Sheet[] {
   }
   if (content.highlights) {
     sheets.push({
-      name: 'Markierungen',
+      name: t('Markierungen'),
       header: true,
       rows: [HIGHLIGHT_HEADER, ...highlightRows(data)].map((row, index) =>
         index === 0 ? row : [toCell(row[0]), ...row.slice(1)],
@@ -185,7 +191,7 @@ export function toCsvFiles(
   if (content.text) {
     files.push({
       name: `${base}-text.csv`,
-      text: tableToCsv([['Seite', 'Typ', 'Ebene', 'Inhalt'], ...textRows(data)]),
+      text: tableToCsv([[t('Seite'), t('Typ'), t('Ebene'), t('Inhalt')], ...textRows(data)]),
     })
   }
   if (content.tables) {
@@ -199,7 +205,10 @@ export function toCsvFiles(
   if (content.comments) {
     files.push({
       name: `${base}-kommentare.csv`,
-      text: tableToCsv([['Seite', 'Kommentar', 'Erstellt', 'Geändert'], ...commentRows(data)]),
+      text: tableToCsv([
+        [t('Seite'), t('Kommentar'), t('Erstellt'), t('Geändert')],
+        ...commentRows(data),
+      ]),
     })
   }
   if (content.highlights) {

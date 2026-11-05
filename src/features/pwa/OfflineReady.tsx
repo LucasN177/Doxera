@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { isInstalledApp, isOfflineReady, OFFLINE_DOWNLOAD_MB, prepareOffline } from './offlineCache'
+import { t } from '@/i18n'
 
 type Status = 'unknown' | 'ready' | 'missing' | 'loading'
 
@@ -18,12 +19,12 @@ export function OfflineReady() {
     try {
       await prepareOffline()
       setStatus((await isOfflineReady()) ? 'ready' : 'missing')
-      if (!quiet) toast.success('Alle Funktionen sind jetzt auch offline verfügbar.')
+      if (!quiet) toast.success(t('Alle Funktionen sind jetzt auch offline verfügbar.'))
     } catch (error) {
       console.warn('Offline-Vorbereitung fehlgeschlagen', error)
       setStatus('missing')
       if (!quiet)
-        toast.error('Das hat nicht geklappt – bitte mit Internetverbindung erneut versuchen.')
+        toast.error(t('Das hat nicht geklappt – bitte mit Internetverbindung erneut versuchen.'))
     }
   }
 
@@ -52,7 +53,7 @@ export function OfflineReady() {
     return (
       <p className="text-muted-foreground flex items-center gap-1.5 text-xs" role="status">
         <CloudOff className="size-3.5 shrink-0" aria-hidden />
-        Alle Funktionen sind auch offline verfügbar.
+        {t('Alle Funktionen sind auch offline verfügbar.')}
       </p>
     )
   }
@@ -66,8 +67,10 @@ export function OfflineReady() {
     >
       {status === 'loading' ? <Loader2 className="animate-spin" /> : <CloudDownload />}
       {status === 'loading'
-        ? 'Wird für die Offline-Nutzung geladen …'
-        : `Alles offline verfügbar machen (ca. ${OFFLINE_DOWNLOAD_MB} MB)`}
+        ? t('Wird für die Offline-Nutzung geladen …')
+        : t('Alles offline verfügbar machen (ca. {OFFLINE_DOWNLOAD_MB} MB)', {
+            OFFLINE_DOWNLOAD_MB,
+          })}
     </Button>
   )
 }

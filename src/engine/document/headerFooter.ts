@@ -1,3 +1,4 @@
+import { localeTag, t } from '@/i18n'
 /** Header and footer for every page: three slots each (left, center, right). */
 export interface HeaderFooter {
   header: [string, string, string]
@@ -32,7 +33,7 @@ export interface StampItem {
 
 export const DEFAULT_HEADER_FOOTER: HeaderFooter = {
   header: ['', '', ''],
-  footer: ['', 'Seite {seite} von {seiten}', ''],
+  footer: ['', t('Seite {seite} von {seiten}'), ''],
   fontSize: 9,
   color: '#475569',
   margin: 24,
@@ -47,35 +48,38 @@ export const HEADER_FOOTER_PRESETS: Array<{
   footer: HeaderFooter['footer']
 }> = [
   {
-    name: 'Seite 1 von 3 (unten mittig)',
+    name: t('Seite 1 von 3 (unten mittig)'),
     header: ['', '', ''],
-    footer: ['', 'Seite {seite} von {seiten}', ''],
+    footer: ['', t('Seite {seite} von {seiten}'), ''],
   },
-  { name: '1 (unten rechts)', header: ['', '', ''], footer: ['', '', '{seite}'] },
-  { name: '– 1 – (unten mittig)', header: ['', '', ''], footer: ['', '– {seite} –', ''] },
+  { name: t('1 (unten rechts)'), header: ['', '', ''], footer: ['', '', '{seite}'] },
+  { name: t('– 1 – (unten mittig)'), header: ['', '', ''], footer: ['', t('– {seite} –'), ''] },
   {
-    name: 'Datei und Datum',
+    name: t('Datei und Datum'),
     header: ['{datei}', '', '{datum}'],
-    footer: ['', '', 'Seite {seite} von {seiten}'],
+    footer: ['', '', t('Seite {seite} von {seiten}')],
   },
 ]
 
-/** Fills the placeholders {seite}, {seiten}, {datei} and {datum} of a slot. */
+/**
+ * Fills the placeholders of a slot: {seite}/{page}, {seiten}/{pages},
+ * {datei}/{file} and {datum}/{date} (German and English names both work).
+ */
 export function resolveStampText(
   template: string,
   settings: HeaderFooter,
   context: StampContext,
 ): string {
-  const date = context.date.toLocaleDateString('de-DE', {
+  const date = context.date.toLocaleDateString(localeTag, {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
   })
   return template
-    .replace(/\{seite\}/gi, String(settings.firstNumber + context.index))
-    .replace(/\{seiten\}/gi, String(settings.firstNumber + context.total - 1))
-    .replace(/\{datei\}/gi, context.fileName.replace(/\.pdf$/i, ''))
-    .replace(/\{datum\}/gi, date)
+    .replace(/\{(seite|page)\}/gi, String(settings.firstNumber + context.index))
+    .replace(/\{(seiten|pages)\}/gi, String(settings.firstNumber + context.total - 1))
+    .replace(/\{(datei|file)\}/gi, context.fileName.replace(/\.pdf$/i, ''))
+    .replace(/\{(datum|date)\}/gi, date)
     .trim()
 }
 

@@ -1,3 +1,5 @@
+import { localeTag } from '@/i18n'
+
 /** Quick check based on MIME type or file extension (no content inspection). */
 export function looksLikePdf(file: Pick<File, 'name' | 'type'>): boolean {
   return file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
@@ -23,7 +25,7 @@ export function formatFileSize(bytes: number): string {
     value /= 1024
     unit++
   }
-  return `${value.toLocaleString('de-DE', { maximumFractionDigits: 1 })} ${units[unit]}`
+  return `${value.toLocaleString(localeTag, { maximumFractionDigits: 1 })} ${units[unit]}`
 }
 
 /** Opens the native file picker and resolves with the selected files (empty if cancelled). */

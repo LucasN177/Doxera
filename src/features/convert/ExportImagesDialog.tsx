@@ -15,13 +15,14 @@ import { useDocumentStore } from '@/stores/documentStore'
 import { useUiStore } from '@/stores/uiStore'
 import { useViewerStore } from '@/stores/viewerStore'
 import { renderPagesAsImages, type ImageFormat } from './renderImages'
+import { t } from '@/i18n'
 
 type Target = 'all' | 'selected' | 'current'
 
 const RESOLUTIONS = [
-  { dpi: 72, label: 'Bildschirm', hint: '72 dpi' },
-  { dpi: 150, label: 'Standard', hint: '150 dpi' },
-  { dpi: 300, label: 'Druck', hint: '300 dpi' },
+  { dpi: 72, label: t('Bildschirm'), hint: t('72 dpi') },
+  { dpi: 150, label: t('Standard'), hint: t('150 dpi') },
+  { dpi: 300, label: t('Druck'), hint: t('300 dpi') },
 ]
 
 export function ExportImagesDialog() {
@@ -59,7 +60,7 @@ function ExportImagesContent({
   onDone: () => void
 }) {
   const pageCount = useDocumentStore((state) => state.document?.pages.length ?? 0)
-  const name = useDocumentStore((state) => state.document?.name ?? 'Dokument')
+  const name = useDocumentStore((state) => state.document?.name ?? t('Dokument'))
   const selectedIds = useViewerStore((state) => state.selectedIds)
   const [format, setFormat] = useState<ImageFormat>('png')
   const [dpi, setDpi] = useState(150)
@@ -81,7 +82,7 @@ function ExportImagesContent({
     onRun(controller)
     const ids = pageIds()
     setProgress({ done: 0, total: ids.size })
-    const toastId = toast.loading('Bilder werden erstellt …')
+    const toastId = toast.loading(t('Bilder werden erstellt …'))
     try {
       const files = await renderPagesAsImages({
         pageIds: ids,
@@ -92,16 +93,16 @@ function ExportImagesContent({
       })
       onDone()
       await deliverGeneratedFiles(files, {
-        archiveName: `${name.replace(/\.pdf$/i, '')} (Bilder)`,
+        archiveName: t('{value0} (Bilder)', { value0: name.replace(/\.pdf$/i, '') }),
         toastId,
-        noun: ['Bild', 'Bilder'],
+        noun: [t('Das Bild ist bereit.'), (count) => t('{count} Bilder sind bereit.', { count })],
       })
     } catch (error) {
       if ((error as Error).name === 'AbortError') {
-        toast.info('Export abgebrochen', { id: toastId })
+        toast.info(t('Export abgebrochen'), { id: toastId })
       } else {
         console.error('Bilder konnten nicht erstellt werden', error)
-        toast.error('Die Bilder konnten nicht erstellt werden.', { id: toastId })
+        toast.error(t('Die Bilder konnten nicht erstellt werden.'), { id: toastId })
       }
       setProgress(null)
     } finally {
@@ -114,17 +115,19 @@ function ExportImagesContent({
   return (
     <DialogContent className="sm:max-w-md">
       <DialogHeader>
-        <DialogTitle>Seiten als Bilder exportieren</DialogTitle>
+        <DialogTitle>{t('Seiten als Bilder exportieren')}</DialogTitle>
         <DialogDescription>
-          Jede Seite wird ein Bild – mit allen Bearbeitungen, Anmerkungen und Schwärzungen.
+          {t('Jede Seite wird ein Bild – mit allen Bearbeitungen, Anmerkungen und Schwärzungen.')}
         </DialogDescription>
       </DialogHeader>
 
       {progress ? (
         <div className="space-y-3 py-2" aria-live="polite">
           <p className="text-sm">
-            Seite {Math.min(progress.done + 1, progress.total)} von {progress.total} wird gerendert
-            …
+            {t('Seite {current} von {total} wird gerendert …', {
+              current: Math.min(progress.done + 1, progress.total),
+              total: progress.total,
+            })}
           </p>
           <div className="bg-muted h-2 overflow-hidden rounded-full" role="progressbar">
             <div
@@ -134,7 +137,7 @@ function ExportImagesContent({
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={onCancel}>
-              Abbrechen
+              {t('Abbrechen')}
             </Button>
           </DialogFooter>
         </div>
@@ -142,7 +145,7 @@ function ExportImagesContent({
         <>
           <div className="space-y-4">
             <fieldset className="space-y-1.5">
-              <legend className="text-sm font-medium">Format</legend>
+              <legend className="text-sm font-medium">{t('Format')}</legend>
               <div className="flex gap-2" role="radiogroup">
                 {(
                   [
@@ -165,7 +168,7 @@ function ExportImagesContent({
               </div>
             </fieldset>
             <fieldset className="space-y-1.5">
-              <legend className="text-sm font-medium">Auflösung</legend>
+              <legend className="text-sm font-medium">{t('Auflösung')}</legend>
               <div className="flex flex-wrap gap-2" role="radiogroup">
                 {RESOLUTIONS.map((option) => (
                   <Button
@@ -184,15 +187,20 @@ function ExportImagesContent({
               </div>
             </fieldset>
             <fieldset className="space-y-1.5">
-              <legend className="text-sm font-medium">Seiten</legend>
+              <legend className="text-sm font-medium">{t('Seiten')}</legend>
               <div className="flex flex-wrap gap-2" role="radiogroup">
                 {(
                   [
-                    ['all', `Alle (${pageCount})`],
+                    ['all', t('Alle ({pageCount})', { pageCount })],
                     ...(selectedIds.length > 0
-                      ? [['selected', `Ausgewählte (${selectedIds.length})`] as const]
+                      ? [
+                          [
+                            'selected',
+                            t('Ausgewählte ({length})', { length: selectedIds.length }),
+                          ] as const,
+                        ]
                       : []),
-                    ['current', 'Aktuelle Seite'],
+                    ['current', t('Aktuelle Seite')],
                   ] as const
                 ).map(([value, label]) => (
                   <Button
@@ -212,9 +220,9 @@ function ExportImagesContent({
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={onDone}>
-              Abbrechen
+              {t('Abbrechen')}
             </Button>
-            <Button onClick={() => void start()}>Exportieren</Button>
+            <Button onClick={() => void start()}>{t('Exportieren')}</Button>
           </DialogFooter>
         </>
       )}

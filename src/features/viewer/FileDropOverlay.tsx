@@ -9,6 +9,7 @@ import { looksLikeImage, prepareImage } from '@/lib/images'
 import { useDocumentStore } from '@/stores/documentStore'
 import { useUiStore } from '@/stores/uiStore'
 import { addBatchFiles } from '@/features/batch/pickBatchFiles'
+import { t } from '@/i18n'
 
 function hasFiles(event: DragEvent): boolean {
   return event.dataTransfer?.types.includes('Files') ?? false
@@ -49,11 +50,11 @@ export function FileDropOverlay() {
       const ui = useUiStore.getState()
       // Open dialogs that collect files take them
       if (ui.batchFiles !== null) {
-        if (addBatchFiles(files) === 0) toast.error('Bitte PDFs oder Bilder ablegen.')
+        if (addBatchFiles(files) === 0) toast.error(t('Bitte PDFs oder Bilder ablegen.'))
         return
       }
       if (ui.imagesToPdf !== null) {
-        if (!files.some(looksLikeImage)) toast.error('Bitte Bilder ablegen.')
+        if (!files.some(looksLikeImage)) toast.error(t('Bitte Bilder ablegen.'))
         addImagesForPdf(files)
         return
       }
@@ -69,10 +70,12 @@ export function FileDropOverlay() {
       if (hasDocument && looksLikeImage(first) && !looksLikePdf(first)) {
         void prepareImage(first)
           .then((image) => insertImage(image))
-          .catch(() => toast.error(`„${first.name}“ konnte nicht als Bild gelesen werden.`))
+          .catch(() =>
+            toast.error(t('„{name}“ konnte nicht als Bild gelesen werden.', { name: first.name })),
+          )
         return
       }
-      if (files.length > 1) toast.info('Es wird nur die erste Datei geöffnet.')
+      if (files.length > 1) toast.info(t('Es wird nur die erste Datei geöffnet.'))
       void open(first)
     }
 
@@ -93,12 +96,12 @@ export function FileDropOverlay() {
   const ui = useUiStore.getState()
   const hint =
     ui.batchFiles !== null
-      ? 'Dateien zur Stapelverarbeitung hinzufügen'
+      ? t('Dateien zur Stapelverarbeitung hinzufügen')
       : ui.imagesToPdf !== null
-        ? 'Bilder hinzufügen'
+        ? t('Bilder hinzufügen')
         : hasDocument
-          ? 'PDF zum Öffnen oder Bild zum Einfügen ablegen'
-          : 'PDF hier ablegen zum Öffnen'
+          ? t('PDF zum Öffnen oder Bild zum Einfügen ablegen')
+          : t('PDF hier ablegen zum Öffnen')
 
   return (
     <div className="bg-primary/10 pointer-events-none fixed inset-0 z-[60] flex items-center justify-center p-6 backdrop-blur-[2px]">

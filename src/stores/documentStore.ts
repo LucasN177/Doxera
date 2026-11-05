@@ -11,6 +11,7 @@ import { requestPassword } from '@/stores/uiStore'
 import type { OpenDocument, PageRef, PdfSource } from '@/types/document'
 import type { FormValues } from '@/types/forms'
 import type { HeaderFooter } from '@/engine/document/headerFooter'
+import { t } from '@/i18n'
 
 export type OpenResult = { ok: true } | { ok: false; cancelled?: boolean; message: string }
 
@@ -85,8 +86,8 @@ interface DocumentState {
 /** Incremented on every open/close so stale async loads can be discarded. */
 let loadToken = 0
 
-const GENERIC_ERROR = 'Die PDF konnte nicht geöffnet werden.'
-const CANCELLED: OpenResult = { ok: false, cancelled: true, message: 'Abgebrochen' }
+const GENERIC_ERROR = t('Die PDF konnte nicht geöffnet werden.')
+const CANCELLED: OpenResult = { ok: false, cancelled: true, message: t('Abgebrochen') }
 const EMPTY_HISTORY: History = { past: [], future: [] }
 
 /**
@@ -102,7 +103,7 @@ export async function unlock(name: string, data: Uint8Array): Promise<Uint8Array
   } catch (error) {
     throw new PdfLoadError(
       'password',
-      'Zum Entsperren wird MuPDF benötigt; es konnte nicht geladen werden.',
+      t('Zum Entsperren wird MuPDF benötigt; es konnte nicht geladen werden.'),
       {
         cause: error,
       },
@@ -113,7 +114,7 @@ export async function unlock(name: string, data: Uint8Array): Promise<Uint8Array
     const result = await decrypt(data, password)
     if (result.status === 'ok') return result.data
     const entered = await requestPassword(name, attempt > 0)
-    if (entered === null) throw new PdfLoadError('cancelled', 'Abgebrochen')
+    if (entered === null) throw new PdfLoadError('cancelled', t('Abgebrochen'))
     password = entered
   }
 }
@@ -121,7 +122,7 @@ export async function unlock(name: string, data: Uint8Array): Promise<Uint8Array
 /** Validates and parses a PDF. Throws {@link PdfLoadError} with a user-facing message. */
 async function loadSource(name: string, data: Uint8Array): Promise<PdfSource> {
   if (!hasPdfSignature(data)) {
-    throw new PdfLoadError('invalid', `„${name}“ ist keine gültige PDF-Datei.`)
+    throw new PdfLoadError('invalid', t('„{name}“ ist keine gültige PDF-Datei.', { name }))
   }
   const pdf = await openPdf(data)
   try {
@@ -216,7 +217,7 @@ export const useDocumentStore = create<DocumentState>()((set, get) => {
 
     openFile: async (file) => {
       if (!looksLikePdf(file)) {
-        return { ok: false, message: `„${file.name}“ ist keine PDF-Datei.` }
+        return { ok: false, message: t('„{name}“ ist keine PDF-Datei.', { name: file.name }) }
       }
       return load(file.name, async () => new Uint8Array(await file.arrayBuffer()))
     },
@@ -341,7 +342,7 @@ export const useDocumentStore = create<DocumentState>()((set, get) => {
       const errors: string[] = []
       for (const file of files) {
         if (!looksLikePdf(file)) {
-          errors.push(`„${file.name}“ ist keine PDF-Datei.`)
+          errors.push(t('„{name}“ ist keine PDF-Datei.', { name: file.name }))
           continue
         }
         try {

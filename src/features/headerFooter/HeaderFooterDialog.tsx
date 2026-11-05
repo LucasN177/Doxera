@@ -18,6 +18,7 @@ import {
 import { cn } from '@/lib/utils'
 import { useDocumentStore } from '@/stores/documentStore'
 import { useUiStore } from '@/stores/uiStore'
+import { locale, t } from '@/i18n'
 
 export function HeaderFooterDialog() {
   const open = useUiStore((state) => state.headerFooterOpen)
@@ -29,7 +30,11 @@ export function HeaderFooterDialog() {
   )
 }
 
-const SLOTS = ['links', 'Mitte', 'rechts'] as const
+/** Placeholder names in the interface language (both languages work). */
+const PLACEHOLDERS =
+  locale === 'de' ? ['seite', 'seiten', 'datei', 'datum'] : ['page', 'pages', 'file', 'date']
+
+const SLOTS = [t('links'), t('Mitte'), t('rechts')] as const
 type Row = 'header' | 'footer'
 
 function HeaderFooterContent({ onDone }: { onDone: () => void }) {
@@ -70,13 +75,13 @@ function HeaderFooterContent({ onDone }: { onDone: () => void }) {
   return (
     <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-lg">
       <DialogHeader>
-        <DialogTitle>Seitenzahlen, Kopf- und Fußzeilen</DialogTitle>
+        <DialogTitle>{t('Seitenzahlen, Kopf- und Fußzeilen')}</DialogTitle>
         <DialogDescription>
-          Erscheinen auf jeder Seite und werden beim Speichern in die PDF geschrieben.
+          {t('Erscheinen auf jeder Seite und werden beim Speichern in die PDF geschrieben.')}
         </DialogDescription>
       </DialogHeader>
 
-      <div className="flex flex-wrap gap-1.5" aria-label="Vorlagen">
+      <div className="flex flex-wrap gap-1.5" aria-label={t('Vorlagen')}>
         {HEADER_FOOTER_PRESETS.map((preset) => (
           <Button
             key={preset.name}
@@ -90,16 +95,21 @@ function HeaderFooterContent({ onDone }: { onDone: () => void }) {
         ))}
       </div>
 
-      {row('header', 'Kopfzeile')}
-      {row('footer', 'Fußzeile')}
+      {row('header', t('Kopfzeile'))}
+      {row('footer', t('Fußzeile'))}
       <p className="text-muted-foreground text-xs">
-        Platzhalter: <code>{'{seite}'}</code>, <code>{'{seiten}'}</code>, <code>{'{datei}'}</code>,{' '}
-        <code>{'{datum}'}</code>
+        {t('Platzhalter:')}{' '}
+        {PLACEHOLDERS.map((name, index) => (
+          <span key={name}>
+            {index > 0 && ', '}
+            <code>{`{${name}}`}</code>
+          </span>
+        ))}
       </p>
 
       <div className="grid gap-3 sm:grid-cols-2">
         <Options
-          label="Schriftgröße"
+          label={t('Schriftgröße')}
           value={draft.fontSize}
           onChange={(fontSize) => update({ fontSize })}
           options={[
@@ -110,27 +120,27 @@ function HeaderFooterContent({ onDone }: { onDone: () => void }) {
           ]}
         />
         <Options
-          label="Abstand zum Rand"
+          label={t('Abstand zum Rand')}
           value={draft.margin}
           onChange={(margin) => update({ margin })}
           options={[
-            [14, 'Klein'],
-            [24, 'Normal'],
-            [40, 'Groß'],
+            [14, t('Klein')],
+            [24, t('Normal')],
+            [40, t('Groß')],
           ]}
         />
         <Options
-          label="Farbe"
+          label={t('Farbe')}
           value={draft.color}
           onChange={(color) => update({ color })}
           options={[
-            ['#475569', 'Grau'],
-            ['#000000', 'Schwarz'],
-            ['#1d4ed8', 'Blau'],
+            ['#475569', t('Grau')],
+            ['#000000', t('Schwarz')],
+            ['#1d4ed8', t('Blau')],
           ]}
         />
         <label className="space-y-1">
-          <span className="block text-sm font-medium">Erste Seitenzahl</span>
+          <span className="block text-sm font-medium">{t('Erste Seitenzahl')}</span>
           <Input
             type="number"
             inputMode="numeric"
@@ -151,7 +161,7 @@ function HeaderFooterContent({ onDone }: { onDone: () => void }) {
           checked={draft.skipFirstPage}
           onChange={(event) => update({ skipFirstPage: event.target.checked })}
         />
-        Nicht auf der ersten Seite (Deckblatt)
+        {t('Nicht auf der ersten Seite (Deckblatt)')}
       </label>
 
       <DialogFooter className="gap-2">
@@ -164,13 +174,13 @@ function HeaderFooterContent({ onDone }: { onDone: () => void }) {
               onDone()
             }}
           >
-            Entfernen
+            {t('Entfernen')}
           </Button>
         )}
         <Button variant="outline" onClick={onDone}>
-          Abbrechen
+          {t('Abbrechen')}
         </Button>
-        <Button onClick={apply}>Übernehmen</Button>
+        <Button onClick={apply}>{t('Übernehmen')}</Button>
       </DialogFooter>
     </DialogContent>
   )

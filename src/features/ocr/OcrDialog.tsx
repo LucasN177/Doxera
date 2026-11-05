@@ -16,6 +16,7 @@ import { useDocumentStore } from '@/stores/documentStore'
 import { useUiStore } from '@/stores/uiStore'
 import { useViewerStore } from '@/stores/viewerStore'
 import { runOcr, type OcrProgress } from './runOcr'
+import { t } from '@/i18n'
 
 type Target = 'all' | 'selected' | 'current'
 
@@ -115,32 +116,41 @@ function OcrDialogContent({
       })
       const notes = [
         summary.skipped > 0 &&
-          `${summary.skipped} ${summary.skipped === 1 ? 'Seite hatte' : 'Seiten hatten'} schon Text`,
-        summary.empty > 0 && `auf ${summary.empty} kein Text gefunden`,
+          (summary.skipped === 1
+            ? t('1 Seite hatte schon Text')
+            : t('{count} Seiten hatten schon Text', { count: summary.skipped })),
+        summary.empty > 0 &&
+          (summary.empty === 1
+            ? t('auf 1 Seite kein Text gefunden')
+            : t('auf {count} Seiten kein Text gefunden', { count: summary.empty })),
       ].filter(Boolean)
       if (summary.recognized > 0) {
         toast.success(
-          `Text auf ${summary.recognized} ${summary.recognized === 1 ? 'Seite' : 'Seiten'} erkannt`,
+          summary.recognized === 1
+            ? t('Text auf 1 Seite erkannt')
+            : t('Text auf {count} Seiten erkannt', { count: summary.recognized }),
           {
             description: [
-              'Er ist jetzt durchsuchbar und markierbar – auch in der exportierten PDF.',
+              t('Er ist jetzt durchsuchbar und markierbar – auch in der exportierten PDF.'),
               ...notes,
             ].join(' '),
           },
         )
       } else {
-        toast.info('Kein Text erkannt', { description: notes.join(', ') || undefined })
+        toast.info(t('Kein Text erkannt'), { description: notes.join(', ') || undefined })
       }
       onDone()
     } catch (error) {
       if ((error as Error).name === 'AbortError') {
-        toast.info('Texterkennung abgebrochen')
+        toast.info(t('Texterkennung abgebrochen'))
       } else {
         console.error('Texterkennung fehlgeschlagen', error)
-        toast.error('Die Texterkennung ist fehlgeschlagen.', {
+        toast.error(t('Die Texterkennung ist fehlgeschlagen.'), {
           description: navigator.onLine
             ? undefined
-            : 'Beim ersten Mal werden die Erkennungsdaten geladen – dafür ist eine Verbindung nötig.',
+            : t(
+                'Beim ersten Mal werden die Erkennungsdaten geladen – dafür ist eine Verbindung nötig.',
+              ),
         })
       }
       setProgress(null)
@@ -156,10 +166,11 @@ function OcrDialogContent({
   return (
     <DialogContent className="sm:max-w-md">
       <DialogHeader>
-        <DialogTitle>Texterkennung (OCR)</DialogTitle>
+        <DialogTitle>{t('Texterkennung (OCR)')}</DialogTitle>
         <DialogDescription>
-          Erkennt Text auf gescannten Seiten und macht ihn durchsuchbar, markierbar und kopierbar.
-          Alles läuft lokal in deinem Browser.
+          {t(
+            'Erkennt Text auf gescannten Seiten und macht ihn durchsuchbar, markierbar und kopierbar. Alles läuft lokal in deinem Browser.',
+          )}
         </DialogDescription>
       </DialogHeader>
 
@@ -169,10 +180,13 @@ function OcrDialogContent({
             <ScanText className="text-primary size-5 animate-pulse" aria-hidden />
             <p className="text-sm">
               {progress.phase === 'loading'
-                ? 'Erkennung wird vorbereitet …'
+                ? t('Erkennung wird vorbereitet …')
                 : progress.phase === 'saving'
-                  ? 'Textebene wird eingefügt …'
-                  : `Seite ${progress.current} von ${progress.total} wird erkannt …`}
+                  ? t('Textebene wird eingefügt …')
+                  : t('Seite {current} von {total} wird erkannt …', {
+                      current: progress.current,
+                      total: progress.total,
+                    })}
             </p>
           </div>
           <div
@@ -189,7 +203,7 @@ function OcrDialogContent({
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={onCancel}>
-              Abbrechen
+              {t('Abbrechen')}
             </Button>
           </DialogFooter>
         </div>
@@ -197,7 +211,7 @@ function OcrDialogContent({
         <>
           <div className="space-y-4">
             <fieldset className="space-y-1.5">
-              <legend className="text-sm font-medium">Sprachen im Dokument</legend>
+              <legend className="text-sm font-medium">{t('Sprachen im Dokument')}</legend>
               <div className="flex flex-wrap gap-2">
                 {OCR_LANGUAGES.map(({ code, name }) => {
                   const selected = languages.includes(code)
@@ -217,20 +231,25 @@ function OcrDialogContent({
                 })}
               </div>
               <p className="text-muted-foreground text-xs">
-                Mehr Sprachen machen die Erkennung langsamer.
+                {t('Mehr Sprachen machen die Erkennung langsamer.')}
               </p>
             </fieldset>
 
             <fieldset className="space-y-1.5">
-              <legend className="text-sm font-medium">Seiten</legend>
+              <legend className="text-sm font-medium">{t('Seiten')}</legend>
               <div className="flex flex-wrap gap-2" role="radiogroup">
                 {(
                   [
-                    ['all', `Alle (${pageCount})`],
+                    ['all', t('Alle ({pageCount})', { pageCount })],
                     ...(selectedIds.length > 0
-                      ? [['selected', `Ausgewählte (${selectedIds.length})`] as const]
+                      ? [
+                          [
+                            'selected',
+                            t('Ausgewählte ({length})', { length: selectedIds.length }),
+                          ] as const,
+                        ]
                       : []),
-                    ['current', 'Aktuelle Seite'],
+                    ['current', t('Aktuelle Seite')],
                   ] as const
                 ).map(([value, label]) => (
                   <Button
@@ -257,9 +276,9 @@ function OcrDialogContent({
                 onChange={(event) => setSkipText(event.target.checked)}
               />
               <span>
-                Seiten mit vorhandenem Text überspringen
+                {t('Seiten mit vorhandenem Text überspringen')}
                 <span className="text-muted-foreground block text-xs">
-                  Digitale PDFs haben schon Text; nur Scans brauchen eine Erkennung.
+                  {t('Digitale PDFs haben schon Text; nur Scans brauchen eine Erkennung.')}
                 </span>
               </span>
             </label>
@@ -267,10 +286,10 @@ function OcrDialogContent({
 
           <DialogFooter>
             <Button variant="outline" onClick={onDone}>
-              Abbrechen
+              {t('Abbrechen')}
             </Button>
             <Button onClick={() => void start()} disabled={languages.length === 0}>
-              Text erkennen
+              {t('Text erkennen')}
             </Button>
           </DialogFooter>
         </>

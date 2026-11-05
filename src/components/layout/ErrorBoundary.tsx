@@ -1,6 +1,7 @@
 import { TriangleAlert } from 'lucide-react'
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
+import { t } from '@/i18n'
 
 interface ErrorBoundaryProps {
   children: ReactNode
@@ -32,17 +33,18 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       >
         <TriangleAlert className="text-destructive size-10" aria-hidden />
         <div className="space-y-1">
-          <h1 className="text-lg font-semibold">Da ist etwas schiefgelaufen</h1>
+          <h1 className="text-lg font-semibold">{t('Da ist etwas schiefgelaufen')}</h1>
           <p className="text-muted-foreground max-w-md text-sm">
-            Doxera ist auf einen unerwarteten Fehler gestoßen. Deine lokal gespeicherten Dokumente
-            sind davon nicht betroffen.
+            {t(
+              'Doxera ist auf einen unerwarteten Fehler gestoßen. Deine lokal gespeicherten Dokumente sind davon nicht betroffen.',
+            )}
           </p>
         </div>
         <details className="text-muted-foreground max-w-md text-left text-xs">
-          <summary className="cursor-pointer">Technische Details</summary>
+          <summary className="cursor-pointer">{t('Technische Details')}</summary>
           <pre className="mt-2 overflow-auto whitespace-pre-wrap">{this.state.error.message}</pre>
         </details>
-        <Button onClick={() => window.location.reload()}>Neu laden</Button>
+        <Button onClick={() => window.location.reload()}>{t('Neu laden')}</Button>
       </div>
     )
   }

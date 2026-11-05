@@ -34,20 +34,21 @@ import { deleteSignature, listSignatures, saveSignature } from '@/storage/signat
 import { useLibraryStore } from '@/stores/libraryStore'
 import { useUiStore } from '@/stores/uiStore'
 import { insertImage } from './insertImage'
+import { t } from '@/i18n'
 
 type Mode = 'draw' | 'type' | 'image'
 
 const INK_COLORS = [
-  { value: '#0f172a', name: 'Schwarz' },
-  { value: '#1d4ed8', name: 'Blau' },
+  { value: '#0f172a', name: t('Schwarz') },
+  { value: '#1d4ed8', name: t('Blau') },
 ]
 const SCRIPT_FONTS = [
   {
     value: '"Segoe Script", "Snell Roundhand", "Brush Script MT", cursive',
-    name: 'Schreibschrift',
+    name: t('Schreibschrift'),
   },
-  { value: '"Bradley Hand", "Comic Sans MS", "Segoe Print", cursive', name: 'Handschrift' },
-  { value: 'Georgia, "Times New Roman", serif', name: 'Klassisch' },
+  { value: '"Bradley Hand", "Comic Sans MS", "Segoe Print", cursive', name: t('Handschrift') },
+  { value: 'Georgia, "Times New Roman", serif', name: t('Klassisch') },
 ]
 
 export function SignatureDialog() {
@@ -114,7 +115,7 @@ function SignatureDialogContent({ onDone }: { onDone: () => void }) {
         await saveSignature({ id: crypto.randomUUID(), createdAt: Date.now(), ...image })
       } catch (error) {
         console.warn('Signatur konnte nicht gespeichert werden', error)
-        toast.warning('Die Signatur wurde eingefügt, aber nicht gespeichert.')
+        toast.warning(t('Die Signatur wurde eingefügt, aber nicht gespeichert.'))
       }
     }
     insertPrepared(image)
@@ -135,7 +136,7 @@ function SignatureDialogContent({ onDone }: { onDone: () => void }) {
       removeWhiteBackground(canvas)
       setUploaded(canvas)
     } catch {
-      toast.error('Das Bild konnte nicht geladen werden.')
+      toast.error(t('Das Bild konnte nicht geladen werden.'))
     }
   }
 
@@ -158,16 +159,19 @@ function SignatureDialogContent({ onDone }: { onDone: () => void }) {
   return (
     <DialogContent className="max-h-[95svh] overflow-y-auto sm:max-w-lg">
       <DialogHeader>
-        <DialogTitle>Signatur einfügen</DialogTitle>
+        <DialogTitle>{t('Signatur einfügen')}</DialogTitle>
         <DialogDescription>
-          Die Signatur wird auf der aktuellen Seite unten rechts eingefügt und lässt sich danach
-          verschieben und skalieren.
+          {t(
+            'Die Signatur wird auf der aktuellen Seite unten rechts eingefügt und lässt sich danach verschieben und skalieren.',
+          )}
         </DialogDescription>
       </DialogHeader>
 
       {saved.length > 0 && (
-        <section aria-label="Gespeicherte Signaturen" className="space-y-2">
-          <h3 className="text-muted-foreground text-xs font-medium">Gespeicherte Signaturen</h3>
+        <section aria-label={t('Gespeicherte Signaturen')} className="space-y-2">
+          <h3 className="text-muted-foreground text-xs font-medium">
+            {t('Gespeicherte Signaturen')}
+          </h3>
           <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {saved.map((signature) => (
               <li key={signature.id} className="group relative">
@@ -175,12 +179,12 @@ function SignatureDialogContent({ onDone }: { onDone: () => void }) {
                   type="button"
                   className="hover:border-primary flex h-16 w-full items-center justify-center rounded-md border bg-white p-1"
                   onClick={() => insertSaved(signature)}
-                  aria-label="Gespeicherte Signatur einfügen"
+                  aria-label={t('Gespeicherte Signatur einfügen')}
                 >
                   <SavedSignatureImage signature={signature} />
                 </button>
                 <IconButton
-                  label="Gespeicherte Signatur löschen"
+                  label={t('Gespeicherte Signatur löschen')}
                   className="bg-background/90 absolute top-1 right-1 size-6 opacity-0 shadow-sm group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
                   onClick={() => void removeSaved(signature.id)}
                 >
@@ -194,17 +198,17 @@ function SignatureDialogContent({ onDone }: { onDone: () => void }) {
 
       <div
         role="tablist"
-        aria-label="Art der Signatur"
+        aria-label={t('Art der Signatur')}
         className="bg-muted flex gap-1 rounded-lg p-1"
       >
-        {tab('draw', 'Zeichnen', PenLine)}
-        {tab('type', 'Tippen', Type)}
-        {tab('image', 'Bild', ImageUp)}
+        {tab('draw', t('Zeichnen'), PenLine)}
+        {tab('type', t('Tippen'), Type)}
+        {tab('image', t('Bild'), ImageUp)}
       </div>
 
       {mode !== 'image' && (
-        <div className="flex items-center gap-2" role="radiogroup" aria-label="Tintenfarbe">
-          <span className="text-muted-foreground text-xs">Farbe</span>
+        <div className="flex items-center gap-2" role="radiogroup" aria-label={t('Tintenfarbe')}>
+          <span className="text-muted-foreground text-xs">{t('Farbe')}</span>
           {INK_COLORS.map(({ value, name: label }) => (
             <button
               key={value}
@@ -227,7 +231,7 @@ function SignatureDialogContent({ onDone }: { onDone: () => void }) {
         <div className="space-y-1">
           <SignaturePad ref={padRef} color={color} onInkChange={setHasInk} />
           <div className="text-muted-foreground flex items-center justify-between text-xs">
-            <span>Mit Maus, Finger oder Stift unterschreiben</span>
+            <span>{t('Mit Maus, Finger oder Stift unterschreiben')}</span>
             <Button
               variant="ghost"
               size="xs"
@@ -235,7 +239,7 @@ function SignatureDialogContent({ onDone }: { onDone: () => void }) {
               disabled={!hasInk}
             >
               <Eraser />
-              Löschen
+              {t('Löschen')}
             </Button>
           </div>
         </div>
@@ -244,13 +248,13 @@ function SignatureDialogContent({ onDone }: { onDone: () => void }) {
       {mode === 'type' && (
         <div className="space-y-2">
           <Input
-            aria-label="Name"
-            placeholder="Vor- und Nachname"
+            aria-label={t('Name')}
+            placeholder={t('Vor- und Nachname')}
             value={name}
             onChange={(event) => setName(event.target.value)}
             autoFocus
           />
-          <div className="grid gap-1.5" role="radiogroup" aria-label="Schriftart">
+          <div className="grid gap-1.5" role="radiogroup" aria-label={t('Schriftart')}>
             {SCRIPT_FONTS.map(({ value, name: label }) => (
               <button
                 key={value}
@@ -265,7 +269,7 @@ function SignatureDialogContent({ onDone }: { onDone: () => void }) {
                 style={{ fontFamily: value, color }}
                 onClick={() => setFont(value)}
               >
-                {name.trim() || 'Ihre Signatur'}
+                {name.trim() || t('Ihre Signatur')}
               </button>
             ))}
           </div>
@@ -278,19 +282,20 @@ function SignatureDialogContent({ onDone }: { onDone: () => void }) {
             <div className="flex h-40 items-center justify-center rounded-md border bg-white p-2">
               <img
                 src={uploaded.toDataURL()}
-                alt="Vorschau der Signatur"
+                alt={t('Vorschau der Signatur')}
                 className="max-h-full max-w-full object-contain"
               />
             </div>
           ) : (
             <p className="text-muted-foreground rounded-md border border-dashed p-6 text-center text-sm">
-              Foto oder Scan einer Unterschrift auf weißem Papier. Der weiße Hintergrund wird
-              automatisch entfernt.
+              {t(
+                'Foto oder Scan einer Unterschrift auf weißem Papier. Der weiße Hintergrund wird automatisch entfernt.',
+              )}
             </p>
           )}
           <Button variant="outline" onClick={() => void upload()}>
             <ImageUp />
-            {uploaded ? 'Anderes Bild wählen' : 'Bild wählen'}
+            {uploaded ? t('Anderes Bild wählen') : t('Bild wählen')}
           </Button>
         </div>
       )}
@@ -309,14 +314,14 @@ function SignatureDialogContent({ onDone }: { onDone: () => void }) {
             disabled={!storageAvailable}
             onChange={(event) => setRemember(event.target.checked)}
           />
-          Für später speichern (nur in diesem Browser)
+          {t('Für später speichern (nur in diesem Browser)')}
         </label>
         <div className="flex gap-2">
           <Button variant="outline" onClick={onDone}>
-            Abbrechen
+            {t('Abbrechen')}
           </Button>
           <Button onClick={() => void insert()} disabled={!canInsert}>
-            Einfügen
+            {t('Einfügen')}
           </Button>
         </div>
       </DialogFooter>
@@ -420,7 +425,7 @@ function SignaturePad({
   return (
     <canvas
       ref={canvasRef}
-      aria-label="Unterschriftenfeld"
+      aria-label={t('Unterschriftenfeld')}
       className="h-44 w-full cursor-crosshair touch-none rounded-md border bg-white"
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}

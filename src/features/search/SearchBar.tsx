@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input'
 import { MAX_MATCHES } from '@/engine/search/textSearch'
 import { cn } from '@/lib/utils'
 import { useSearchStore } from '@/stores/searchStore'
+import { t } from '@/i18n'
 
 /** Floating search panel shown above the document view. */
 export function SearchBar() {
@@ -32,12 +33,17 @@ export function SearchBar() {
 
   const hasQuery = query.trim().length > 0
   let status = ''
-  if (indexing) status = `Lese Seite ${indexedPages} von ${indexTotal} …`
+  if (indexing)
+    status = t('Lese Seite {indexedPages} von {indexTotal} …', { indexedPages, indexTotal })
   else if (hasQuery && !searching) {
     status =
       matches.length === 0
-        ? 'Keine Treffer'
-        : `${activeIndex + 1} von ${matches.length}${matches.length >= MAX_MATCHES ? '+' : ''}`
+        ? t('Keine Treffer')
+        : t('{value0} von {length}{value2}', {
+            value0: activeIndex + 1,
+            length: matches.length,
+            value2: matches.length >= MAX_MATCHES ? '+' : '',
+          })
   }
 
   return (
@@ -53,8 +59,8 @@ export function SearchBar() {
         <Input
           ref={inputRef}
           type="search"
-          aria-label="Im Dokument suchen"
-          placeholder="Im Dokument suchen"
+          aria-label={t('Im Dokument suchen')}
+          placeholder={t('Im Dokument suchen')}
           className="h-8 w-56 pl-8 max-sm:w-full [&::-webkit-search-cancel-button]:hidden"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
@@ -79,14 +85,14 @@ export function SearchBar() {
         aria-live="polite"
       >
         {searching && !indexing ? (
-          <Loader2 className="mx-auto size-3.5 animate-spin" aria-label="Suche läuft" />
+          <Loader2 className="mx-auto size-3.5 animate-spin" aria-label={t('Suche läuft')} />
         ) : (
           status
         )}
       </span>
 
       <IconButton
-        label="Groß-/Kleinschreibung beachten"
+        label={t('Groß-/Kleinschreibung beachten')}
         aria-pressed={matchCase}
         className={cn('max-sm:hidden', matchCase && 'bg-accent text-accent-foreground')}
         onClick={() => setMatchCase(!matchCase)}
@@ -94,22 +100,22 @@ export function SearchBar() {
         <CaseSensitive />
       </IconButton>
       <IconButton
-        label="Vorheriger Treffer"
-        shortcut="Umschalt+Enter"
+        label={t('Vorheriger Treffer')}
+        shortcut={t('Umschalt+Enter')}
         disabled={matches.length === 0}
         onClick={previous}
       >
         <ChevronUp />
       </IconButton>
       <IconButton
-        label="Nächster Treffer"
+        label={t('Nächster Treffer')}
         shortcut="Enter"
         disabled={matches.length === 0}
         onClick={next}
       >
         <ChevronDown />
       </IconButton>
-      <IconButton label="Suche schließen" shortcut="Esc" onClick={close}>
+      <IconButton label={t('Suche schließen')} shortcut={t('Esc')} onClick={close}>
         <X />
       </IconButton>
     </div>

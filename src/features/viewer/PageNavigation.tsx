@@ -3,6 +3,7 @@ import { useState, type FormEvent } from 'react'
 import { IconButton } from '@/components/layout/IconButton'
 import { Input } from '@/components/ui/input'
 import { useViewerStore } from '@/stores/viewerStore'
+import { t } from '@/i18n'
 
 export function PageNavigation({ pageCount }: { pageCount: number }) {
   const currentPage = useViewerStore((state) => state.currentPage)
@@ -20,7 +21,7 @@ export function PageNavigation({ pageCount }: { pageCount: number }) {
   return (
     <form className="flex items-center gap-1" onSubmit={submit}>
       <IconButton
-        label="Vorherige Seite"
+        label={t('Vorherige Seite')}
         className="max-lg:hidden"
         disabled={currentPage <= 1}
         onClick={() => goToPage(currentPage - 1)}
@@ -28,7 +29,7 @@ export function PageNavigation({ pageCount }: { pageCount: number }) {
         <ChevronUp />
       </IconButton>
       <IconButton
-        label="Nächste Seite"
+        label={t('Nächste Seite')}
         className="max-lg:hidden"
         disabled={currentPage >= pageCount}
         onClick={() => goToPage(currentPage + 1)}
@@ -36,7 +37,7 @@ export function PageNavigation({ pageCount }: { pageCount: number }) {
         <ChevronDown />
       </IconButton>
       <Input
-        aria-label="Seitennummer"
+        aria-label={t('Seitennummer')}
         inputMode="numeric"
         className="h-8 w-12 px-1 text-center"
         value={draft ?? String(currentPage)}

@@ -36,6 +36,7 @@ import { cn } from '@/lib/utils'
 import { useViewerStore } from '@/stores/viewerStore'
 import type { ResolvedPage } from '@/types/document'
 import type { usePageActions } from './usePageActions'
+import { t } from '@/i18n'
 
 export type PagesLayout = 'list' | 'grid'
 
@@ -274,7 +275,10 @@ const SortableThumbnail = memo(function SortableThumbnail({
         onClick={onClick}
         {...attributes}
         {...listeners}
-        aria-label={`Seite ${index + 1}${selected ? ', ausgewählt' : ''}`}
+        aria-label={t('Seite {value0}{value1}', {
+          value0: index + 1,
+          value1: selected ? t(', ausgewählt') : '',
+        })}
         aria-current={active ? 'page' : undefined}
         aria-pressed={selected}
       >
@@ -315,7 +319,11 @@ const SortableThumbnail = memo(function SortableThumbnail({
         // Sit in the corner of the page image, which is centered inside grid cells
         style={toggleOffset}
         onClick={onToggle}
-        aria-label={selected ? `Seite ${index + 1} abwählen` : `Seite ${index + 1} auswählen`}
+        aria-label={
+          selected
+            ? t('Seite {value0} abwählen', { value0: index + 1 })
+            : t('Seite {value0} auswählen', { value0: index + 1 })
+        }
         tabIndex={-1}
       >
         {selected && <Check className="size-4" aria-hidden />}

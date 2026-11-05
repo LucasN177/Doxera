@@ -11,6 +11,7 @@ import { useExportDocument } from '@/hooks/useExportDocument'
 import { pickFiles } from '@/lib/file'
 import { useDocumentStore } from '@/stores/documentStore'
 import { useViewerStore } from '@/stores/viewerStore'
+import { t } from '@/i18n'
 
 /**
  * Page editing actions. They act on the selected pages, or on the page in view
@@ -49,13 +50,16 @@ export function usePageActions() {
     if (ids.size === 0) return
     const ok = useDocumentStore.getState().edit((pages) => deletePages(pages, ids))
     if (!ok) {
-      toast.error('Ein Dokument braucht mindestens eine Seite.')
+      toast.error(t('Ein Dokument braucht mindestens eine Seite.'))
       return
     }
     useViewerStore.getState().clearSelection()
-    toast(`${ids.size === 1 ? 'Seite' : `${ids.size} Seiten`} gelöscht.`, {
-      action: { label: 'Rückgängig', onClick: () => useDocumentStore.getState().undo() },
-    })
+    toast(
+      ids.size === 1 ? t('Seite gelöscht.') : t('{count} Seiten gelöscht.', { count: ids.size }),
+      {
+        action: { label: t('Rückgängig'), onClick: () => useDocumentStore.getState().undo() },
+      },
+    )
   }, [targetIds])
 
   /** Moves the given pages so they start at `toIndex` (index without the moved pages). */
@@ -76,9 +80,14 @@ export function usePageActions() {
     const result = await useDocumentStore.getState().insertFiles(files, index)
     for (const error of result.errors) toast.error(error)
     if (result.pages > 0) {
-      toast.success(`${result.pages === 1 ? '1 Seite' : `${result.pages} Seiten`} eingefügt.`, {
-        action: { label: 'Rückgängig', onClick: () => useDocumentStore.getState().undo() },
-      })
+      toast.success(
+        result.pages === 1
+          ? t('1 Seite eingefügt.')
+          : t('{count} Seiten eingefügt.', { count: result.pages }),
+        {
+          action: { label: t('Rückgängig'), onClick: () => useDocumentStore.getState().undo() },
+        },
+      )
       useViewerStore.getState().goToPage(index + 1)
     }
   }, [targetIds])

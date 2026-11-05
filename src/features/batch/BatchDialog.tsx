@@ -39,6 +39,7 @@ import { pickBatchFiles } from './pickBatchFiles'
 import { mergeFiles, processFile, type BatchAction } from './processors'
 import { describeWorkflow } from '@/engine/workflow/templates'
 import { useWorkflowStore } from '@/stores/workflowStore'
+import { t } from '@/i18n'
 
 type ActionType = BatchAction['type']
 type Status = 'waiting' | 'running' | 'done' | 'skipped' | 'error'
@@ -51,12 +52,12 @@ interface Item {
 }
 
 const ACTIONS: Array<{ type: ActionType; label: string; hint: string; icon: typeof Layers }> = [
-  { type: 'compress', label: 'Komprimieren', hint: 'Dateien verkleinern', icon: FileArchive },
-  { type: 'ocr', label: 'Texterkennung', hint: 'Scans durchsuchbar machen', icon: ScanText },
-  { type: 'images', label: 'Als Bilder', hint: 'Jede Seite als Bild', icon: FileImage },
-  { type: 'data', label: 'Daten', hint: 'Text und Tabellen', icon: FileSpreadsheet },
-  { type: 'merge', label: 'Zusammenführen', hint: 'Eine PDF aus allen', icon: Layers },
-  { type: 'workflow', label: 'Workflow', hint: 'Gespeicherte Schrittkette', icon: Workflow },
+  { type: 'compress', label: t('Komprimieren'), hint: t('Dateien verkleinern'), icon: FileArchive },
+  { type: 'ocr', label: t('Texterkennung'), hint: t('Scans durchsuchbar machen'), icon: ScanText },
+  { type: 'images', label: t('Als Bilder'), hint: t('Jede Seite als Bild'), icon: FileImage },
+  { type: 'data', label: t('Daten'), hint: t('Text und Tabellen'), icon: FileSpreadsheet },
+  { type: 'merge', label: t('Zusammenführen'), hint: t('Eine PDF aus allen'), icon: Layers },
+  { type: 'workflow', label: t('Workflow'), hint: t('Gespeicherte Schrittkette'), icon: Workflow },
 ]
 
 export function BatchDialog() {
@@ -211,18 +212,18 @@ function BatchContent({
             })
           } catch (error) {
             if ((error as Error).name === 'AbortError') {
-              update(index, { status: 'skipped', note: 'Abgebrochen' })
+              update(index, { status: 'skipped', note: t('Abgebrochen') })
               break
             }
             console.error(`Stapelverarbeitung: ${file.name}`, error)
             update(index, {
               status: 'error',
-              note: (error as Error).message || 'Fehlgeschlagen',
+              note: (error as Error).message || t('Fehlgeschlagen'),
             })
           }
         }
       }
-      if (controller.signal.aborted) toast.info('Stapelverarbeitung abgebrochen')
+      if (controller.signal.aborted) toast.info(t('Stapelverarbeitung abgebrochen'))
     } finally {
       onRun(null)
       setResults(uniqueFileNames(output))
@@ -232,11 +233,11 @@ function BatchContent({
 
   const save = async () => {
     try {
-      await saveFilesNow(results, type === 'merge' ? 'Zusammengeführt' : 'Doxera Ergebnisse')
+      await saveFilesNow(results, type === 'merge' ? t('Zusammengeführt') : t('Doxera Ergebnisse'))
     } catch (error) {
       if ((error as Error).name === 'AbortError') return
       console.error('Speichern fehlgeschlagen', error)
-      toast.error('Die Ergebnisse konnten nicht gespeichert werden.')
+      toast.error(t('Die Ergebnisse konnten nicht gespeichert werden.'))
     }
   }
 
@@ -263,13 +264,13 @@ function BatchContent({
   if (type === 'compress') {
     options = (
       <Choices
-        label="Stufe"
+        label={t('Stufe')}
         value={level}
         onChange={setLevel}
         options={[
-          ['medium', 'Ausgewogen (150 dpi)'],
-          ['strong', 'Stark (96 dpi)'],
-          ['lossless', 'Verlustfrei'],
+          ['medium', t('Ausgewogen (150 dpi)')],
+          ['strong', t('Stark (96 dpi)')],
+          ['lossless', t('Verlustfrei')],
         ]}
       />
     )
@@ -277,7 +278,7 @@ function BatchContent({
     options = (
       <div className="space-y-2">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-muted-foreground w-20 text-xs">Sprachen</span>
+          <span className="text-muted-foreground w-20 text-xs">{t('Sprachen')}</span>
           {OCR_LANGUAGES.map(({ code, name }) => {
             const selected = languages.includes(code)
             return (
@@ -305,7 +306,7 @@ function BatchContent({
             checked={skipText}
             onChange={(event) => setSkipText(event.target.checked)}
           />
-          Seiten mit vorhandenem Text überspringen
+          {t('Seiten mit vorhandenem Text überspringen')}
         </label>
       </div>
     )
@@ -313,7 +314,7 @@ function BatchContent({
     options = (
       <div className="space-y-2">
         <Choices
-          label="Format"
+          label={t('Format')}
           value={imageFormat}
           onChange={setImageFormat}
           options={[
@@ -322,13 +323,13 @@ function BatchContent({
           ]}
         />
         <Choices
-          label="Auflösung"
+          label={t('Auflösung')}
           value={dpi}
           onChange={setDpi}
           options={[
-            [72, '72 dpi'],
-            [150, '150 dpi'],
-            [300, '300 dpi'],
+            [72, t('72 dpi')],
+            [150, t('150 dpi')],
+            [300, t('300 dpi')],
           ]}
         />
       </div>
@@ -336,11 +337,11 @@ function BatchContent({
   } else if (type === 'data') {
     options = (
       <Choices
-        label="Format"
+        label={t('Format')}
         value={dataFormat}
         onChange={setDataFormat}
         options={[
-          ['xlsx', 'Excel'],
+          ['xlsx', t('Excel')],
           ['json', 'JSON'],
           ['csv', 'CSV'],
         ]}
@@ -349,9 +350,9 @@ function BatchContent({
   } else if (type === 'workflow') {
     options = workflow ? (
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-muted-foreground w-20 text-xs">Workflow</span>
+        <span className="text-muted-foreground w-20 text-xs">{t('Workflow')}</span>
         <select
-          aria-label="Workflow"
+          aria-label={t('Workflow')}
           className="border-input bg-background h-8 min-w-0 flex-1 rounded-md border px-2 text-sm"
           value={workflow.id}
           onChange={(event) => setWorkflowId(event.target.value)}
@@ -365,7 +366,7 @@ function BatchContent({
       </div>
     ) : (
       <div className="flex flex-wrap items-center gap-2">
-        <p className="text-muted-foreground text-xs">Noch keine Workflows gespeichert.</p>
+        <p className="text-muted-foreground text-xs">{t('Noch keine Workflows gespeichert.')}</p>
         <Button
           size="sm"
           variant="outline"
@@ -374,15 +375,16 @@ function BatchContent({
             useUiStore.getState().setWorkflowsOpen(true)
           }}
         >
-          Workflows anlegen
+          {t('Workflows anlegen')}
         </Button>
       </div>
     )
   } else {
     options = (
       <p className="text-muted-foreground text-xs">
-        Alle Dateien werden in der Reihenfolge der Liste zu einer PDF verbunden; Bilder werden
-        A4-Seiten.
+        {t(
+          'Alle Dateien werden in der Reihenfolge der Liste zu einer PDF verbunden; Bilder werden A4-Seiten.',
+        )}
       </p>
     )
   }
@@ -390,9 +392,9 @@ function BatchContent({
   return (
     <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-2xl">
       <DialogHeader>
-        <DialogTitle>Stapelverarbeitung</DialogTitle>
+        <DialogTitle>{t('Stapelverarbeitung')}</DialogTitle>
         <DialogDescription>
-          Eine Aktion für mehrere Dateien auf einmal – nacheinander und lokal im Browser.
+          {t('Eine Aktion für mehrere Dateien auf einmal – nacheinander und lokal im Browser.')}
         </DialogDescription>
       </DialogHeader>
 
@@ -422,14 +424,14 @@ function BatchContent({
                 {type === 'merge' && (
                   <>
                     <IconButton
-                      label="Nach oben"
+                      label={t('Nach oben')}
                       disabled={index === 0}
                       onClick={() => move(index, -1)}
                     >
                       <ArrowUp />
                     </IconButton>
                     <IconButton
-                      label="Nach unten"
+                      label={t('Nach unten')}
                       disabled={index === files.length - 1}
                       onClick={() => move(index, 1)}
                     >
@@ -438,7 +440,7 @@ function BatchContent({
                   </>
                 )}
                 <IconButton
-                  label="Entfernen"
+                  label={t('Entfernen')}
                   onClick={() => setFiles(files.filter((_, other) => other !== index))}
                 >
                   <X />
@@ -449,7 +451,7 @@ function BatchContent({
         ))}
         {shown.length === 0 && (
           <li className="text-muted-foreground rounded-md border border-dashed p-4 text-center text-sm">
-            Noch keine Dateien – PDFs oder Bilder hinzufügen oder hierher ziehen.
+            {t('Noch keine Dateien – PDFs oder Bilder hinzufügen oder hierher ziehen.')}
           </li>
         )}
       </ol>
@@ -462,12 +464,12 @@ function BatchContent({
             className="self-start"
             onClick={() => void pickBatchFiles()}
           >
-            <FilePlus2 /> Dateien hinzufügen
+            <FilePlus2 /> {t('Dateien hinzufügen')}
           </Button>
           <div
             className="grid grid-cols-2 gap-2 sm:grid-cols-3"
             role="radiogroup"
-            aria-label="Aktion"
+            aria-label={t('Aktion')}
           >
             {ACTIONS.map(({ type: value, label, hint, icon: Icon }) => (
               <button
@@ -501,9 +503,11 @@ function BatchContent({
           </div>
           {phase === 'done' && (
             <p className="text-sm">
-              {finished} von {items.length} {items.length === 1 ? 'Datei' : 'Dateien'} verarbeitet
-              {failed > 0 && `, ${failed} mit Fehler`} – {results.length}{' '}
-              {results.length === 1 ? 'Ergebnis' : 'Ergebnisse'}.
+              {t('{finished} von {total} verarbeitet', { finished, total: items.length })}
+              {failed > 0 && t(', {failed} mit Fehler', { failed })} –{' '}
+              {results.length === 1
+                ? t('1 Ergebnis.')
+                : t('{count} Ergebnisse.', { count: results.length })}
             </p>
           )}
         </div>
@@ -513,7 +517,7 @@ function BatchContent({
         {phase === 'setup' && (
           <>
             <Button variant="outline" onClick={onClose}>
-              Abbrechen
+              {t('Abbrechen')}
             </Button>
             <Button
               onClick={() => void run()}
@@ -524,30 +528,34 @@ function BatchContent({
                 (type === 'workflow' && !workflow)
               }
             >
-              {files.length} {files.length === 1 ? 'Datei' : 'Dateien'} verarbeiten
+              {files.length === 1
+                ? t('1 Datei verarbeiten')
+                : t('{count} Dateien verarbeiten', { count: files.length })}
             </Button>
           </>
         )}
         {phase === 'running' && (
           <Button variant="outline" onClick={onClose}>
-            Abbrechen
+            {t('Abbrechen')}
           </Button>
         )}
         {phase === 'done' && (
           <>
             <Button variant="outline" onClick={() => setPhase('setup')}>
-              Neue Aktion
+              {t('Neue Aktion')}
             </Button>
             {type === 'merge' && results.length === 1 && (
               <Button
                 variant="outline"
                 onClick={() => void open(results[0]).then((ok) => ok && onClose())}
               >
-                Öffnen
+                {t('Öffnen')}
               </Button>
             )}
             <Button onClick={() => void save()} disabled={results.length === 0}>
-              {results.length > 1 ? `${results.length} Dateien speichern` : 'Speichern'}
+              {results.length > 1
+                ? t('{length} Dateien speichern', { length: results.length })
+                : t('Speichern')}
             </Button>
           </>
         )}

@@ -1,11 +1,12 @@
 import { Monitor, Moon, Sun } from 'lucide-react'
 import { IconButton } from '@/components/layout/IconButton'
 import { useThemeStore, type Theme } from '@/stores/themeStore'
+import { t } from '@/i18n'
 
 const THEMES: Record<Theme, { label: string; icon: typeof Sun }> = {
-  system: { label: 'Design: wie System', icon: Monitor },
-  light: { label: 'Design: hell', icon: Sun },
-  dark: { label: 'Design: dunkel', icon: Moon },
+  system: { label: t('Design: wie System'), icon: Monitor },
+  light: { label: t('Design: hell'), icon: Sun },
+  dark: { label: t('Design: dunkel'), icon: Moon },
 }
 
 /** Cycles between system, light and dark theme. */

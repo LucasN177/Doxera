@@ -8,6 +8,7 @@ import { formatFileSize } from '@/lib/file'
 import { formatRelativeTime } from '@/lib/time'
 import type { LibraryEntry } from '@/storage/db'
 import { useLibraryStore } from '@/stores/libraryStore'
+import { t } from '@/i18n'
 
 /** "Recently opened" list of documents stored locally in the browser. */
 export function RecentDocuments() {
@@ -27,8 +28,8 @@ export function RecentDocuments() {
   const removeEntry = async (entry: LibraryEntry) => {
     const removed = await remove(entry.id)
     if (!removed) return
-    toast(`„${entry.name}“ wurde entfernt.`, {
-      action: { label: 'Rückgängig', onClick: () => void restore(removed) },
+    toast(t('„{name}“ wurde entfernt.', { name: entry.name }), {
+      action: { label: t('Rückgängig'), onClick: () => void restore(removed) },
     })
   }
 
@@ -41,11 +42,13 @@ export function RecentDocuments() {
     if (!confirmed) return
     try {
       await wipeAllData()
-      toast.success('Alle lokalen Daten wurden gelöscht.')
+      toast.success(t('Alle lokalen Daten wurden gelöscht.'))
     } catch (error) {
       console.error('Lokale Daten konnten nicht gelöscht werden', error)
       toast.error(
-        'Die lokalen Daten konnten nicht vollständig gelöscht werden. Schließe andere Doxera-Tabs und versuche es erneut.',
+        t(
+          'Die lokalen Daten konnten nicht vollständig gelöscht werden. Schließe andere Doxera-Tabs und versuche es erneut.',
+        ),
       )
     }
   }
@@ -54,7 +57,7 @@ export function RecentDocuments() {
     <section className="w-full max-w-4xl" aria-labelledby="recent-documents-heading">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h2 id="recent-documents-heading" className="text-sm font-semibold">
-          Zuletzt geöffnet
+          {t('Zuletzt geöffnet')}
         </h2>
         <div className="flex items-center gap-3">
           <label className="text-muted-foreground flex cursor-pointer items-center gap-2 text-xs">
@@ -64,7 +67,7 @@ export function RecentDocuments() {
               checked={rememberDocuments}
               onChange={(event) => setRememberDocuments(event.target.checked)}
             />
-            Geöffnete Dokumente lokal merken
+            {t('Geöffnete Dokumente lokal merken')}
           </label>
           <Button
             variant="ghost"
@@ -73,7 +76,7 @@ export function RecentDocuments() {
             onClick={() => void wipeAll()}
           >
             <Trash2 />
-            Alle lokalen Daten löschen
+            {t('Alle lokalen Daten löschen')}
           </Button>
         </div>
       </div>
@@ -81,8 +84,10 @@ export function RecentDocuments() {
       {entries.length === 0 ? (
         <p className="text-muted-foreground rounded-lg border border-dashed p-6 text-center text-sm">
           {rememberDocuments
-            ? 'Geöffnete Dokumente erscheinen hier, damit du später schnell weiterarbeiten kannst. Sie bleiben nur in diesem Browser.'
-            : 'Dokumente werden nicht gemerkt.'}
+            ? t(
+                'Geöffnete Dokumente erscheinen hier, damit du später schnell weiterarbeiten kannst. Sie bleiben nur in diesem Browser.',
+              )
+            : t('Dokumente werden nicht gemerkt.')}
         </p>
       ) : (
         <ul className="grid grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] gap-3">
@@ -108,13 +113,16 @@ export function RecentDocuments() {
                 <div className="space-y-0.5 p-2">
                   <p className="truncate text-xs font-medium">{entry.name}</p>
                   <p className="text-muted-foreground truncate text-[11px]">
-                    {formatRelativeTime(entry.lastOpenedAt)} · {entry.pageCount}{' '}
-                    {entry.pageCount === 1 ? 'Seite' : 'Seiten'} · {formatFileSize(entry.size)}
+                    {formatRelativeTime(entry.lastOpenedAt)} ·{' '}
+                    {entry.pageCount === 1
+                      ? t('1 Seite')
+                      : t('{count} Seiten', { count: entry.pageCount })}{' '}
+                    · {formatFileSize(entry.size)}
                   </p>
                 </div>
               </button>
               <IconButton
-                label={`„${entry.name}“ entfernen`}
+                label={t('„{name}“ entfernen', { name: entry.name })}
                 className="bg-background/90 absolute top-1.5 right-1.5 opacity-0 shadow-sm group-focus-within:opacity-100 group-hover:opacity-100 focus-visible:opacity-100"
                 onClick={() => void removeEntry(entry)}
               >

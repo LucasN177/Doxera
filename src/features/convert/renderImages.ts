@@ -2,6 +2,7 @@ import type { PDFDocumentProxy } from 'pdfjs-dist'
 import { documentBytes, isDocumentUnchanged } from '@/features/document/documentBytes'
 import { closePdf, MAX_CANVAS_PIXELS, openPdf } from '@/engine/render/pdfjs'
 import { getPrimarySource, useDocumentStore } from '@/stores/documentStore'
+import { t } from '@/i18n'
 
 export type ImageFormat = 'png' | 'jpeg'
 
@@ -15,13 +16,13 @@ export interface RenderImagesOptions {
 }
 
 function baseName(name: string) {
-  return name.replace(/\.pdf$/i, '') || 'Dokument'
+  return name.replace(/\.pdf$/i, '') || t('Dokument')
 }
 
 function canvasToBlob(canvas: HTMLCanvasElement, format: ImageFormat) {
   return new Promise<Blob>((resolve, reject) =>
     canvas.toBlob(
-      (blob) => (blob ? resolve(blob) : reject(new Error('Bild konnte nicht erstellt werden.'))),
+      (blob) => (blob ? resolve(blob) : reject(new Error(t('Bild konnte nicht erstellt werden.')))),
       `image/${format}`,
       format === 'jpeg' ? 0.9 : undefined,
     ),

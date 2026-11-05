@@ -20,13 +20,14 @@ import {
   markupsFromSelection,
   redactionsFromSelection,
 } from './selectionMarkup'
+import { t } from '@/i18n'
 
 const MARKUP_COLORS = [
-  { value: '#facc15', name: 'Gelb' },
-  { value: '#4ade80', name: 'Grün' },
-  { value: '#60a5fa', name: 'Blau' },
-  { value: '#f472b6', name: 'Pink' },
-  { value: '#e11d48', name: 'Rot' },
+  { value: '#facc15', name: t('Gelb') },
+  { value: '#4ade80', name: t('Grün') },
+  { value: '#60a5fa', name: t('Blau') },
+  { value: '#f472b6', name: t('Pink') },
+  { value: '#e11d48', name: t('Rot') },
 ] as const
 
 const MENU_HALF_WIDTH = 150
@@ -135,8 +136,8 @@ export function SelectionMenu() {
       )
     selection.removeAllRanges()
     setPosition(null)
-    toast.success('Zum Schwärzen markiert', {
-      description: 'Der Text wird beim Export dauerhaft aus der PDF entfernt.',
+    toast.success(t('Zum Schwärzen markiert'), {
+      description: t('Der Text wird beim Export dauerhaft aus der PDF entfernt.'),
     })
   }
 
@@ -184,22 +185,26 @@ export function SelectionMenu() {
     const text = document.getSelection()?.toString() ?? ''
     try {
       await navigator.clipboard.writeText(text)
-      toast.success('Text kopiert.')
+      toast.success(t('Text kopiert.'))
     } catch {
-      toast.error('Kopieren nicht möglich. Nutze Strg/⌘+C.')
+      toast.error(t('Kopieren nicht möglich. Nutze Strg/⌘+C.'))
     }
   }
 
   return (
     <div
       role="toolbar"
-      aria-label="Ausgewählten Text markieren"
+      aria-label={t('Ausgewählten Text markieren')}
       data-selection-menu
       className="bg-popover text-popover-foreground fixed z-30 flex -translate-x-1/2 items-center gap-0.5 rounded-lg border p-1 shadow-lg"
       style={position}
       onMouseDown={keepSelection}
     >
-      <div className="flex items-center gap-1 px-1" role="radiogroup" aria-label="Markierungsfarbe">
+      <div
+        className="flex items-center gap-1 px-1"
+        role="radiogroup"
+        aria-label={t('Markierungsfarbe')}
+      >
         {MARKUP_COLORS.map(({ value, name }) => (
           <button
             key={value}
@@ -217,22 +222,22 @@ export function SelectionMenu() {
           />
         ))}
       </div>
-      <IconButton label="Hervorheben" onClick={() => mark('highlight')}>
+      <IconButton label={t('Hervorheben')} onClick={() => mark('highlight')}>
         <Highlighter />
       </IconButton>
-      <IconButton label="Unterstreichen" onClick={() => mark('underline')}>
+      <IconButton label={t('Unterstreichen')} onClick={() => mark('underline')}>
         <Underline />
       </IconButton>
-      <IconButton label="Durchstreichen" onClick={() => mark('strikeout')}>
+      <IconButton label={t('Durchstreichen')} onClick={() => mark('strikeout')}>
         <Strikethrough />
       </IconButton>
-      <IconButton label="Kommentieren" onClick={comment}>
+      <IconButton label={t('Kommentieren')} onClick={comment}>
         <MessageSquarePlus />
       </IconButton>
-      <IconButton label="Schwärzen" onClick={redact}>
+      <IconButton label={t('Schwärzen')} onClick={redact}>
         <EyeOff />
       </IconButton>
-      <IconButton label="Kopieren" onClick={() => void copy()}>
+      <IconButton label={t('Kopieren')} onClick={() => void copy()}>
         <Copy />
       </IconButton>
     </div>

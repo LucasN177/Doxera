@@ -1,3 +1,4 @@
+import { t } from '@/i18n'
 import type { PDFPageProxy } from 'pdfjs-dist'
 import type { Worker } from 'tesseract.js'
 import { MAX_CANVAS_PIXELS } from '@/engine/render/pdfjs'
@@ -6,11 +7,11 @@ import { fromTesseract, type TesseractPage } from './result'
 
 /** Languages whose recognition data ships with Doxera (no download from elsewhere). */
 export const OCR_LANGUAGES = [
-  { code: 'deu', name: 'Deutsch' },
-  { code: 'eng', name: 'Englisch' },
-  { code: 'fra', name: 'Französisch' },
-  { code: 'spa', name: 'Spanisch' },
-  { code: 'ita', name: 'Italienisch' },
+  { code: 'deu', name: t('Deutsch') },
+  { code: 'eng', name: t('Englisch') },
+  { code: 'fra', name: t('Französisch') },
+  { code: 'spa', name: t('Spanisch') },
+  { code: 'ita', name: t('Italienisch') },
 ] as const
 
 export type OcrLanguage = (typeof OCR_LANGUAGES)[number]['code']

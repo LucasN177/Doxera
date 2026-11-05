@@ -16,6 +16,7 @@ import { useDocumentStore } from '@/stores/documentStore'
 import { useUiStore } from '@/stores/uiStore'
 import { useViewerStore } from '@/stores/viewerStore'
 import type { PageRef } from '@/types/document'
+import { t } from '@/i18n'
 
 type Kind = SplitMode['kind']
 
@@ -90,47 +91,53 @@ function SplitDialogContent({ onDone }: { onDone: () => void }) {
   return (
     <DialogContent className="sm:max-w-md">
       <DialogHeader>
-        <DialogTitle>PDF aufteilen</DialogTitle>
+        <DialogTitle>{t('PDF aufteilen')}</DialogTitle>
         <DialogDescription>
-          Erstellt aus „{document.name}“ ({pages.length} Seiten) mehrere PDF-Dateien. Das Dokument
-          selbst bleibt unverändert.
+          {t(
+            'Erstellt aus „{name}“ ({count} Seiten) mehrere PDF-Dateien. Das Dokument selbst bleibt unverändert.',
+            { name: document.name, count: pages.length },
+          )}
         </DialogDescription>
       </DialogHeader>
 
-      <div className="space-y-2" role="radiogroup" aria-label="Aufteilen nach">
+      <div className="space-y-2" role="radiogroup" aria-label={t('Aufteilen nach')}>
         {option(
           'every',
           <span className="flex items-center gap-2">
-            Alle
+            {t('Alle')}
             <Input
               type="number"
               min={1}
               max={pages.length}
               inputMode="numeric"
-              aria-label="Seiten pro Datei"
+              aria-label={t('Seiten pro Datei')}
               className="h-7 w-16 px-2"
               value={size}
               onFocus={() => setKind('every')}
               onChange={(event) => setSize(event.target.value)}
             />
-            Seiten eine neue Datei
+            {t('Seiten eine neue Datei')}
           </span>,
         )}
         {option(
           'before',
-          'Vor jeder ausgewählten Seite',
+          t('Vor jeder ausgewählten Seite'),
           !selectionUsable,
           selectionUsable
-            ? 'Jede ausgewählte Seite beginnt eine neue Datei.'
-            : 'Wähle in der Seitenleiste die Seiten aus, mit denen eine neue Datei beginnen soll.',
+            ? t('Jede ausgewählte Seite beginnt eine neue Datei.')
+            : t(
+                'Wähle in der Seitenleiste die Seiten aus, mit denen eine neue Datei beginnen soll.',
+              ),
         )}
-        {option('single', 'Jede Seite als eigene Datei')}
+        {option('single', t('Jede Seite als eigene Datei'))}
       </div>
 
       <div className="bg-muted/50 rounded-md p-3 text-sm">
         <p className="mb-1.5 flex items-center gap-1.5 font-medium">
           <FileStack className="size-4" aria-hidden />
-          Ergibt {parts.length === 1 ? '1 Datei' : `${parts.length} Dateien`}
+          {parts.length === 1
+            ? t('Ergibt 1 Datei')
+            : t('Ergibt {count} Dateien', { count: parts.length })}
         </p>
         <ul className="text-muted-foreground space-y-0.5 text-xs">
           {parts.slice(0, PREVIEW_LIMIT).map((part) => (
@@ -138,16 +145,18 @@ function SplitDialogContent({ onDone }: { onDone: () => void }) {
               {partFileName(document.name, part)}
             </li>
           ))}
-          {parts.length > PREVIEW_LIMIT && <li>… und {parts.length - PREVIEW_LIMIT} weitere</li>}
+          {parts.length > PREVIEW_LIMIT && (
+            <li>{t('… und {count} weitere', { count: parts.length - PREVIEW_LIMIT })}</li>
+          )}
         </ul>
       </div>
 
       <DialogFooter>
         <Button variant="outline" onClick={onDone}>
-          Abbrechen
+          {t('Abbrechen')}
         </Button>
         <Button onClick={submit} disabled={parts.length < 2}>
-          {savesViaShareSheet ? 'Aufteilen und sichern' : 'Aufteilen und speichern'}
+          {savesViaShareSheet ? t('Aufteilen und sichern') : t('Aufteilen und speichern')}
         </Button>
       </DialogFooter>
     </DialogContent>

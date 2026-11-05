@@ -1,5 +1,6 @@
 import {
   baseName,
+  countImages,
   ocrNote,
   ocrPdf,
   pdfFile,
@@ -10,6 +11,7 @@ import {
 } from '@/features/batch/processors'
 import { formatFileSize } from '@/lib/file'
 import type { Workflow } from '@/types/workflow'
+import { t } from '@/i18n'
 
 /**
  * Runs a workflow on a PDF: its steps one after another (each gets the
@@ -38,11 +40,11 @@ export async function runWorkflow(
     } else if (step.type === 'watermark') {
       const { watermarkPdf } = await import('@/engine/workflow/watermark')
       data = await watermarkPdf(data, step)
-      notes.push('Wasserzeichen')
+      notes.push(t('Wasserzeichen'))
     } else if (step.type === 'headerFooter') {
       const { stampPdf } = await import('@/engine/document/stampPdf')
       data = await stampPdf(data, step.settings, name)
-      notes.push('Seitenzahlen')
+      notes.push(t('Seitenzahlen'))
     } else {
       const { compressPdfData } = await import('@/engine/mupdf/client')
       const before = data.length
@@ -58,7 +60,7 @@ export async function runWorkflow(
   const output = workflow.output
   if (output.type === 'images') {
     const files = await pdfToImageFiles(data, base, output, part(parts - 1))
-    notes.push(`${files.length} ${files.length === 1 ? 'Bild' : 'Bilder'}`)
+    notes.push(countImages(files.length))
     return { files, note: notes.join(' · ') }
   }
   if (output.type === 'data') {
@@ -68,6 +70,6 @@ export async function runWorkflow(
   onProgress(1)
   return {
     files: [pdfFile(data, `${base} (${workflow.name}).pdf`)],
-    note: notes.join(' · ') || 'Fertig',
+    note: notes.join(' · ') || t('Fertig'),
   }
 }

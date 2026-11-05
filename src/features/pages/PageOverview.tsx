@@ -6,6 +6,7 @@ import { GRID_SIZE_MAX, GRID_SIZE_MIN, useViewerStore } from '@/stores/viewerSto
 import { PageActionBar } from './PageActionBar'
 import { SortablePages } from './SortablePages'
 import { usePageActions } from './usePageActions'
+import { t } from '@/i18n'
 
 /**
  * Full-screen grid of all pages for organizing them – the page tools for
@@ -38,13 +39,13 @@ export function PageOverview() {
         <div className="ml-auto flex items-center gap-1">
           <Button variant="ghost" size="sm" onClick={openSelected}>
             <Eye />
-            Seite anzeigen
+            {t('Seite anzeigen')}
           </Button>
           <div className="flex items-center gap-1 max-sm:hidden">
             <ZoomOut className="text-muted-foreground size-4" aria-hidden />
             <input
               type="range"
-              aria-label="Vorschaugröße"
+              aria-label={t('Vorschaugröße')}
               className="accent-primary w-28"
               min={GRID_SIZE_MIN}
               max={GRID_SIZE_MAX}
@@ -62,7 +63,7 @@ export function PageOverview() {
         actions={actions}
         onOpen={open}
         className="flex-1 pb-[env(safe-area-inset-bottom)]"
-        label="Seitenübersicht"
+        label={t('Seitenübersicht')}
       />
     </div>
   )

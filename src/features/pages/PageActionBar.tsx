@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils'
 import { useUiStore } from '@/stores/uiStore'
 import { useViewerStore } from '@/stores/viewerStore'
 import type { usePageActions } from './usePageActions'
+import { t } from '@/i18n'
 
 interface PageActionBarProps {
   actions: ReturnType<typeof usePageActions>
@@ -24,35 +25,66 @@ interface PageActionBarProps {
 
 /** Edit buttons for pages; they act on the selection or the current page. */
 export function PageActionBar({ actions, selectedCount, variant = 'sidebar' }: PageActionBarProps) {
-  const target = selectedCount > 1 ? `${selectedCount} Seiten` : 'Seite'
+  const many = selectedCount > 1
+  /** Label for the current page or the selected pages. */
+  const label = (one: string, several: string) => (many ? several : one)
+  const count = selectedCount
   const clearSelection = useViewerStore((state) => state.clearSelection)
   const openPageDialog = useUiStore((state) => state.openPageDialog)
   const toolbar = variant === 'toolbar'
 
   const buttons = (
     <>
-      <IconButton label={`${target} nach links drehen`} onClick={() => actions.rotate(-90)}>
+      <IconButton
+        label={label(
+          t('Seite nach links drehen'),
+          t('{count} Seiten nach links drehen', { count }),
+        )}
+        onClick={() => actions.rotate(-90)}
+      >
         <RotateCcw />
       </IconButton>
-      <IconButton label={`${target} nach rechts drehen`} onClick={() => actions.rotate(90)}>
+      <IconButton
+        label={label(
+          t('Seite nach rechts drehen'),
+          t('{count} Seiten nach rechts drehen', { count }),
+        )}
+        onClick={() => actions.rotate(90)}
+      >
         <RotateCw />
       </IconButton>
-      <IconButton label={`${target} duplizieren`} onClick={actions.duplicate}>
+      <IconButton
+        label={label(t('Seite duplizieren'), t('{count} Seiten duplizieren', { count }))}
+        onClick={actions.duplicate}
+      >
         <Copy />
       </IconButton>
-      <IconButton label={`${target} löschen`} shortcut="Entf" onClick={actions.remove}>
+      <IconButton
+        label={label(t('Seite löschen'), t('{count} Seiten löschen', { count }))}
+        shortcut={t('Entf')}
+        onClick={actions.remove}
+      >
         <Trash2 />
       </IconButton>
-      <IconButton label="PDF einfügen" onClick={() => void actions.insertPdf()}>
+      <IconButton label={t('PDF einfügen')} onClick={() => void actions.insertPdf()}>
         <FilePlus2 />
       </IconButton>
-      <IconButton label={`${target} als neue PDF speichern`} onClick={actions.extract}>
+      <IconButton
+        label={label(
+          t('Seite als neue PDF speichern'),
+          t('{count} Seiten als neue PDF speichern', { count }),
+        )}
+        onClick={actions.extract}
+      >
         <FileOutput />
       </IconButton>
-      <IconButton label={`${target} zuschneiden`} onClick={() => openPageDialog('crop')}>
+      <IconButton
+        label={label(t('Seite zuschneiden'), t('{count} Seiten zuschneiden', { count }))}
+        onClick={() => openPageDialog('crop')}
+      >
         <Crop />
       </IconButton>
-      <IconButton label="PDF aufteilen" onClick={() => openPageDialog('split')}>
+      <IconButton label={t('PDF aufteilen')} onClick={() => openPageDialog('split')}>
         <Scissors />
       </IconButton>
     </>
@@ -66,7 +98,9 @@ export function PageActionBar({ actions, selectedCount, variant = 'sidebar' }: P
       )}
     >
       <span aria-live="polite" className="whitespace-nowrap">
-        {selectedCount === 1 ? '1 Seite ausgewählt' : `${selectedCount} Seiten ausgewählt`}
+        {selectedCount === 1
+          ? t('1 Seite ausgewählt')
+          : t('{selectedCount} Seiten ausgewählt', { selectedCount })}
       </span>
       <button
         type="button"
@@ -74,7 +108,7 @@ export function PageActionBar({ actions, selectedCount, variant = 'sidebar' }: P
         onClick={clearSelection}
       >
         <X className="size-3" aria-hidden />
-        Aufheben
+        {t('Aufheben')}
       </button>
     </div>
   )
@@ -84,7 +118,7 @@ export function PageActionBar({ actions, selectedCount, variant = 'sidebar' }: P
       <div
         className="flex flex-wrap items-center gap-x-3 gap-y-1"
         role="toolbar"
-        aria-label="Seiten bearbeiten"
+        aria-label={t('Seiten bearbeiten')}
       >
         <div className="flex items-center">{buttons}</div>
         {selection}
@@ -96,7 +130,7 @@ export function PageActionBar({ actions, selectedCount, variant = 'sidebar' }: P
     <div
       className="bg-background/80 border-b px-1.5 py-1.5"
       role="toolbar"
-      aria-label="Seiten bearbeiten"
+      aria-label={t('Seiten bearbeiten')}
     >
       <div className="grid grid-cols-4 justify-items-center gap-y-0.5">{buttons}</div>
       {selection}

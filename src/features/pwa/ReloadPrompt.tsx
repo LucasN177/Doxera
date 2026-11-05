@@ -1,4 +1,5 @@
 import { useRegisterSW } from 'virtual:pwa-register/react'
+import { t } from '@/i18n'
 
 /**
  * Informs the user when the app is ready for offline use or when a new
@@ -25,8 +26,8 @@ export function ReloadPrompt() {
     >
       <p>
         {needRefresh
-          ? 'Eine neue Version von Doxera ist verfügbar.'
-          : 'Doxera ist jetzt offline verfügbar.'}
+          ? t('Eine neue Version von Doxera ist verfügbar.')
+          : t('Doxera ist jetzt offline verfügbar.')}
       </p>
       <div className="flex justify-end gap-2">
         {needRefresh && (
@@ -35,7 +36,7 @@ export function ReloadPrompt() {
             className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-3 py-1.5 font-medium"
             onClick={() => updateServiceWorker(true)}
           >
-            Aktualisieren
+            {t('Aktualisieren')}
           </button>
         )}
         <button
@@ -43,7 +44,7 @@ export function ReloadPrompt() {
           className="hover:bg-accent rounded-md border px-3 py-1.5 font-medium"
           onClick={close}
         >
-          Schließen
+          {t('Schließen')}
         </button>
       </div>
     </div>

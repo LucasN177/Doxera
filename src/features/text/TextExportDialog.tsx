@@ -18,6 +18,7 @@ import { useDocumentStore } from '@/stores/documentStore'
 import { useUiStore } from '@/stores/uiStore'
 import { useViewerStore } from '@/stores/viewerStore'
 import { collectText } from './collectText'
+import { t } from '@/i18n'
 
 type Format = 'markdown' | 'text' | 'tables'
 type Target = 'all' | 'selected' | 'current'
@@ -33,7 +34,7 @@ export function TextExportDialog() {
 }
 
 function baseName(name: string) {
-  return name.replace(/\.pdf$/i, '') || 'Dokument'
+  return name.replace(/\.pdf$/i, '') || t('Dokument')
 }
 
 function TextExportContent({ onDone }: { onDone: () => void }) {
@@ -97,9 +98,9 @@ function TextExportContent({ onDone }: { onDone: () => void }) {
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(text)
-      toast.success('Text kopiert')
+      toast.success(t('Text kopiert'))
     } catch {
-      toast.error('Der Text konnte nicht kopiert werden.')
+      toast.error(t('Der Text konnte nicht kopiert werden.'))
     }
   }
 
@@ -110,7 +111,7 @@ function TextExportContent({ onDone }: { onDone: () => void }) {
       await saveFile(file)
     } catch (error) {
       console.error('Speichern fehlgeschlagen', error)
-      toast.error('Die Datei konnte nicht gespeichert werden.')
+      toast.error(t('Die Datei konnte nicht gespeichert werden.'))
     }
   }
 
@@ -119,20 +120,21 @@ function TextExportContent({ onDone }: { onDone: () => void }) {
   return (
     <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-2xl">
       <DialogHeader>
-        <DialogTitle>Text exportieren</DialogTitle>
+        <DialogTitle>{t('Text exportieren')}</DialogTitle>
         <DialogDescription>
-          Der Text des Dokuments mit erkannten Überschriften, Absätzen, Listen und Tabellen.
-          Geschwärzte Zeilen werden ausgelassen.
+          {t(
+            'Der Text des Dokuments mit erkannten Überschriften, Absätzen, Listen und Tabellen. Geschwärzte Zeilen werden ausgelassen.',
+          )}
         </DialogDescription>
       </DialogHeader>
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <div className="flex gap-2" role="radiogroup" aria-label="Format">
+        <div className="flex gap-2" role="radiogroup" aria-label={t('Format')}>
           {(
             [
-              ['markdown', 'Markdown'],
-              ['text', 'Nur Text'],
-              ['tables', 'Tabellen (CSV)'],
+              ['markdown', t('Markdown')],
+              ['text', t('Nur Text')],
+              ['tables', t('Tabellen (CSV)')],
             ] as const
           ).map(([value, label]) => (
             <Button
@@ -148,14 +150,19 @@ function TextExportContent({ onDone }: { onDone: () => void }) {
             </Button>
           ))}
         </div>
-        <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Seiten">
+        <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={t('Seiten')}>
           {(
             [
-              ['all', `Alle Seiten (${document?.pages.length ?? 0})`],
+              ['all', t('Alle Seiten ({value0})', { value0: document?.pages.length ?? 0 })],
               ...(selectedIds.length > 0
-                ? [['selected', `Ausgewählte (${selectedIds.length})`] as const]
+                ? [
+                    [
+                      'selected',
+                      t('Ausgewählte ({length})', { length: selectedIds.length }),
+                    ] as const,
+                  ]
                 : []),
-              ['current', 'Aktuelle Seite'],
+              ['current', t('Aktuelle Seite')],
             ] as const
           ).map(([value, label]) => (
             <Button
@@ -174,16 +181,19 @@ function TextExportContent({ onDone }: { onDone: () => void }) {
       </div>
 
       {failed ? (
-        <p className="text-destructive text-sm">Der Text konnte nicht gelesen werden.</p>
+        <p className="text-destructive text-sm">{t('Der Text konnte nicht gelesen werden.')}</p>
       ) : pages === null ? (
         <p className="text-muted-foreground py-8 text-center text-sm" aria-live="polite">
-          Text wird gelesen …{progress && ` Seite ${progress.done} von ${progress.total}`}
+          {t('Text wird gelesen …')}
+          {progress &&
+            t(' Seite {done} von {total}', { done: progress.done, total: progress.total })}
         </p>
       ) : empty ? (
         <div className="space-y-3 py-6 text-center">
           <p className="text-muted-foreground text-sm">
-            Auf diesen Seiten wurde kein Text gefunden. Bei gescannten Seiten zuerst die
-            Texterkennung ausführen.
+            {t(
+              'Auf diesen Seiten wurde kein Text gefunden. Bei gescannten Seiten zuerst die Texterkennung ausführen.',
+            )}
           </p>
           <Button
             variant="outline"
@@ -193,7 +203,7 @@ function TextExportContent({ onDone }: { onDone: () => void }) {
               useUiStore.getState().setOcrOpen(true)
             }}
           >
-            <ScanText /> Texterkennung (OCR) …
+            <ScanText /> {t('Texterkennung (OCR) …')}
           </Button>
         </div>
       ) : format === 'tables' ? (
@@ -202,7 +212,7 @@ function TextExportContent({ onDone }: { onDone: () => void }) {
         <textarea
           readOnly
           value={text}
-          aria-label="Vorschau"
+          aria-label={t('Vorschau')}
           spellCheck={false}
           className="bg-muted/40 h-72 w-full resize-y rounded-md border p-3 font-mono text-xs leading-relaxed outline-none"
         />
@@ -210,10 +220,11 @@ function TextExportContent({ onDone }: { onDone: () => void }) {
 
       <DialogFooter className={cn('gap-2', format === 'tables' && 'hidden')}>
         <Button variant="outline" onClick={() => void copy()} disabled={!text.trim()}>
-          <Copy /> Kopieren
+          <Copy /> {t('Kopieren')}
         </Button>
         <Button onClick={() => void download()} disabled={!text.trim()}>
-          <Download /> {fileName.slice(fileName.lastIndexOf('.'))} speichern
+          <Download />{' '}
+          {t('{extension} speichern', { extension: fileName.slice(fileName.lastIndexOf('.')) })}
         </Button>
       </DialogFooter>
     </DialogContent>
@@ -233,8 +244,9 @@ function TablesView({
   if (tables.length === 0) {
     return (
       <p className="text-muted-foreground py-8 text-center text-sm">
-        Auf diesen Seiten wurden keine Tabellen erkannt. Erkannt werden Zeilen, deren Inhalte in
-        mindestens zwei Spalten untereinander stehen (ab drei Zeilen).
+        {t(
+          'Auf diesen Seiten wurden keine Tabellen erkannt. Erkannt werden Zeilen, deren Inhalte in mindestens zwei Spalten untereinander stehen (ab drei Zeilen).',
+        )}
       </p>
     )
   }
@@ -242,11 +254,11 @@ function TablesView({
   const copy = async (rows: string[][]) => {
     try {
       await navigator.clipboard.writeText(tableToTsv(rows))
-      toast.success('Tabelle kopiert', {
-        description: 'Lässt sich direkt in eine Tabellenkalkulation einfügen.',
+      toast.success(t('Tabelle kopiert'), {
+        description: t('Lässt sich direkt in eine Tabellenkalkulation einfügen.'),
       })
     } catch {
-      toast.error('Die Tabelle konnte nicht kopiert werden.')
+      toast.error(t('Die Tabelle konnte nicht kopiert werden.'))
     }
   }
 
@@ -259,7 +271,7 @@ function TablesView({
       await saveFile(file)
     } catch (error) {
       console.error('Speichern fehlgeschlagen', error)
-      toast.error('Die Datei konnte nicht gespeichert werden.')
+      toast.error(t('Die Datei konnte nicht gespeichert werden.'))
     }
   }
 
@@ -269,14 +281,18 @@ function TablesView({
         <li key={index} className="space-y-2 rounded-md border p-3">
           <div className="flex flex-wrap items-center gap-2">
             <p className="flex-1 text-sm font-medium">
-              Tabelle {index + 1}
+              {t('Tabelle')} {index + 1}
               <span className="text-muted-foreground font-normal">
                 {' '}
-                · Seite {page} · {rows.length} × {rows[0]?.length ?? 0}
+                {t('· Seite {page} · {rows} × {columns}', {
+                  page,
+                  rows: rows.length,
+                  columns: rows[0]?.length ?? 0,
+                })}
               </span>
             </p>
             <Button size="sm" variant="outline" onClick={() => void copy(rows)}>
-              <Copy /> Kopieren
+              <Copy /> {t('Kopieren')}
             </Button>
             <Button size="sm" onClick={() => void save(rows, index)}>
               <Download /> CSV
@@ -299,7 +315,7 @@ function TablesView({
           </div>
           {rows.length > PREVIEW_ROWS && (
             <p className="text-muted-foreground text-xs">
-              … {rows.length - PREVIEW_ROWS} weitere Zeilen
+              {t('… {count} weitere Zeilen', { count: rows.length - PREVIEW_ROWS })}
             </p>
           )}
         </li>

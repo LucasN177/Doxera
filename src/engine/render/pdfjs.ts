@@ -2,6 +2,7 @@ import type { PDFDocumentProxy, PDFPageProxy } from 'pdfjs-dist'
 import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
 import type { TextContent, TextItem } from 'pdfjs-dist/types/src/display/api'
 import type { PageSize } from '@/types/document'
+import { t } from '@/i18n'
 
 type PdfJs = typeof import('pdfjs-dist')
 
@@ -53,18 +54,22 @@ export async function openPdf(data: Uint8Array): Promise<PDFDocumentProxy> {
     if (name === 'PasswordException') {
       throw new PdfLoadError(
         'password',
-        'Die PDF ist passwortgeschützt und konnte nicht entsperrt werden.',
+        t('Die PDF ist passwortgeschützt und konnte nicht entsperrt werden.'),
         {
           cause: error,
         },
       )
     }
     if (name === 'InvalidPDFException') {
-      throw new PdfLoadError('invalid', 'Die Datei ist keine gültige oder eine beschädigte PDF.', {
-        cause: error,
-      })
+      throw new PdfLoadError(
+        'invalid',
+        t('Die Datei ist keine gültige oder eine beschädigte PDF.'),
+        {
+          cause: error,
+        },
+      )
     }
-    throw new PdfLoadError('unknown', 'Die PDF konnte nicht geöffnet werden.', { cause: error })
+    throw new PdfLoadError('unknown', t('Die PDF konnte nicht geöffnet werden.'), { cause: error })
   }
 }
 

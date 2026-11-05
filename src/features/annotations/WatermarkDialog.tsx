@@ -21,20 +21,21 @@ import { useDocumentStore } from '@/stores/documentStore'
 import { useUiStore } from '@/stores/uiStore'
 import { useViewerStore } from '@/stores/viewerStore'
 import type { WatermarkAnnotation } from '@/types/annotations'
+import { t } from '@/i18n'
 
 type Mode = 'text' | 'image'
 type Target = 'all' | 'selected' | 'current'
 
 const COLORS = [
-  { value: '#64748b', name: 'Grau' },
-  { value: '#dc2626', name: 'Rot' },
-  { value: '#1d4ed8', name: 'Blau' },
-  { value: '#0f172a', name: 'Schwarz' },
+  { value: '#64748b', name: t('Grau') },
+  { value: '#dc2626', name: t('Rot') },
+  { value: '#1d4ed8', name: t('Blau') },
+  { value: '#0f172a', name: t('Schwarz') },
 ]
 const ANGLES = [
-  { value: 45, name: 'Aufsteigend' },
-  { value: 0, name: 'Waagerecht' },
-  { value: -45, name: 'Absteigend' },
+  { value: 45, name: t('Aufsteigend') },
+  { value: 0, name: t('Waagerecht') },
+  { value: -45, name: t('Absteigend') },
 ]
 const PREVIEW_SIZE = 240
 
@@ -121,7 +122,7 @@ function WatermarkDialogContent({ onDone }: { onDone: () => void }) {
       setAssetId(added.id)
       setMode('image')
     } catch {
-      toast.error('Das Bild konnte nicht gelesen werden.')
+      toast.error(t('Das Bild konnte nicht gelesen werden.'))
     }
   }
 
@@ -131,14 +132,18 @@ function WatermarkDialogContent({ onDone }: { onDone: () => void }) {
     useDocumentStore
       .getState()
       .edit((list) => setWatermarks(list, ids, (page) => make(turnsById.get(page.id) ?? 0)))
-    toast.success(ids.size === 1 ? 'Wasserzeichen gesetzt' : `Wasserzeichen auf ${ids.size} Seiten`)
+    toast.success(
+      ids.size === 1
+        ? t('Wasserzeichen gesetzt')
+        : t('Wasserzeichen auf {size} Seiten', { size: ids.size }),
+    )
     onDone()
   }
 
   const removeAll = () => {
     const ids = new Set(pages.map((page) => page.ref.id))
     useDocumentStore.getState().edit((list) => setWatermarks(list, ids, () => null))
-    toast.success('Wasserzeichen entfernt')
+    toast.success(t('Wasserzeichen entfernt'))
     onDone()
   }
 
@@ -147,10 +152,11 @@ function WatermarkDialogContent({ onDone }: { onDone: () => void }) {
   return (
     <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-2xl">
       <DialogHeader>
-        <DialogTitle>Wasserzeichen</DialogTitle>
+        <DialogTitle>{t('Wasserzeichen')}</DialogTitle>
         <DialogDescription>
-          Text oder Bild halbtransparent über die Seiten legen. Ein vorhandenes Wasserzeichen wird
-          ersetzt.
+          {t(
+            'Text oder Bild halbtransparent über die Seiten legen. Ein vorhandenes Wasserzeichen wird ersetzt.',
+          )}
         </DialogDescription>
       </DialogHeader>
 
@@ -159,7 +165,7 @@ function WatermarkDialogContent({ onDone }: { onDone: () => void }) {
           <div
             className="relative overflow-hidden bg-white shadow-md ring-1 ring-black/10"
             style={{ width: current.size.width * scale, height: current.size.height * scale }}
-            aria-label="Vorschau der aktuellen Seite"
+            aria-label={t('Vorschau der aktuellen Seite')}
             role="img"
           >
             <PageSurface page={preview} scale={scale} showError={false} />
@@ -167,15 +173,15 @@ function WatermarkDialogContent({ onDone }: { onDone: () => void }) {
         </div>
 
         <div className="min-w-0 flex-1 space-y-4">
-          <div className="flex gap-2" role="radiogroup" aria-label="Art">
+          <div className="flex gap-2" role="radiogroup" aria-label={t('Art')}>
             <Choice selected={mode === 'text'} onClick={() => setMode('text')}>
-              <Type /> Text
+              <Type /> {t('Text')}
             </Choice>
             <Choice
               selected={mode === 'image'}
               onClick={() => (asset ? setMode('image') : void pickImage())}
             >
-              <ImageUp /> Bild
+              <ImageUp /> {t('Bild')}
             </Choice>
           </div>
 
@@ -184,11 +190,11 @@ function WatermarkDialogContent({ onDone }: { onDone: () => void }) {
               <Input
                 value={text}
                 onChange={(event) => setText(event.target.value)}
-                aria-label="Text des Wasserzeichens"
+                aria-label={t('Text des Wasserzeichens')}
                 maxLength={60}
                 className="text-base sm:text-sm"
               />
-              <div className="flex gap-2" role="radiogroup" aria-label="Farbe">
+              <div className="flex gap-2" role="radiogroup" aria-label={t('Farbe')}>
                 {COLORS.map((option) => (
                   <button
                     key={option.value}
@@ -217,13 +223,13 @@ function WatermarkDialogContent({ onDone }: { onDone: () => void }) {
                 />
               )}
               <Button variant="outline" size="sm" onClick={() => void pickImage()}>
-                Anderes Bild…
+                {t('Anderes Bild…')}
               </Button>
             </div>
           )}
 
           <Slider
-            label="Größe"
+            label={t('Größe')}
             value={size}
             min={0.2}
             max={1}
@@ -232,7 +238,7 @@ function WatermarkDialogContent({ onDone }: { onDone: () => void }) {
             format={(value) => `${Math.round(value * 100)} %`}
           />
           <Slider
-            label="Deckkraft"
+            label={t('Deckkraft')}
             value={opacity}
             min={0.1}
             max={0.6}
@@ -242,7 +248,7 @@ function WatermarkDialogContent({ onDone }: { onDone: () => void }) {
           />
 
           <fieldset className="space-y-1.5">
-            <legend className="text-sm font-medium">Ausrichtung</legend>
+            <legend className="text-sm font-medium">{t('Ausrichtung')}</legend>
             <div className="flex flex-wrap gap-2" role="radiogroup">
               {ANGLES.map((option) => (
                 <Choice
@@ -257,18 +263,18 @@ function WatermarkDialogContent({ onDone }: { onDone: () => void }) {
           </fieldset>
 
           <fieldset className="space-y-1.5">
-            <legend className="text-sm font-medium">Seiten</legend>
+            <legend className="text-sm font-medium">{t('Seiten')}</legend>
             <div className="flex flex-wrap gap-2" role="radiogroup">
               <Choice selected={target === 'all'} onClick={() => setTarget('all')}>
-                Alle ({pages.length})
+                {t('Alle ({count})', { count: pages.length })}
               </Choice>
               {selectedIds.length > 0 && (
                 <Choice selected={target === 'selected'} onClick={() => setTarget('selected')}>
-                  Ausgewählte ({selectedIds.length})
+                  {t('Ausgewählte ({length})', { length: selectedIds.length })}
                 </Choice>
               )}
               <Choice selected={target === 'current'} onClick={() => setTarget('current')}>
-                Aktuelle Seite
+                {t('Aktuelle Seite')}
               </Choice>
             </div>
           </fieldset>
@@ -278,17 +284,17 @@ function WatermarkDialogContent({ onDone }: { onDone: () => void }) {
       <DialogFooter className="gap-2 sm:justify-between">
         {anyWatermark ? (
           <Button variant="ghost" onClick={removeAll}>
-            Alle entfernen
+            {t('Alle entfernen')}
           </Button>
         ) : (
           <span />
         )}
         <div className="flex gap-2 max-sm:flex-col-reverse">
           <Button variant="outline" onClick={onDone}>
-            Abbrechen
+            {t('Abbrechen')}
           </Button>
           <Button onClick={apply} disabled={!valid}>
-            Anwenden
+            {t('Anwenden')}
           </Button>
         </div>
       </DialogFooter>

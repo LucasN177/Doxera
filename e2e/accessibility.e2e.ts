@@ -4,6 +4,10 @@ import { openPdf, SAMPLE } from './helpers.ts'
 
 /** WCAG 2.1 A/AA problems on the current screen (the PDF canvas itself is content, not UI). */
 async function violations(page: Page) {
+  // Fading dialogs are briefly translucent: measure contrast once they're settled
+  await page.waitForFunction(() =>
+    document.getAnimations().every((animation) => animation.playState !== 'running'),
+  )
   const result = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
     .analyze()

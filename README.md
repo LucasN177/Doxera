@@ -123,6 +123,7 @@ Privacy and data security are important design principles of Doxera.
 - [x] Download and share PDFs
 - [x] Keyboard shortcuts with an overview (`?`)
 - [x] Light and dark mode (follows the system by default)
+- [x] German and English interface (follows the browser, switchable)
 
 ---
 
@@ -251,6 +252,7 @@ The main objectives are:
 - ✅ **Phase 5 – OCR:** scanned pages become searchable PDFs; text export with headings, paragraphs, lists and tables (Markdown, text, CSV)
 - ✅ **Phase 6 – Processing:** converting, compression, data export (Excel, JSON, CSV), batch processing and reusable workflows
 - ✅ **Closing the gaps:** saved edits, forms, password protection, page numbers and headers, bookmarks, document comparison, Unicode text and smaller improvements
+- ✅ **Phase 8 – Polish:** open files with the installed app, end-to-end and offline tests, large-PDF measurements, accessibility checks, English interface
 - 🔜 **Next phase:** AI features
 
 The full roadmap is in the [implementation plan](docs/IMPLEMENTATION_PLAN.md).

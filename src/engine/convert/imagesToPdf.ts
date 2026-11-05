@@ -1,4 +1,5 @@
 import type { PreparedImage } from '@/lib/images'
+import { t } from '@/i18n'
 
 export type PageFormat = 'a4' | 'letter' | 'image'
 
@@ -56,7 +57,7 @@ export async function imagesToPdf(
   images: readonly PreparedImage[],
   options: ImagesToPdfOptions,
 ): Promise<Uint8Array> {
-  if (images.length === 0) throw new Error('Keine Bilder ausgewählt.')
+  if (images.length === 0) throw new Error(t('Keine Bilder ausgewählt.'))
   const { PDFDocument } = await import('pdf-lib')
   const output = await PDFDocument.create()
   for (const image of images) {

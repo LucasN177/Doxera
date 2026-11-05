@@ -3,6 +3,7 @@ import { TriangleAlert } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { renderPage, type RenderHandle } from '@/engine/render/pdfjs'
 import { cn } from '@/lib/utils'
+import { t } from '@/i18n'
 
 interface PageCanvasProps {
   pdf: PDFDocumentProxy
@@ -74,7 +75,7 @@ export function PageCanvas({
           )}
         >
           <TriangleAlert className="size-6 text-amber-500" aria-hidden />
-          Seite {pageNumber} konnte nicht dargestellt werden.
+          {t('Seite {pageNumber} konnte nicht dargestellt werden.', { pageNumber })}
         </div>
       )}
     </>

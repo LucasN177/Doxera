@@ -16,6 +16,7 @@ import { useUiStore } from '@/stores/uiStore'
 import { openBatch } from '@/features/batch/pickBatchFiles'
 import { pickCompareFile } from '@/features/compare/pickCompareFile'
 import { pickImagesForPdf } from './pickImages'
+import { t } from '@/i18n'
 
 const item =
   'focus:bg-accent focus:text-accent-foreground flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none select-none [&_svg]:size-4'
@@ -26,7 +27,7 @@ export function ToolsMenu() {
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
-        <IconButton label="Werkzeuge">
+        <IconButton label={t('Werkzeuge')}>
           <Wrench />
         </IconButton>
       </DropdownMenu.Trigger>
@@ -40,56 +41,56 @@ export function ToolsMenu() {
             className={item}
             onSelect={() => useUiStore.getState().setCompressOpen(true)}
           >
-            <FileArchive /> PDF komprimieren …
+            <FileArchive /> {t('PDF komprimieren …')}
           </DropdownMenu.Item>
           <DropdownMenu.Item
             className={item}
             onSelect={() => useUiStore.getState().setHeaderFooterOpen(true)}
           >
-            <Hash /> Seitenzahlen, Kopf- und Fußzeilen …
+            <Hash /> {t('Seitenzahlen, Kopf- und Fußzeilen …')}
           </DropdownMenu.Item>
           <DropdownMenu.Item
             className={item}
             onSelect={() => useUiStore.getState().setProtectOpen(true)}
           >
-            <LockKeyhole /> Mit Passwort schützen …
+            <LockKeyhole /> {t('Mit Passwort schützen …')}
           </DropdownMenu.Item>
           <DropdownMenu.Item
             className={item}
             onSelect={() => useUiStore.getState().setExportImagesOpen(true)}
           >
-            <FileImage /> Seiten als Bilder exportieren …
+            <FileImage /> {t('Seiten als Bilder exportieren …')}
           </DropdownMenu.Item>
           <DropdownMenu.Item className={item} onSelect={() => void pickImagesForPdf()}>
-            <Images /> Bilder zu PDF / als Seiten einfügen …
+            <Images /> {t('Bilder zu PDF / als Seiten einfügen …')}
           </DropdownMenu.Item>
           <DropdownMenu.Separator className="bg-border -mx-1 my-1 h-px" />
           <DropdownMenu.Item
             className={item}
             onSelect={() => useUiStore.getState().setDataExportOpen(true)}
           >
-            <FileSpreadsheet /> Daten exportieren (Excel, JSON, CSV) …
+            <FileSpreadsheet /> {t('Daten exportieren (Excel, JSON, CSV) …')}
           </DropdownMenu.Item>
           <DropdownMenu.Item className={item} onSelect={() => void pickCompareFile()}>
-            <GitCompareArrows /> Mit anderer PDF vergleichen …
+            <GitCompareArrows /> {t('Mit anderer PDF vergleichen …')}
           </DropdownMenu.Item>
           {compare && (
             <DropdownMenu.Item
               className={item}
               onSelect={() => useUiStore.getState().setCompare({ ...compare, open: true })}
             >
-              <GitCompareArrows /> Vergleich mit „{compare.file.name}“ zeigen
+              <GitCompareArrows /> {t('Vergleich mit „{name}“ zeigen', { name: compare.file.name })}
             </DropdownMenu.Item>
           )}
           <DropdownMenu.Separator className="bg-border -mx-1 my-1 h-px" />
           <DropdownMenu.Item className={item} onSelect={openBatch}>
-            <Layers /> Stapelverarbeitung (mehrere Dateien) …
+            <Layers /> {t('Stapelverarbeitung (mehrere Dateien) …')}
           </DropdownMenu.Item>
           <DropdownMenu.Item
             className={item}
             onSelect={() => useUiStore.getState().setWorkflowsOpen(true)}
           >
-            <Workflow /> Workflows …
+            <Workflow /> {t('Workflows …')}
           </DropdownMenu.Item>
         </DropdownMenu.Content>
       </DropdownMenu.Portal>

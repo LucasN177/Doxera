@@ -17,6 +17,7 @@ import { useDocumentStore } from '@/stores/documentStore'
 import { useUiStore } from '@/stores/uiStore'
 import { useViewerStore } from '@/stores/viewerStore'
 import type { CropInsets, ResolvedPage } from '@/types/document'
+import { t } from '@/i18n'
 
 type Target = 'current' | 'selection' | 'all'
 
@@ -86,39 +87,50 @@ function CropDialogContent({ onDone }: { onDone: () => void }) {
   return (
     <DialogContent className="max-h-[95svh] overflow-y-auto sm:max-w-xl">
       <DialogHeader>
-        <DialogTitle>Seiten zuschneiden</DialogTitle>
+        <DialogTitle>{t('Seiten zuschneiden')}</DialogTitle>
         <DialogDescription>
-          Ziehe die Kanten oder Ecken des Rahmens. Alles außerhalb wird ausgeblendet; die Seite
-          selbst bleibt erhalten und lässt sich jederzeit wieder zurücksetzen.
+          {t(
+            'Ziehe die Kanten oder Ecken des Rahmens. Alles außerhalb wird ausgeblendet; die Seite selbst bleibt erhalten und lässt sich jederzeit wieder zurücksetzen.',
+          )}
         </DialogDescription>
       </DialogHeader>
 
       <CropEditor page={reference} insets={insets} onChange={setInsets} />
 
       <p className="text-muted-foreground text-center text-xs tabular-nums">
-        Ränder: oben {mm(insets.top, height)} mm · rechts {mm(insets.right, width)} mm · unten{' '}
-        {mm(insets.bottom, height)} mm · links {mm(insets.left, width)} mm
+        {t('Ränder: oben {top} mm · rechts {right} mm · unten {bottom} mm · links {left} mm', {
+          top: mm(insets.top, height),
+          right: mm(insets.right, width),
+          bottom: mm(insets.bottom, height),
+          left: mm(insets.left, width),
+        })}
       </p>
 
       <fieldset className="flex flex-wrap gap-x-5 gap-y-2">
-        <legend className="mb-1.5 text-sm font-medium">Anwenden auf</legend>
-        {radio('current', `Diese Seite (${pages.indexOf(reference) + 1})`)}
-        {radio('selection', `Ausgewählte Seiten (${selectedIds.length})`, selectedIds.length < 2)}
-        {radio('all', `Alle Seiten (${pages.length})`)}
+        <legend className="mb-1.5 text-sm font-medium">{t('Anwenden auf')}</legend>
+        {radio('current', t('Diese Seite ({value0})', { value0: pages.indexOf(reference) + 1 }))}
+        {radio(
+          'selection',
+          t('Ausgewählte Seiten ({length})', { length: selectedIds.length }),
+          selectedIds.length < 2,
+        )}
+        {radio('all', t('Alle Seiten ({length})', { length: pages.length }))}
       </fieldset>
 
       <DialogFooter className="gap-2 sm:justify-between">
         <Button variant="ghost" onClick={() => setInsets(NO_CROP)} disabled={!isCropped(insets)}>
-          Zurücksetzen
+          {t('Zurücksetzen')}
         </Button>
         <div className="flex gap-2">
           <Button variant="outline" onClick={onDone}>
-            Abbrechen
+            {t('Abbrechen')}
           </Button>
           <Button onClick={apply} disabled={!isCropped(insets) && !targetsCropped}>
             {isCropped(insets) || !targetsCropped
-              ? `${targetCount === 1 ? 'Seite' : `${targetCount} Seiten`} zuschneiden`
-              : 'Zuschnitt entfernen'}
+              ? targetCount === 1
+                ? t('Seite zuschneiden')
+                : t('{count} Seiten zuschneiden', { count: targetCount })
+              : t('Zuschnitt entfernen')}
           </Button>
         </div>
       </DialogFooter>
@@ -127,29 +139,33 @@ function CropDialogContent({ onDone }: { onDone: () => void }) {
 }
 
 const HANDLES: Array<{ handle: CropHandle; className: string; label: string }> = [
-  { handle: 'nw', className: '-top-2 -left-2 cursor-nwse-resize', label: 'Ecke oben links' },
-  { handle: 'ne', className: '-top-2 -right-2 cursor-nesw-resize', label: 'Ecke oben rechts' },
-  { handle: 'sw', className: '-bottom-2 -left-2 cursor-nesw-resize', label: 'Ecke unten links' },
-  { handle: 'se', className: '-bottom-2 -right-2 cursor-nwse-resize', label: 'Ecke unten rechts' },
+  { handle: 'nw', className: '-top-2 -left-2 cursor-nwse-resize', label: t('Ecke oben links') },
+  { handle: 'ne', className: '-top-2 -right-2 cursor-nesw-resize', label: t('Ecke oben rechts') },
+  { handle: 'sw', className: '-bottom-2 -left-2 cursor-nesw-resize', label: t('Ecke unten links') },
+  {
+    handle: 'se',
+    className: '-bottom-2 -right-2 cursor-nwse-resize',
+    label: t('Ecke unten rechts'),
+  },
   {
     handle: 'n',
     className: '-top-2 left-1/2 -translate-x-1/2 cursor-ns-resize',
-    label: 'Oberer Rand',
+    label: t('Oberer Rand'),
   },
   {
     handle: 's',
     className: '-bottom-2 left-1/2 -translate-x-1/2 cursor-ns-resize',
-    label: 'Unterer Rand',
+    label: t('Unterer Rand'),
   },
   {
     handle: 'w',
     className: 'top-1/2 -left-2 -translate-y-1/2 cursor-ew-resize',
-    label: 'Linker Rand',
+    label: t('Linker Rand'),
   },
   {
     handle: 'e',
     className: 'top-1/2 -right-2 -translate-y-1/2 cursor-ew-resize',
-    label: 'Rechter Rand',
+    label: t('Rechter Rand'),
   },
 ]
 
@@ -224,7 +240,7 @@ function CropEditor({ page, insets, onChange }: CropEditorProps) {
         {/* Crop frame; the huge shadow dims everything outside of it */}
         <div
           role="slider"
-          aria-label="Zuschnitt verschieben (Pfeiltasten)"
+          aria-label={t('Zuschnitt verschieben (Pfeiltasten)')}
           aria-valuetext={`${Math.round((1 - insets.left - insets.right) * 100)} % × ${Math.round((1 - insets.top - insets.bottom) * 100)} %`}
           tabIndex={0}
           className="border-primary focus-visible:ring-ring absolute cursor-move border-2 shadow-[0_0_0_9999px_rgb(0_0_0/0.45)] outline-none focus-visible:ring-2"
@@ -236,7 +252,7 @@ function CropEditor({ page, insets, onChange }: CropEditorProps) {
             <span
               key={handle}
               role="slider"
-              aria-label={`${label} (Pfeiltasten)`}
+              aria-label={t('{label} (Pfeiltasten)', { label })}
               tabIndex={0}
               className={cn(
                 'bg-background border-primary focus-visible:ring-ring absolute size-4 rounded-sm border-2 shadow outline-none focus-visible:ring-2',

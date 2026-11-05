@@ -1,5 +1,6 @@
 import { DEFAULT_HEADER_FOOTER } from '@/engine/document/headerFooter'
 import type { Workflow, WorkflowStep } from '@/types/workflow'
+import { t } from '@/i18n'
 
 /** Default settings of a newly added step. */
 export function defaultStep(type: WorkflowStep['type']): WorkflowStep {
@@ -27,26 +28,26 @@ type Template = Pick<Workflow, 'name' | 'steps' | 'output'> & { description: str
 /** Ready-made workflows to start from. */
 export const WORKFLOW_TEMPLATES: Template[] = [
   {
-    name: 'Scan archivieren',
-    description: 'Text erkennen und platzsparend speichern – durchsuchbar im Archiv.',
+    name: t('Scan archivieren'),
+    description: t('Text erkennen und platzsparend speichern – durchsuchbar im Archiv.'),
     steps: [defaultStep('ocr'), defaultStep('compress')],
     output: { type: 'pdf' },
   },
   {
-    name: 'Für E-Mail verkleinern',
-    description: 'Stark komprimieren, damit die PDF in jedes Postfach passt.',
+    name: t('Für E-Mail verkleinern'),
+    description: t('Stark komprimieren, damit die PDF in jedes Postfach passt.'),
     steps: [{ type: 'compress', level: 'strong' }],
     output: { type: 'pdf' },
   },
   {
-    name: 'Vertraulich markieren',
-    description: 'Wasserzeichen „VERTRAULICH“ auf allen Seiten, dann komprimieren.',
+    name: t('Vertraulich markieren'),
+    description: t('Wasserzeichen „VERTRAULICH“ auf allen Seiten, dann komprimieren.'),
     steps: [defaultStep('watermark'), defaultStep('compress')],
     output: { type: 'pdf' },
   },
   {
-    name: 'Tabellen nach Excel',
-    description: 'Scans erkennen und Text sowie Tabellen als Excel-Datei ausgeben.',
+    name: t('Tabellen nach Excel'),
+    description: t('Scans erkennen und Text sowie Tabellen als Excel-Datei ausgeben.'),
     steps: [defaultStep('ocr')],
     output: { type: 'data', format: 'xlsx' },
   },
@@ -55,15 +56,18 @@ export const WORKFLOW_TEMPLATES: Template[] = [
 /** Human-readable summary of a workflow, e.g. "Texterkennung → Komprimieren → PDF". */
 export function describeWorkflow(workflow: Pick<Workflow, 'steps' | 'output'>): string {
   const names = {
-    ocr: 'Texterkennung',
-    watermark: 'Wasserzeichen',
-    compress: 'Komprimieren',
-    headerFooter: 'Seitenzahlen',
+    ocr: t('Texterkennung'),
+    watermark: t('Wasserzeichen'),
+    compress: t('Komprimieren'),
+    headerFooter: t('Seitenzahlen'),
   }
-  const outputs = { pdf: 'PDF', images: 'Bilder', data: 'Daten' }
+  const outputs = { pdf: 'PDF', images: t('Bilder'), data: t('Daten') }
   const output =
     workflow.output.type === 'data'
-      ? `Daten (${workflow.output.format === 'xlsx' ? 'Excel' : workflow.output.format.toUpperCase()})`
+      ? t('Daten ({value0})', {
+          value0:
+            workflow.output.format === 'xlsx' ? t('Excel') : workflow.output.format.toUpperCase(),
+        })
       : outputs[workflow.output.type]
   return [...workflow.steps.map((step) => names[step.type]), output].join(' → ')
 }

@@ -1,3 +1,4 @@
+import { t } from '@/i18n'
 /**
  * Saving files from the browser, with special handling for iOS/iPadOS.
  *
@@ -32,7 +33,7 @@ export function createPdfFile(data: Uint8Array, name: string): File {
 }
 
 export function ensurePdfExtension(name: string): string {
-  const trimmed = name.trim() || 'Dokument'
+  const trimmed = name.trim() || t('Dokument')
   return /\.pdf$/i.test(trimmed) ? trimmed : `${trimmed}.pdf`
 }
 

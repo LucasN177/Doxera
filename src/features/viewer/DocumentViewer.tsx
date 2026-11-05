@@ -13,6 +13,7 @@ import { useViewerStore } from '@/stores/viewerStore'
 import { PageSurface } from './PageSurface'
 import { HeaderFooterPreview } from '@/features/headerFooter/HeaderFooterPreview'
 import { resetPinchPreview, usePinchZoom } from './usePinchZoom'
+import { t } from '@/i18n'
 
 const PADDING = 24
 const GAP = 16
@@ -218,7 +219,7 @@ export function DocumentViewer() {
         }}
         data-page-number={index + 1}
         role="group"
-        aria-label={`Seite ${index + 1}`}
+        aria-label={t('Seite {value0}', { value0: index + 1 })}
       >
         <PageSurface page={page} scale={scale} pageIndex={index} textLayer />
         <HeaderFooterPreview index={index} total={pages.length} size={page.size} scale={scale} />
@@ -234,7 +235,7 @@ export function DocumentViewer() {
       style={{ touchAction: 'pan-x pan-y' }}
       onScroll={syncWithScroll}
       tabIndex={0}
-      aria-label="Dokumentansicht"
+      aria-label={t('Dokumentansicht')}
     >
       <div
         ref={contentRef}

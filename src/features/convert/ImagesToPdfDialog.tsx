@@ -19,6 +19,7 @@ import { useDocumentStore } from '@/stores/documentStore'
 import { useUiStore } from '@/stores/uiStore'
 import { useViewerStore } from '@/stores/viewerStore'
 import { pickImagesForPdf } from './pickImages'
+import { t } from '@/i18n'
 
 /** Preview URLs of the listed images, freed when the dialog closes. */
 const previews = new Map<File, string>()
@@ -72,11 +73,11 @@ function ImagesToPdfContent({ files, onDone }: { files: File[]; onDone: () => vo
       try {
         images.push(await prepareImage(file))
       } catch {
-        toast.error(`„${file.name}“ konnte nicht als Bild gelesen werden.`)
+        toast.error(t('„{name}“ konnte nicht als Bild gelesen werden.', { name: file.name }))
       }
     }
     if (images.length === 0) return null
-    const name = files.length === 1 ? files[0].name.replace(/\.[^.]+$/, '') : 'Bilder'
+    const name = files.length === 1 ? files[0].name.replace(/\.[^.]+$/, '') : t('Bilder')
     const data = await imagesToPdf(images, {
       format,
       margin: margin && format !== 'image' ? 28 : 0,
@@ -98,11 +99,11 @@ function ImagesToPdfContent({ files, onDone }: { files: File[]; onDone: () => vo
       // After the page in view
       const index = useViewerStore.getState().currentPage
       const count = await useDocumentStore.getState().insertData(result.name, result.data, index)
-      toast.success(`${count} ${count === 1 ? 'Seite' : 'Seiten'} eingefügt`)
+      toast.success(count === 1 ? t('1 Seite eingefügt') : t('{count} Seiten eingefügt', { count }))
       onDone()
     } catch (error) {
       console.error('PDF aus Bildern fehlgeschlagen', error)
-      toast.error('Aus den Bildern konnte keine PDF erstellt werden.')
+      toast.error(t('Aus den Bildern konnte keine PDF erstellt werden.'))
     } finally {
       setBusy(false)
     }
@@ -113,9 +114,9 @@ function ImagesToPdfContent({ files, onDone }: { files: File[]; onDone: () => vo
   return (
     <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-lg">
       <DialogHeader>
-        <DialogTitle>Bilder zu PDF</DialogTitle>
+        <DialogTitle>{t('Bilder zu PDF')}</DialogTitle>
         <DialogDescription>
-          Jedes Bild wird eine Seite. Fotos vom iPhone (HEIC) werden unterstützt.
+          {t('Jedes Bild wird eine Seite. Fotos vom iPhone (HEIC) werden unterstützt.')}
         </DialogDescription>
       </DialogHeader>
 
@@ -130,18 +131,22 @@ function ImagesToPdfContent({ files, onDone }: { files: File[]; onDone: () => vo
               <span className="text-muted-foreground tabular-nums">{index + 1}. </span>
               {file.name}
             </span>
-            <IconButton label="Nach oben" disabled={index === 0} onClick={() => move(index, -1)}>
+            <IconButton
+              label={t('Nach oben')}
+              disabled={index === 0}
+              onClick={() => move(index, -1)}
+            >
               <ArrowUp />
             </IconButton>
             <IconButton
-              label="Nach unten"
+              label={t('Nach unten')}
               disabled={index === files.length - 1}
               onClick={() => move(index, 1)}
             >
               <ArrowDown />
             </IconButton>
             <IconButton
-              label="Entfernen"
+              label={t('Entfernen')}
               onClick={() => setFiles(files.filter((_, other) => other !== index))}
             >
               <X />
@@ -155,18 +160,18 @@ function ImagesToPdfContent({ files, onDone }: { files: File[]; onDone: () => vo
         className="self-start"
         onClick={() => void pickImagesForPdf()}
       >
-        <ImagePlus /> Bilder hinzufügen
+        <ImagePlus /> {t('Bilder hinzufügen')}
       </Button>
 
       <div className="space-y-3">
         <fieldset className="space-y-1.5">
-          <legend className="text-sm font-medium">Seitengröße</legend>
+          <legend className="text-sm font-medium">{t('Seitengröße')}</legend>
           <div className="flex flex-wrap gap-2" role="radiogroup">
             {(
               [
                 ['a4', 'A4'],
-                ['letter', 'US Letter'],
-                ['image', 'Wie das Bild'],
+                ['letter', t('US Letter')],
+                ['image', t('Wie das Bild')],
               ] as const
             ).map(([value, label]) => (
               <Button
@@ -191,14 +196,14 @@ function ImagesToPdfContent({ files, onDone }: { files: File[]; onDone: () => vo
               checked={margin}
               onChange={(event) => setMargin(event.target.checked)}
             />
-            Rand um das Bild (1 cm)
+            {t('Rand um das Bild (1 cm)')}
           </label>
         )}
       </div>
 
       <DialogFooter className="gap-2">
         <Button variant="outline" onClick={onDone} disabled={busy}>
-          Abbrechen
+          {t('Abbrechen')}
         </Button>
         {hasDocument && (
           <Button
@@ -206,11 +211,11 @@ function ImagesToPdfContent({ files, onDone }: { files: File[]; onDone: () => vo
             onClick={() => void run('append')}
             disabled={busy || files.length === 0}
           >
-            Als Seiten einfügen
+            {t('Als Seiten einfügen')}
           </Button>
         )}
         <Button onClick={() => void run('new')} disabled={busy || files.length === 0}>
-          {busy ? 'Wird erstellt …' : 'Neue PDF erstellen'}
+          {busy ? t('Wird erstellt …') : t('Neue PDF erstellen')}
         </Button>
       </DialogFooter>
     </DialogContent>

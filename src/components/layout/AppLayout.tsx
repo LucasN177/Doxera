@@ -30,6 +30,7 @@ import { useDocumentStore } from '@/stores/documentStore'
 import { useUiStore } from '@/stores/uiStore'
 import { useViewerStore } from '@/stores/viewerStore'
 import { Toolbar } from './Toolbar'
+import { t } from '@/i18n'
 
 export function AppLayout() {
   const document = useDocumentStore((state) => state.document)
@@ -89,7 +90,7 @@ export function AppLayout() {
             >
               <div className="bg-background flex items-center gap-2 rounded-md border px-4 py-2 text-sm shadow-sm">
                 <Loader2 className="size-4 animate-spin" aria-hidden />
-                PDF wird geöffnet …
+                {t('PDF wird geöffnet …')}
               </div>
             </div>
           )}

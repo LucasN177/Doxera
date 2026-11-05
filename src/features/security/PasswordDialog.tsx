@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { useUiStore, type PasswordRequest } from '@/stores/uiStore'
+import { t } from '@/i18n'
 
 /** Asks for the password of a protected PDF while it is being opened. */
 export function PasswordDialog() {
@@ -31,11 +32,13 @@ function PasswordContent({ request }: { request: PasswordRequest }) {
     <DialogContent className="sm:max-w-sm">
       <DialogHeader>
         <DialogTitle className="flex items-center gap-2">
-          <LockKeyhole className="size-5" aria-hidden /> Passwortgeschützte PDF
+          <LockKeyhole className="size-5" aria-hidden /> {t('Passwortgeschützte PDF')}
         </DialogTitle>
         <DialogDescription>
-          „{request.name}“ ist geschützt. Das Passwort wird nur hier im Browser zum Entsperren
-          verwendet und nicht gespeichert.
+          {t(
+            '„{name}“ ist geschützt. Das Passwort wird nur hier im Browser zum Entsperren verwendet und nicht gespeichert.',
+            { name: request.name },
+          )}
         </DialogDescription>
       </DialogHeader>
       <form
@@ -50,23 +53,23 @@ function PasswordContent({ request }: { request: PasswordRequest }) {
           autoFocus
           autoComplete="off"
           value={password}
-          aria-label="Passwort"
+          aria-label={t('Passwort')}
           aria-invalid={request.retry}
-          placeholder="Passwort"
+          placeholder={t('Passwort')}
           className="text-base sm:text-sm"
           onChange={(event) => setPassword(event.target.value)}
         />
         {request.retry && (
           <p className="text-destructive text-sm" role="alert">
-            Das Passwort ist falsch. Bitte erneut versuchen.
+            {t('Das Passwort ist falsch. Bitte erneut versuchen.')}
           </p>
         )}
         <DialogFooter className="pt-2">
           <Button type="button" variant="outline" onClick={() => request.resolve(null)}>
-            Abbrechen
+            {t('Abbrechen')}
           </Button>
           <Button type="submit" disabled={!password}>
-            Entsperren
+            {t('Entsperren')}
           </Button>
         </DialogFooter>
       </form>
