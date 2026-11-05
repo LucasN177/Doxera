@@ -327,7 +327,7 @@ Nach Phase 6 erkannte Lücken, die vor den KI-Funktionen geschlossen werden:
 | G2  | Formulare                 | PDF-Formularfelder ausfüllen und mit exportieren                                                      | ✅     |
 | G3  | Passwortschutz            | Geschützte PDFs öffnen, PDFs mit Passwort verschlüsseln                                               | ✅     |
 | G4  | Seitenzahlen & Kopfzeilen | Seitenzahlen, Kopf- und Fußzeilen einfügen (auch als Workflow-Schritt)                                | ✅     |
-| G5  | Lesezeichen               | Lesezeichen (Outline) beim Export erhalten                                                            | offen  |
+| G5  | Lesezeichen               | Lesezeichen (Outline) beim Export erhalten                                                            | ✅     |
 | G6  | Dokumentvergleich         | Textunterschiede zweier Dokumente ohne KI hervorheben                                                 | offen  |
 | G7  | Unicode-Schrift           | Eingebettete Unicode-Schrift statt „?“ für Zeichen außerhalb von WinAnsi                              | offen  |
 | G8  | Kleinigkeiten             | Ablegen im Stapel-Dialog, Bild-Wasserzeichen im Workflow, Excel-Datumswerte, Markierungen exportieren | offen  |
@@ -361,6 +361,12 @@ Seitenzahl und „nicht auf dem Deckblatt“. Die Einstellung gehört zum Dokume
 G1 gespeichert und im Editor als Vorschau über die Seiten gelegt. `documentBytes` stempelt sie als letzten
 Schritt per pdf-lib auf die fertige PDF – aufrecht in der sichtbaren Seite (Drehung und CropBox berücksichtigt),
 beim Aufteilen pro Teil gezählt. Als Workflow-Schritt „Seitenzahlen“ mit den Vorlagen-Layouts.
+
+**Lesezeichen (G5):** pdf-lib übernimmt beim Neuaufbau keine Gliederung. Beim Export liest pdf.js die
+Lesezeichen jeder genutzten Quelle (Ziele als Seitenindex, einmal pro Quelle), `mapOutline` richtet sie auf
+die neue Seitenfolge aus (erste Ausgabeseite der Quellseite; Lesezeichen gelöschter Seiten entfallen, ihre
+Kinder rücken auf) und `writeOutline` schreibt sie als /Outlines in die neue PDF. Lesezeichen eingefügter
+Dateien stehen unter deren Namen; Aufklapp-Zustand bleibt erhalten.
 
 ## 5. Querschnittsthemen
 

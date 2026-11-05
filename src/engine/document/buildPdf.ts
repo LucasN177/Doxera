@@ -2,6 +2,7 @@ import type { PDFFont, PDFImage } from 'pdf-lib'
 import type { PageRef } from '@/types/document'
 import type { FormValues } from '@/types/forms'
 import { standardFontName } from './annotations'
+import { writeOutline, type OutlineEntry } from './outline'
 import { hasImageReplacements, hasTextReplacements, textRemovalPages } from './contentEditing'
 import {
   addNoteAnnotations,
@@ -27,6 +28,8 @@ export interface BuildOptions {
   redact?: (data: Uint8Array, mode: 'redact' | 'text' | 'clean') => Promise<Uint8Array>
   /** Form values for the fields of one source; they are drawn into its pages (flattened). */
   forms?: { sourceId: string; values: FormValues }
+  /** Bookmarks of the built PDF (see `mapOutline`). */
+  outline?: readonly OutlineEntry[]
 }
 
 /** Source id of the intermediate file with replaced text removed. */
@@ -42,13 +45,13 @@ export interface ImageData {
  * sources in order, with the added rotation, annotations (drawn into the page
  * content) and crop (as CropBox) applied. Redactions are applied afterwards
  * with MuPDF, which removes the content below them. Page content, annotations
- * and links on the page are kept; document-level parts such as outlines
- * (bookmarks) and form field structure are not carried over.
+ * and links on the page are kept; bookmarks are written from `outline`, form
+ * field structure is not carried over.
  */
 export async function buildPdf(
   pages: readonly PageRef[],
   sources: ReadonlyMap<string, SourceData>,
-  { title, assets = new Map(), redact = defaultRedact, forms }: BuildOptions = {},
+  { title, assets = new Map(), redact = defaultRedact, forms, outline }: BuildOptions = {},
 ): Promise<Uint8Array> {
   if (pages.length === 0) throw new Error('Ein PDF braucht mindestens eine Seite.')
 
@@ -75,7 +78,7 @@ export async function buildPdf(
         ),
       })),
       new Map(sources).set(TEXT_REMOVED_SOURCE, { data: removed }),
-      { title, assets, redact },
+      { title, assets, redact, outline },
     )
   }
 
@@ -185,6 +188,7 @@ export async function buildPdf(
     output.addPage(page)
   }
 
+  if (outline) writeOutline(lib, output, outline)
   if (title) output.setTitle(title)
   output.setProducer('Doxera')
   output.setModificationDate(new Date())
