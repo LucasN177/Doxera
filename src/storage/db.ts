@@ -3,6 +3,7 @@ import type { ImageAsset } from '@/types/annotations'
 import type { PageRef } from '@/types/document'
 import type { FormValues } from '@/types/forms'
 import type { Workflow } from '@/types/workflow'
+import type { HeaderFooter } from '@/engine/document/headerFooter'
 
 /** Metadata of a document kept in the local library (without file contents). */
 export interface LibraryEntry {
@@ -65,6 +66,8 @@ export interface StoredEdits {
   assets: Array<Omit<ImageAsset, 'url' | 'data'> & { data: ArrayBuffer }>
   /** Entered form values of the opened file's fields. */
   formValues?: FormValues
+  /** Page numbers, headers and footers added on export. */
+  headerFooter?: HeaderFooter
   savedAt: number
 }
 

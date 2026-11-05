@@ -2,6 +2,7 @@ import { PRIMARY_SOURCE } from '@/storage/db'
 import type { ImageAsset } from '@/types/annotations'
 import type { PageRef } from '@/types/document'
 import { captureEdits, restorePages } from './editState'
+import { DEFAULT_HEADER_FOOTER } from './headerFooter'
 
 const size = { width: 100, height: 100 }
 const primary = { id: 'p1', name: 'a.pdf', data: new Uint8Array([1]), pageSizes: [size, size] }
@@ -30,6 +31,15 @@ describe('edit state', () => {
   it('keeps nothing for an unchanged document', () => {
     const pages = [page('a', 'p1', 0), page('b', 'p1', 1)]
     expect(captureEdits('h', pages, primary, sources, new Map(), 1)).toBeNull()
+  })
+
+  it('keeps page numbers of an otherwise unchanged document', () => {
+    const pages = [page('a', 'p1', 0), page('b', 'p1', 1)]
+    const edits = captureEdits('h', pages, primary, sources, new Map(), 1, {
+      headerFooter: DEFAULT_HEADER_FOOTER,
+    })
+    expect(edits?.headerFooter).toEqual(DEFAULT_HEADER_FOOTER)
+    expect(edits?.formValues).toBeUndefined()
   })
 
   it('captures pages, used extra sources and pictures, and restores them', () => {

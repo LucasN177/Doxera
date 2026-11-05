@@ -10,6 +10,7 @@ import { isEncrypted } from '@/engine/mupdf/encryption'
 import { requestPassword } from '@/stores/uiStore'
 import type { OpenDocument, PageRef, PdfSource } from '@/types/document'
 import type { FormValues } from '@/types/forms'
+import type { HeaderFooter } from '@/engine/document/headerFooter'
 
 export type OpenResult = { ok: true } | { ok: false; cancelled?: boolean; message: string }
 
@@ -39,6 +40,9 @@ interface DocumentState {
   /** Values entered into the opened file's form fields (by field name). */
   formValues: FormValues
   setFormValue: (name: string, value: string | boolean) => void
+  /** Page numbers, headers and footers drawn onto every page on export. */
+  headerFooter: HeaderFooter | null
+  setHeaderFooter: (settings: HeaderFooter | null) => void
   /** Images used by image annotations (pictures, signatures). */
   assets: ReadonlyMap<string, ImageAsset>
   history: History
@@ -170,6 +174,7 @@ export const useDocumentStore = create<DocumentState>()((set, get) => {
         sources: new Map([[source.id, source]]),
         assets: new Map(),
         formValues: {},
+        headerFooter: null,
         history: EMPTY_HISTORY,
         document: {
           id: crypto.randomUUID(),
@@ -203,9 +208,11 @@ export const useDocumentStore = create<DocumentState>()((set, get) => {
     pdf: null,
     assets: new Map(),
     formValues: {},
+    headerFooter: null,
     history: EMPTY_HISTORY,
 
     setFormValue: (name, value) => set({ formValues: { ...get().formValues, [name]: value } }),
+    setHeaderFooter: (headerFooter) => set({ headerFooter }),
 
     openFile: async (file) => {
       if (!looksLikePdf(file)) {
@@ -226,6 +233,7 @@ export const useDocumentStore = create<DocumentState>()((set, get) => {
         sources: new Map(),
         assets: new Map(),
         formValues: {},
+        headerFooter: null,
         history: EMPTY_HISTORY,
       })
     },
@@ -313,6 +321,7 @@ export const useDocumentStore = create<DocumentState>()((set, get) => {
       }
       setPages(pages, EMPTY_HISTORY)
       if (edits.formValues) set({ formValues: edits.formValues })
+      if (edits.headerFooter) set({ headerFooter: edits.headerFooter })
       return true
     },
 

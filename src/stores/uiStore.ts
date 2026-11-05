@@ -42,6 +42,8 @@ interface UiState {
   setWorkflowsOpen: (open: boolean) => void
   protectOpen: boolean
   setProtectOpen: (open: boolean) => void
+  headerFooterOpen: boolean
+  setHeaderFooterOpen: (open: boolean) => void
   /** Open question for the password of a protected PDF. */
   passwordRequest: PasswordRequest | null
   setPasswordRequest: (request: PasswordRequest | null) => void
@@ -88,6 +90,8 @@ export const useUiStore = create<UiState>()((set) => ({
   setWorkflowsOpen: (workflowsOpen) => set({ workflowsOpen }),
   protectOpen: false,
   setProtectOpen: (protectOpen) => set({ protectOpen }),
+  headerFooterOpen: false,
+  setHeaderFooterOpen: (headerFooterOpen) => set({ headerFooterOpen }),
   passwordRequest: null,
   setPasswordRequest: (passwordRequest) => set({ passwordRequest }),
 }))

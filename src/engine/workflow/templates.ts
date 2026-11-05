@@ -1,3 +1,4 @@
+import { DEFAULT_HEADER_FOOTER } from '@/engine/document/headerFooter'
 import type { Workflow, WorkflowStep } from '@/types/workflow'
 
 /** Default settings of a newly added step. */
@@ -16,6 +17,8 @@ export function defaultStep(type: WorkflowStep['type']): WorkflowStep {
       }
     case 'compress':
       return { type, level: 'medium' }
+    case 'headerFooter':
+      return { type, settings: DEFAULT_HEADER_FOOTER }
   }
 }
 
@@ -51,7 +54,12 @@ export const WORKFLOW_TEMPLATES: Template[] = [
 
 /** Human-readable summary of a workflow, e.g. "Texterkennung → Komprimieren → PDF". */
 export function describeWorkflow(workflow: Pick<Workflow, 'steps' | 'output'>): string {
-  const names = { ocr: 'Texterkennung', watermark: 'Wasserzeichen', compress: 'Komprimieren' }
+  const names = {
+    ocr: 'Texterkennung',
+    watermark: 'Wasserzeichen',
+    compress: 'Komprimieren',
+    headerFooter: 'Seitenzahlen',
+  }
   const outputs = { pdf: 'PDF', images: 'Bilder', data: 'Daten' }
   const output =
     workflow.output.type === 'data'

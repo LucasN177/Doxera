@@ -48,6 +48,7 @@ Tools for organizing and restructuring PDF documents.
 - [x] Extract individual pages (save a selection as a new PDF)
 - [x] Delete, rotate and rearrange pages
 - [x] Crop pages (non-destructive, can be reset any time)
+- [x] Add page numbers, headers and footers (left, center, right; file name and date; skip the cover page)
 - [x] Duplicate pages
 - [x] Preview pages using thumbnails
 - [x] Drag-and-drop page organization (mouse, touch and keyboard)
@@ -89,7 +90,7 @@ Automate repetitive document-related tasks.
 - [x] Convert PDFs to images (PNG or JPEG, 72–300 dpi, with all edits; ZIP or share sheet)
 - [x] Convert images to PDFs (A4, Letter or image size; open as new PDF or insert as pages; HEIC supported)
 - [x] Export extracted data to CSV, Excel and JSON (text, tables with real numbers, comments)
-- [x] Create reusable processing workflows (OCR, watermark, compression → PDF, images or data; saved locally)
+- [x] Create reusable processing workflows (OCR, watermark, page numbers, compression → PDF, images or data; saved locally)
 - [ ] Automate document classification and extraction
 - [ ] Process invoices and extract relevant information
 - [x] Custom document processing templates (ready-made workflows to start from)

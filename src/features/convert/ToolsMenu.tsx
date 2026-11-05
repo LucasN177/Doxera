@@ -2,6 +2,7 @@ import {
   FileArchive,
   FileImage,
   FileSpreadsheet,
+  Hash,
   Images,
   Layers,
   LockKeyhole,
@@ -37,6 +38,12 @@ export function ToolsMenu() {
             onSelect={() => useUiStore.getState().setCompressOpen(true)}
           >
             <FileArchive /> PDF komprimieren …
+          </DropdownMenu.Item>
+          <DropdownMenu.Item
+            className={item}
+            onSelect={() => useUiStore.getState().setHeaderFooterOpen(true)}
+          >
+            <Hash /> Seitenzahlen, Kopf- und Fußzeilen …
           </DropdownMenu.Item>
           <DropdownMenu.Item
             className={item}

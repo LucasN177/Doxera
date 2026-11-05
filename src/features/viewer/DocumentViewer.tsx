@@ -11,6 +11,7 @@ import { clampZoom, computeFitScale } from '@/lib/zoom'
 import { scrollForFocalPoint, type FocalPoint } from '@/lib/zoomFocus'
 import { useViewerStore } from '@/stores/viewerStore'
 import { PageSurface } from './PageSurface'
+import { HeaderFooterPreview } from '@/features/headerFooter/HeaderFooterPreview'
 import { resetPinchPreview, usePinchZoom } from './usePinchZoom'
 
 const PADDING = 24
@@ -220,6 +221,7 @@ export function DocumentViewer() {
         aria-label={`Seite ${index + 1}`}
       >
         <PageSurface page={page} scale={scale} pageIndex={index} textLayer />
+        <HeaderFooterPreview index={index} total={pages.length} size={page.size} scale={scale} />
       </div>,
     )
   }

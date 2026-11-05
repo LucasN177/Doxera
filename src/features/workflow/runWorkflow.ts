@@ -39,6 +39,10 @@ export async function runWorkflow(
       const { watermarkPdf } = await import('@/engine/workflow/watermark')
       data = await watermarkPdf(data, step)
       notes.push('Wasserzeichen')
+    } else if (step.type === 'headerFooter') {
+      const { stampPdf } = await import('@/engine/document/stampPdf')
+      data = await stampPdf(data, step.settings, name)
+      notes.push('Seitenzahlen')
     } else {
       const { compressPdfData } = await import('@/engine/mupdf/client')
       const before = data.length

@@ -326,7 +326,7 @@ Nach Phase 6 erkannte Lücken, die vor den KI-Funktionen geschlossen werden:
 | G1  | Bearbeitungen speichern   | Bearbeitungsstand lokal sichern und beim erneuten Öffnen wiederherstellen                             | ✅     |
 | G2  | Formulare                 | PDF-Formularfelder ausfüllen und mit exportieren                                                      | ✅     |
 | G3  | Passwortschutz            | Geschützte PDFs öffnen, PDFs mit Passwort verschlüsseln                                               | ✅     |
-| G4  | Seitenzahlen & Kopfzeilen | Seitenzahlen, Kopf- und Fußzeilen einfügen (auch als Workflow-Schritt)                                | offen  |
+| G4  | Seitenzahlen & Kopfzeilen | Seitenzahlen, Kopf- und Fußzeilen einfügen (auch als Workflow-Schritt)                                | ✅     |
 | G5  | Lesezeichen               | Lesezeichen (Outline) beim Export erhalten                                                            | offen  |
 | G6  | Dokumentvergleich         | Textunterschiede zweier Dokumente ohne KI hervorheben                                                 | offen  |
 | G7  | Unicode-Schrift           | Eingebettete Unicode-Schrift statt „?“ für Zeichen außerhalb von WinAnsi                              | offen  |
@@ -354,6 +354,13 @@ mit der entschlüsselten Fassung, in der Bibliothek bleibt die verschlüsselte O
 fragt wieder; der Datei-Hash der entschlüsselten Fassung hält G1-Bearbeitungen zusammen). „Mit Passwort
 schützen“ erzeugt per MuPDF eine AES-256-Kopie mit Rechte-Flags (Drucken, Kopieren, Ändern). Passwörter
 werden nicht gespeichert; Kommas sind wegen MuPDFs Optionssyntax nicht erlaubt.
+
+**Seitenzahlen & Kopfzeilen (G4):** Je drei Felder (links, Mitte, rechts) für Kopf- und Fußzeile mit
+Platzhaltern `{seite}`, `{seiten}`, `{datei}`, `{datum}`, dazu Schriftgröße, Randabstand, Farbe, erste
+Seitenzahl und „nicht auf dem Deckblatt“. Die Einstellung gehört zum Dokument (nicht zu den Seiten), wird mit
+G1 gespeichert und im Editor als Vorschau über die Seiten gelegt. `documentBytes` stempelt sie als letzten
+Schritt per pdf-lib auf die fertige PDF – aufrecht in der sichtbaren Seite (Drehung und CropBox berücksichtigt),
+beim Aufteilen pro Teil gezählt. Als Workflow-Schritt „Seitenzahlen“ mit den Vorlagen-Layouts.
 
 ## 5. Querschnittsthemen
 

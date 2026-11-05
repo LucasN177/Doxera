@@ -1,3 +1,4 @@
+import type { HeaderFooter } from '@/engine/document/headerFooter'
 import type { DataFormat } from '@/engine/export/dataFiles'
 import type { CompressionLevel } from '@/engine/mupdf/compress'
 import type { OcrLanguage } from '@/engine/ocr/tesseract'
@@ -15,6 +16,7 @@ export type WorkflowStep =
       angle: number
     }
   | { type: 'compress'; level: CompressionLevel }
+  | { type: 'headerFooter'; settings: HeaderFooter }
 
 /** What a workflow hands out at the end. */
 export type WorkflowOutput =

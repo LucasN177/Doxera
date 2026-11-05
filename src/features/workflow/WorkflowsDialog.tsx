@@ -3,6 +3,7 @@ import {
   ArrowUp,
   Copy,
   FileArchive,
+  Hash,
   Layers,
   Pencil,
   Play,
@@ -26,6 +27,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { HEADER_FOOTER_PRESETS } from '@/engine/document/headerFooter'
 import { OCR_LANGUAGES } from '@/engine/ocr/tesseract'
 import { defaultStep, describeWorkflow, WORKFLOW_TEMPLATES } from '@/engine/workflow/templates'
 import { useOpenDocument } from '@/hooks/useOpenDocument'
@@ -46,6 +48,7 @@ const STEP_INFO = {
   ocr: { label: 'Texterkennung', icon: ScanText },
   watermark: { label: 'Wasserzeichen', icon: Stamp },
   compress: { label: 'Komprimieren', icon: FileArchive },
+  headerFooter: { label: 'Seitenzahlen', icon: Hash },
 } as const
 
 const timestamp = () => Date.now()
@@ -352,6 +355,38 @@ function StepOptions({
           ['lossless', 'Verlustfrei'],
         ]}
       />
+    )
+  }
+  if (step.type === 'headerFooter') {
+    const { settings } = step
+    const preset = HEADER_FOOTER_PRESETS.findIndex(
+      (item) =>
+        item.header.join('|') === settings.header.join('|') &&
+        item.footer.join('|') === settings.footer.join('|'),
+    )
+    return (
+      <div className="space-y-1.5">
+        <Choice
+          label="Layout"
+          value={preset}
+          onChange={(index) => {
+            const { header, footer } = HEADER_FOOTER_PRESETS[index]!
+            onChange({ ...step, settings: { ...settings, header, footer } })
+          }}
+          options={HEADER_FOOTER_PRESETS.map((item, index) => [index, item.name] as const)}
+        />
+        <label className="flex items-center gap-2 text-xs">
+          <input
+            type="checkbox"
+            className="accent-primary size-3.5"
+            checked={settings.skipFirstPage}
+            onChange={(event) =>
+              onChange({ ...step, settings: { ...settings, skipFirstPage: event.target.checked } })
+            }
+          />
+          Nicht auf der ersten Seite (Deckblatt)
+        </label>
+      </div>
     )
   }
   if (step.type === 'ocr') {

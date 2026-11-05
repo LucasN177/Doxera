@@ -10,6 +10,7 @@ import { WorkflowsDialog } from '@/features/workflow/WorkflowsDialog'
 import { CompressDialog } from '@/features/convert/CompressDialog'
 import { PasswordDialog } from '@/features/security/PasswordDialog'
 import { ProtectDialog } from '@/features/security/ProtectDialog'
+import { HeaderFooterDialog } from '@/features/headerFooter/HeaderFooterDialog'
 import { DataExportDialog } from '@/features/data/DataExportDialog'
 import { ExportImagesDialog } from '@/features/convert/ExportImagesDialog'
 import { ImagesToPdfDialog } from '@/features/convert/ImagesToPdfDialog'
@@ -68,6 +69,7 @@ export function AppLayout() {
               <ExportImagesDialog />
               <CompressDialog />
               <ProtectDialog />
+              <HeaderFooterDialog />
               <DataExportDialog />
               <CropDialog />
             </>
