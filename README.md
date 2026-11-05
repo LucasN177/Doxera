@@ -117,6 +117,7 @@ Privacy and data security are important design principles of Doxera.
 ### 📱 App Experience
 
 - [x] Installable as an app (PWA) with update notifications
+- [x] Open PDFs and pictures directly with the installed app ("Open with", Chrome and Edge on desktop)
 - [x] iPhone & iPad support: save via the share sheet ("Save to Files"), pinch-to-zoom, touch-friendly page organization
 - [x] Download and share PDFs
 - [x] Keyboard shortcuts with an overview (`?`)

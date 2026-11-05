@@ -9,6 +9,7 @@ import { useAppShortcuts } from '@/features/shortcuts/useAppShortcuts'
 import { FileDropOverlay } from '@/features/viewer/FileDropOverlay'
 import { useApplyTheme } from '@/hooks/useApplyTheme'
 import { startEditsPersistence } from '@/features/library/editsPersistence'
+import { useLaunchQueue } from '@/features/pwa/useLaunchQueue'
 import { useEffect } from 'react'
 
 function AppContent() {
@@ -16,6 +17,8 @@ function AppContent() {
   useAppShortcuts()
   // Changes to the open document are kept locally (restored when it's opened again)
   useEffect(() => startEditsPersistence(), [])
+  // PDFs opened with the installed app ("Open with", double click)
+  useLaunchQueue()
 
   return (
     <TooltipProvider delayDuration={400}>

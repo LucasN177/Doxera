@@ -64,6 +64,18 @@ export default defineConfig({
         theme_color: '#4f46e5',
         background_color: '#ffffff',
         categories: ['productivity', 'utilities'],
+        // Installed app: offered for PDFs and pictures in "Open with" (Chromium desktop)
+        file_handlers: [
+          {
+            action: './',
+            accept: {
+              'application/pdf': ['.pdf'],
+              'image/*': ['.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif'],
+            },
+          },
+        ],
+        // A file opened while Doxera runs goes to the open window instead of a new one
+        launch_handler: { client_mode: 'focus-existing' },
         icons: [
           { src: 'pwa-64x64.png', sizes: '64x64', type: 'image/png' },
           { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },

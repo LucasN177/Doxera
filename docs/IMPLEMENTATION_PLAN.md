@@ -347,6 +347,21 @@ Einzelfunktionen (`ocrPdf`, `watermarkPdf`, `compressPdfData`, `pdfToImageFiles`
 - Barrierefreiheit, Tastaturkürzel, Dark Mode, i18n (DE/EN)
 - E2E-Tests mit Playwright, Performance-Optimierung großer PDFs
 
+| #   | Milestone         | Inhalt                                                                              | Status |
+| --- | ----------------- | ----------------------------------------------------------------------------------- | ------ |
+| F1  | Öffnen mit Doxera | Dateizuordnung (`file_handlers`) und Launch Queue für die installierte App          | ✅     |
+| F2  | E2E-Tests         | Playwright-Tests der wichtigsten Abläufe im echten Browser                          | offen  |
+| F3  | Offline-Test      | Alle Funktionen ohne Netz (Service Worker, nachgeladene MuPDF-/OCR-Dateien) geprüft | offen  |
+| F4  | Große PDFs        | Speicher und Geschwindigkeit bei vielen Seiten (Vorschaubilder, Rendering, Export)  | offen  |
+| F5  | Barrierefreiheit  | Tastaturbedienung, Fokus, Beschriftungen, Kontraste, Screenreader-Durchgang         | offen  |
+| F6  | Englisch (i18n)   | Oberfläche auf Deutsch und Englisch, Sprache nach Browser, umschaltbar              | offen  |
+
+**Öffnen mit Doxera (F1):** Das Manifest meldet die installierte App über `file_handlers` für PDFs und
+Bilder an; `launch_handler: focus-existing` übergibt Dateien an ein schon offenes Fenster. `useLaunchQueue`
+übernimmt die Dateien aus der Launch Queue: eine PDF wird geöffnet, mehrere PDFs gehen in die
+Stapelverarbeitung, Bilder in „Bilder zu PDF“. Unterstützt von Chromium-Browsern auf dem Desktop
+(Chrome, Edge); Safari/iOS bieten das nicht – dort bleiben Dateiauswahl, Ziehen und Teilen über Dateien.
+
 ---
 
 ### Lückenschluss (vor Phase 7)
