@@ -1,4 +1,6 @@
 import { deleteDB, openDB, type DBSchema, type IDBPDatabase } from 'idb'
+import type { ImageAsset } from '@/types/annotations'
+import type { PageRef } from '@/types/document'
 import type { Workflow } from '@/types/workflow'
 
 /** Metadata of a document kept in the local library (without file contents). */
@@ -43,7 +45,28 @@ interface DoxeraDB extends DBSchema {
     value: Workflow
     indexes: { updatedAt: number }
   }
+  /** Unsaved changes to a library document (by its id), restored when it is opened again. */
+  edits: {
+    key: string
+    value: StoredEdits
+  }
 }
+
+/** The edit state of a document: pages with their changes, extra PDFs and pictures. */
+export interface StoredEdits {
+  /** Library id (SHA-256 of the original file). */
+  id: string
+  /** Pages; the opened file's own pages use the source id {@link PRIMARY_SOURCE}. */
+  pages: PageRef[]
+  /** Other PDFs the pages come from (inserted files, recognized text). */
+  sources: Array<{ id: string; name: string; data: ArrayBuffer }>
+  /** Pictures used by image annotations and watermarks. */
+  assets: Array<Omit<ImageAsset, 'url' | 'data'> & { data: ArrayBuffer }>
+  savedAt: number
+}
+
+/** Placeholder for the opened file's source id in {@link StoredEdits.pages}. */
+export const PRIMARY_SOURCE = 'primary'
 
 export interface StoredSignature {
   id: string
@@ -56,7 +79,7 @@ export interface StoredSignature {
 export type DoxeraDatabase = IDBPDatabase<DoxeraDB>
 
 const DB_NAME = 'doxera'
-const DB_VERSION = 3
+const DB_VERSION = 4
 
 let dbPromise: Promise<DoxeraDatabase> | null = null
 
@@ -76,6 +99,9 @@ export function getDb(): Promise<DoxeraDatabase> {
       if (oldVersion < 3) {
         const workflows = db.createObjectStore('workflows', { keyPath: 'id' })
         workflows.createIndex('updatedAt', 'updatedAt')
+      }
+      if (oldVersion < 4) {
+        db.createObjectStore('edits', { keyPath: 'id' })
       }
     },
     // Another tab wants to delete or upgrade the database: release our connection

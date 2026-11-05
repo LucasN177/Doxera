@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import { toast } from 'sonner'
 import { addImagesForPdf, IMAGE_ACCEPT } from '@/features/convert/pickImages'
+import { restoreSavedEdits } from '@/features/library/editsPersistence'
 import { looksLikePdf, pickFiles } from '@/lib/file'
 import { useDocumentStore, type OpenResult } from '@/stores/documentStore'
 import { useLibraryStore } from '@/stores/libraryStore'
@@ -29,9 +30,13 @@ export function useOpenDocument() {
   const openFile = useDocumentStore((state) => state.openFile)
   const openData = useDocumentStore((state) => state.openData)
 
-  const handle = useCallback((result: OpenResult) => {
-    if (result.ok) rememberOpenDocument()
-    else if (!result.cancelled) toast.error(result.message)
+  const handle = useCallback(async (result: OpenResult) => {
+    if (result.ok) {
+      await restoreSavedEdits()
+      rememberOpenDocument()
+    } else if (!result.cancelled) {
+      toast.error(result.message)
+    }
     return result.ok
   }, [])
 

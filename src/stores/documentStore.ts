@@ -4,6 +4,8 @@ import { insertPages, pagesFromSource } from '@/engine/document/pageOps'
 import { closePdf, getPageSizes, openPdf, PdfLoadError } from '@/engine/render/pdfjs'
 import { hasPdfSignature, looksLikePdf } from '@/lib/file'
 import type { ImageAsset } from '@/types/annotations'
+import { restorePages } from '@/engine/document/editState'
+import type { StoredEdits } from '@/storage/db'
 import type { OpenDocument, PageRef, PdfSource } from '@/types/document'
 
 export type OpenResult = { ok: true } | { ok: false; cancelled?: boolean; message: string }
@@ -60,6 +62,12 @@ interface DocumentState {
    * that pages can refer to. Returns null if the document changed meanwhile.
    */
   addSource: (name: string, data: Uint8Array) => Promise<PdfSource | null>
+  /**
+   * Brings back saved changes of the opened file (pages, extra PDFs,
+   * pictures). Starts a fresh undo history; returns false if nothing could
+   * be restored.
+   */
+  restoreEdits: (edits: StoredEdits) => Promise<boolean>
   /** Adds all pages of a generated PDF at `index` (one undoable step); returns the page count. */
   insertData: (name: string, data: Uint8Array, index: number) => Promise<number>
 }
@@ -228,6 +236,40 @@ export const useDocumentStore = create<DocumentState>()((set, get) => {
       }
       set({ sources: new Map(get().sources).set(source.id, source) })
       return source
+    },
+
+    restoreEdits: async (edits) => {
+      const documentId = get().document?.id
+      const primary = getPrimarySource(get())
+      if (!documentId || !primary) return false
+      const loaded: PdfSource[] = []
+      const ids = new Map<string, string>()
+      for (const saved of edits.sources) {
+        try {
+          const source = await loadSource(saved.name, new Uint8Array(saved.data))
+          loaded.push(source)
+          ids.set(saved.id, source.id)
+        } catch (error) {
+          console.warn(`Gespeicherte Quelle „${saved.name}“ fehlt`, error)
+        }
+      }
+      if (get().document?.id !== documentId) {
+        for (const source of loaded) void closePdf(source.pdf)
+        return false
+      }
+      const pages = restorePages(edits, primary.id, ids)
+      if (pages.length === 0) {
+        for (const source of loaded) void closePdf(source.pdf)
+        return false
+      }
+      const sources = new Map(get().sources)
+      for (const source of loaded) sources.set(source.id, source)
+      set({ sources })
+      for (const asset of edits.assets) {
+        get().addAsset({ ...asset, data: new Uint8Array(asset.data) })
+      }
+      setPages(pages, EMPTY_HISTORY)
+      return true
     },
 
     insertData: async (name, data, index) => {

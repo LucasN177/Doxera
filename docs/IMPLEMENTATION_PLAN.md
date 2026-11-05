@@ -317,6 +317,29 @@ Einzelfunktionen (`ocrPdf`, `watermarkPdf`, `compressPdfData`, `pdfToImageFiles`
 
 ---
 
+### Lückenschluss (vor Phase 7)
+
+Nach Phase 6 erkannte Lücken, die vor den KI-Funktionen geschlossen werden:
+
+| #   | Lücke                     | Inhalt                                                                                                | Status |
+| --- | ------------------------- | ----------------------------------------------------------------------------------------------------- | ------ |
+| G1  | Bearbeitungen speichern   | Bearbeitungsstand lokal sichern und beim erneuten Öffnen wiederherstellen                             | ✅     |
+| G2  | Formulare                 | PDF-Formularfelder ausfüllen und mit exportieren                                                      | offen  |
+| G3  | Passwortschutz            | Geschützte PDFs öffnen, PDFs mit Passwort verschlüsseln                                               | offen  |
+| G4  | Seitenzahlen & Kopfzeilen | Seitenzahlen, Kopf- und Fußzeilen einfügen (auch als Workflow-Schritt)                                | offen  |
+| G5  | Lesezeichen               | Lesezeichen (Outline) beim Export erhalten                                                            | offen  |
+| G6  | Dokumentvergleich         | Textunterschiede zweier Dokumente ohne KI hervorheben                                                 | offen  |
+| G7  | Unicode-Schrift           | Eingebettete Unicode-Schrift statt „?“ für Zeichen außerhalb von WinAnsi                              | offen  |
+| G8  | Kleinigkeiten             | Ablegen im Stapel-Dialog, Bild-Wasserzeichen im Workflow, Excel-Datumswerte, Markierungen exportieren | offen  |
+
+**Bearbeitungen speichern (G1):** IndexedDB-Store `edits` (DB-Version 4) je Bibliothekseintrag (Datei-Hash):
+Seitenliste (Quelle der geöffneten Datei als Platzhalter `primary`), zusätzlich geladene Quellen (eingefügte
+PDFs, OCR-Fassungen) und verwendete Bilder. Gespeichert 0,8 s nach jeder Änderung und beim Verlassen der
+Seite, nur wenn „Dokumente lokal merken“ aktiv ist; ein unverändertes Dokument löscht den Eintrag. Beim
+Öffnen derselben Datei (aus der Bibliothek oder erneut vom Gerät) wird der Stand mit Hinweis wiederhergestellt;
+„Original anzeigen“ ist ein rückgängig machbarer Schritt. Entfernen eines Bibliothekseintrags löscht seine
+Bearbeitungen mit.
+
 ## 5. Querschnittsthemen
 
 - **Tests:** Engine-/Processing-Logik mit Vitest unit-testen (Fixture-PDFs unter `tests/fixtures`). UI-Flows später per Playwright.

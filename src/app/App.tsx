@@ -8,10 +8,14 @@ import { ShortcutsDialog } from '@/features/shortcuts/ShortcutsDialog'
 import { useAppShortcuts } from '@/features/shortcuts/useAppShortcuts'
 import { FileDropOverlay } from '@/features/viewer/FileDropOverlay'
 import { useApplyTheme } from '@/hooks/useApplyTheme'
+import { startEditsPersistence } from '@/features/library/editsPersistence'
+import { useEffect } from 'react'
 
 function AppContent() {
   const theme = useApplyTheme()
   useAppShortcuts()
+  // Changes to the open document are kept locally (restored when it's opened again)
+  useEffect(() => startEditsPersistence(), [])
 
   return (
     <TooltipProvider delayDuration={400}>

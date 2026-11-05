@@ -35,11 +35,13 @@ export async function loadFile(id: string): Promise<Uint8Array | null> {
 export async function deleteEntries(ids: readonly string[]): Promise<void> {
   if (ids.length === 0) return
   const db = await getDb()
-  const tx = db.transaction(['documents', 'files'], 'readwrite')
+  const tx = db.transaction(['documents', 'files', 'edits'], 'readwrite')
   await Promise.all([
     ...ids.flatMap((id) => [
       tx.objectStore('documents').delete(id),
       tx.objectStore('files').delete(id),
+      // Saved changes go with the document
+      tx.objectStore('edits').delete(id),
     ]),
     tx.done,
   ])
@@ -47,8 +49,13 @@ export async function deleteEntries(ids: readonly string[]): Promise<void> {
 
 export async function clearLibrary(): Promise<void> {
   const db = await getDb()
-  const tx = db.transaction(['documents', 'files'], 'readwrite')
-  await Promise.all([tx.objectStore('documents').clear(), tx.objectStore('files').clear(), tx.done])
+  const tx = db.transaction(['documents', 'files', 'edits'], 'readwrite')
+  await Promise.all([
+    tx.objectStore('documents').clear(),
+    tx.objectStore('files').clear(),
+    tx.objectStore('edits').clear(),
+    tx.done,
+  ])
 }
 
 /** Removes the least recently opened entries beyond `maxEntries`. Returns the removed ids. */
