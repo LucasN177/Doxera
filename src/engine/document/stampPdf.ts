@@ -1,3 +1,4 @@
+import { embedUnicodeFont, needsUnicode } from '@/engine/fonts/unicodeFont'
 import { encodable, hexToRgb } from './drawAnnotations'
 import { hasStamps, stampItems, type HeaderFooter } from './headerFooter'
 
@@ -38,7 +39,10 @@ export async function stampPdf(
   const lib = await import('pdf-lib')
   const { PDFDocument, StandardFonts, degrees, rgb } = lib
   const document = await PDFDocument.load(data, { ignoreEncryption: true })
-  const font = await document.embedFont(StandardFonts.Helvetica)
+  const unicode = needsUnicode([...settings.header, ...settings.footer, fileName].join(''))
+  const font = unicode
+    ? await embedUnicodeFont(document)
+    : await document.embedFont(StandardFonts.Helvetica)
   const [r, g, b] = hexToRgb(settings.color)
   const pages = document.getPages()
   pages.forEach((page, index) => {

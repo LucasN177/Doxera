@@ -329,7 +329,7 @@ Nach Phase 6 erkannte Lücken, die vor den KI-Funktionen geschlossen werden:
 | G4  | Seitenzahlen & Kopfzeilen | Seitenzahlen, Kopf- und Fußzeilen einfügen (auch als Workflow-Schritt)                                | ✅     |
 | G5  | Lesezeichen               | Lesezeichen (Outline) beim Export erhalten                                                            | ✅     |
 | G6  | Dokumentvergleich         | Textunterschiede zweier Dokumente ohne KI hervorheben                                                 | ✅     |
-| G7  | Unicode-Schrift           | Eingebettete Unicode-Schrift statt „?“ für Zeichen außerhalb von WinAnsi                              | offen  |
+| G7  | Unicode-Schrift           | Eingebettete Unicode-Schrift statt „?“ für Zeichen außerhalb von WinAnsi                              | ✅     |
 | G8  | Kleinigkeiten             | Ablegen im Stapel-Dialog, Bild-Wasserzeichen im Workflow, Excel-Datumswerte, Markierungen exportieren | offen  |
 
 **Bearbeitungen speichern (G1):** IndexedDB-Store `edits` (DB-Version 4) je Bibliothekseintrag (Datei-Hash):
@@ -374,6 +374,13 @@ läuft zweistufig: Myers-Diff über normalisierte Zeilen, dann Wort-Diff innerha
 reine Umbrüche und Leerzeichen heraus. Jede Änderung zeigt entfernte/hinzugefügte Wörter mit Kontext und springt
 per Klick zur Seite in der geöffneten PDF; „Tauschen“ dreht die Richtung. Sehr verschiedene Texte (über 2000
 Änderungen) werden als ein ersetzter Block behandelt, damit Zeit und Speicher begrenzt bleiben.
+
+**Unicode-Schrift (G7):** Die 14 Standardschriften kennen nur WinAnsi. Enthält ein Text andere Zeichen
+(`needsUnicode`, z. B. Polnisch, Tschechisch, Türkisch, Griechisch, Kyrillisch, „≤“), bettet der Export Liberation
+Sans (metrisch wie Helvetica; Regular/Bold/Italic/BoldItalic) als Teilmenge per `@pdf-lib/fontkit` ein – für
+Textfelder und bearbeitete Zeilen, Text-Wasserzeichen, Kopf-/Fußzeilen, Formularwerte und die OCR-Textebene. Die
+Schrift liegt ohnehin bei pdf.js (`/pdfjs/standard_fonts/`, offline vorgehalten) und wird nur bei Bedarf geladen.
+Zeichen ohne Glyphe (z. B. Emoji) werden weiterhin zu „?“; geprüft über `getCharacterSet()` der Schrift.
 
 ## 5. Querschnittsthemen
 

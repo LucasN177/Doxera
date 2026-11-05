@@ -1,3 +1,4 @@
+import { needsUnicode, unicodeFontKey, unicodeStyle } from '@/engine/fonts/unicodeFont'
 import type { PDFFont, PDFImage, PDFPage } from 'pdf-lib'
 import type {
   Annotation,
@@ -53,16 +54,17 @@ export function toPdf(point: PagePoint, box: PageBox) {
   return { x: box.x + point.x * box.width, y: box.y + (1 - point.y) * box.height }
 }
 
-/** Replaces characters the standard PDF font can't encode (e.g. emoji) with "?". */
+const characterSets = new WeakMap<PDFFont, Set<number>>()
+
+/** Replaces characters the font has no glyph for (e.g. emoji) with "?". */
 export function encodable(font: PDFFont, text: string): string {
-  return Array.from(text, (char) => {
-    try {
-      font.encodeText(char)
-      return char
-    } catch {
-      return '?'
-    }
-  }).join('')
+  let characters = characterSets.get(font)
+  if (!characters) {
+    characters = new Set(font.getCharacterSet())
+    characterSets.set(font, characters)
+  }
+  const known = characters
+  return Array.from(text, (char) => (known.has(char.codePointAt(0)!) ? char : '?')).join('')
 }
 
 /**
@@ -106,7 +108,11 @@ export function drawAnnotations(
     }
 
     if (annotation.type === 'watermark') {
-      drawWatermark(lib, page, annotation, box, boldFont, images)
+      const watermarkFont =
+        !annotation.assetId && needsUnicode(annotation.text)
+          ? (textFonts.get(unicodeFontKey('Bold')) ?? boldFont)
+          : boldFont
+      drawWatermark(lib, page, annotation, box, watermarkFont, images)
       continue
     }
 
@@ -188,7 +194,7 @@ export function drawAnnotations(
     }
 
     if (annotation.type === 'text') {
-      const textFont = textFonts.get(standardFontName(annotation)) ?? font
+      const textFont = textFonts.get(textFontKey(annotation)) ?? font
       drawText(page, annotation, box, textFont, color, degrees)
     }
   }
@@ -210,6 +216,7 @@ function drawWatermark(
   const frameWidth = turns % 2 === 0 ? box.width : box.height
   const frameHeight = turns % 2 === 0 ? box.height : box.width
   const image = watermark.assetId ? images.get(watermark.assetId) : undefined
+  const label = encodable(font, watermark.text)
 
   let width: number
   let height: number
@@ -218,8 +225,8 @@ function drawWatermark(
     width = watermark.size * frameWidth
     height = (width * image.height) / Math.max(1, image.width)
   } else {
-    fontSize = watermarkFontSize(watermark, frameWidth, font.widthOfTextAtSize(watermark.text, 1))
-    width = font.widthOfTextAtSize(watermark.text, fontSize)
+    fontSize = watermarkFontSize(watermark, frameWidth, font.widthOfTextAtSize(label, 1))
+    width = font.widthOfTextAtSize(label, fontSize)
     height = fontSize * WATERMARK_CAP_HEIGHT
   }
 
@@ -236,7 +243,7 @@ function drawWatermark(
   if (image) {
     page.drawImage(image, { x, y, width, height, rotate, opacity: watermark.opacity })
   } else if (watermark.text.trim()) {
-    page.drawText(encodable(font, watermark.text), {
+    page.drawText(label, {
       x,
       y,
       size: fontSize,
@@ -378,6 +385,16 @@ export function textBaselines(text: TextAnnotation, box: PageBox) {
     // The page is shown turned clockwise; counter-rotating keeps the text upright
     return { line, ...toPdf(baseline, box), rotate: turns * 90 }
   })
+}
+
+/**
+ * Key of a text annotation's font in the export's text fonts: its standard
+ * font, or the Unicode font for characters the standard fonts lack.
+ */
+export function textFontKey(text: TextAnnotation): string {
+  return needsUnicode(text.text)
+    ? unicodeFontKey(unicodeStyle(text.bold, text.italic))
+    : standardFontName(text)
 }
 
 function drawText(

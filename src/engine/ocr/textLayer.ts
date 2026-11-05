@@ -1,3 +1,4 @@
+import { embedUnicodeFont, needsUnicode } from '@/engine/fonts/unicodeFont'
 import type { PDFFont, PDFPage } from 'pdf-lib'
 import { toStored } from '@/engine/document/annotations'
 import { encodable, toPdf } from '@/engine/document/drawAnnotations'
@@ -96,7 +97,12 @@ export async function buildOcrPdf(
   const lib = await import('pdf-lib')
   const { PDFDocument, StandardFonts } = lib
   const output = await PDFDocument.create()
-  const font = await output.embedFont(StandardFonts.Helvetica)
+  const unicode = targets.some((target) =>
+    ocrLines(target.ocr).some((line) => line.words.some((word) => needsUnicode(word.text))),
+  )
+  const font = unicode
+    ? await embedUnicodeFont(output)
+    : await output.embedFont(StandardFonts.Helvetica)
   const loaded = new Map<string, Awaited<ReturnType<typeof PDFDocument.load>>>()
   for (const target of targets) {
     let source = loaded.get(target.sourceId)

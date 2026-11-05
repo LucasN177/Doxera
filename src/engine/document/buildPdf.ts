@@ -9,7 +9,14 @@ import {
   addRedactAnnotations,
   drawAnnotations,
   hideImageXObjects,
+  textFontKey,
 } from './drawAnnotations'
+import {
+  embedUnicodeFont,
+  needsUnicode,
+  unicodeFontKey,
+  unicodeStyle,
+} from '@/engine/fonts/unicodeFont'
 
 /** What the builder needs from a source: its original bytes. */
 export interface SourceData {
@@ -166,9 +173,21 @@ export async function buildPdf(
         boldFont ??= await output.embedFont(StandardFonts.HelveticaBold)
       }
       for (const annotation of ref.annotations) {
+        if (annotation.type === 'watermark' && !annotation.assetId) {
+          const key = unicodeFontKey('Bold')
+          if (needsUnicode(annotation.text) && !textFonts.has(key)) {
+            textFonts.set(key, await embedUnicodeFont(output, 'Bold'))
+          }
+        }
         if (annotation.type !== 'text') continue
-        const name = standardFontName(annotation)
-        if (!textFonts.has(name)) textFonts.set(name, await output.embedFont(name))
+        const key = textFontKey(annotation)
+        if (textFonts.has(key)) continue
+        textFonts.set(
+          key,
+          needsUnicode(annotation.text)
+            ? await embedUnicodeFont(output, unicodeStyle(annotation.bold, annotation.italic))
+            : await output.embedFont(standardFontName(annotation)),
+        )
       }
       drawAnnotations(lib, page, ref.annotations, box, font, images, boldFont ?? font, textFonts)
       const notes = ref.annotations.filter((annotation) => annotation.type === 'note')

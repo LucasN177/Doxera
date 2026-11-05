@@ -30,6 +30,7 @@ Comprehensive tools for viewing and editing existing PDF documents.
 - [x] Move and resize existing elements (images and edited text lines)
 - [x] Select, move, resize and remove existing images (removed image data is dropped from the file)
 - [x] Add shapes, lines, arrows and text boxes (select, move, resize, recolor)
+- [x] Exported text supports Latin, Greek and Cyrillic letters (an embedded font is used where the standard PDF fonts fall short)
 - [x] Add images (PNG, JPEG, WebP, HEIC …; move and resize with fixed proportions)
 - [x] Highlight, underline and strike through text (from a text selection)
 - [x] Add comments and notes (sticky notes with a comment list; exported as standard PDF comments)

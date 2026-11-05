@@ -1,4 +1,5 @@
 import type { PDFDocument } from 'pdf-lib'
+import { embedUnicodeFont, needsUnicode } from '@/engine/fonts/unicodeFont'
 import type { FormValues } from '@/types/forms'
 
 type PdfLib = typeof import('pdf-lib')
@@ -47,7 +48,12 @@ export async function fillForm(
       console.warn(`Formularfeld „${name}“ konnte nicht gesetzt werden`, error)
     }
   }
-  const font = await document.embedFont(StandardFonts.Helvetica)
+  const unicode = Object.values(values).some(
+    (value) => typeof value === 'string' && needsUnicode(value),
+  )
+  const font = unicode
+    ? await embedUnicodeFont(document)
+    : await document.embedFont(StandardFonts.Helvetica)
   try {
     form.updateFieldAppearances(font)
   } catch (error) {
