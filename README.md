@@ -146,6 +146,7 @@ The project is built on a modern TypeScript-based frontend and browser-native do
 | WebAssembly | High-performance browser processing (PDF.js image decoders) | ✅ in use |
 | vite-plugin-pwa / Workbox | Offline support and installation | ✅ in use |
 | Vitest & Testing Library | Unit and component tests | ✅ in use |
+| Playwright | End-to-end tests in a real browser (desktop and phone) | ✅ in use |
 | MuPDF.js | Advanced PDF processing (redaction, text editing, compression) | ✅ in use (loaded on demand) |
 | Tesseract.js | Optical Character Recognition | ✅ in use (loaded on demand) |
 
@@ -215,6 +216,7 @@ Requirements: Node.js 24 or newer.
 npm install
 npm run dev        # start the development server
 npm test           # run the tests
+npm run test:e2e   # end-to-end tests (build + Playwright; uses the installed Edge locally)
 npm run lint       # lint with oxlint
 npm run build      # production build
 ```

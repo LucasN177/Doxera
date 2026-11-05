@@ -350,7 +350,7 @@ Einzelfunktionen (`ocrPdf`, `watermarkPdf`, `compressPdfData`, `pdfToImageFiles`
 | #   | Milestone         | Inhalt                                                                              | Status |
 | --- | ----------------- | ----------------------------------------------------------------------------------- | ------ |
 | F1  | Öffnen mit Doxera | Dateizuordnung (`file_handlers`) und Launch Queue für die installierte App          | ✅     |
-| F2  | E2E-Tests         | Playwright-Tests der wichtigsten Abläufe im echten Browser                          | offen  |
+| F2  | E2E-Tests         | Playwright-Tests der wichtigsten Abläufe im echten Browser                          | ✅     |
 | F3  | Offline-Test      | Alle Funktionen ohne Netz (Service Worker, nachgeladene MuPDF-/OCR-Dateien) geprüft | offen  |
 | F4  | Große PDFs        | Speicher und Geschwindigkeit bei vielen Seiten (Vorschaubilder, Rendering, Export)  | offen  |
 | F5  | Barrierefreiheit  | Tastaturbedienung, Fokus, Beschriftungen, Kontraste, Screenreader-Durchgang         | offen  |
@@ -361,6 +361,14 @@ Bilder an; `launch_handler: focus-existing` übergibt Dateien an ein schon offen
 übernimmt die Dateien aus der Launch Queue: eine PDF wird geöffnet, mehrere PDFs gehen in die
 Stapelverarbeitung, Bilder in „Bilder zu PDF“. Unterstützt von Chromium-Browsern auf dem Desktop
 (Chrome, Edge); Safari/iOS bieten das nicht – dort bleiben Dateiauswahl, Ziehen und Teilen über Dateien.
+
+**E2E-Tests (F2):** Playwright testet den Produktions-Build (`vite preview` auf eigenem Port 5392, damit kein
+anderer Preview-Server erwischt wird), lokal mit dem installierten Edge, in CI mit Chromium. Abgedeckt: Öffnen und
+Navigieren, Seite löschen/rückgängig und speichern, Textfeld und Bearbeiten vorhandenen Texts (gespeicherte PDF
+wird mit MuPDF geprüft), lokale Wiederherstellung nach Neuladen, Suche, passwortgeschützte PDF, Smartphone-Layout
+und Seitenübersicht. Der Smartphone-Test fand einen echten Fehler: Die Werkzeugleiste war ab 412 px zu breit (Schließen
+abgeschnitten) – auf Telefonen entfallen jetzt Logo und Trenner, die Leiste ist notfalls waagerecht scrollbar. Der
+Deploy-Workflow führt die E2E-Tests vor dem Veröffentlichen aus.
 
 ---
 

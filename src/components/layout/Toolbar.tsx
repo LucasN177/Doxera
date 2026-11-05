@@ -56,7 +56,7 @@ export function Toolbar() {
   const { save, share, canShare, savesViaShareSheet } = useExportDocument()
 
   return (
-    <header className="bg-background box-content flex h-12 shrink-0 items-center gap-1 border-b px-2 pt-[env(safe-area-inset-top)] pr-[max(0.5rem,env(safe-area-inset-right))] pl-[max(0.5rem,env(safe-area-inset-left))]">
+    <header className="bg-background box-content flex h-12 shrink-0 [scrollbar-width:none] items-center gap-1 overflow-x-auto border-b px-2 pt-[env(safe-area-inset-top)] pr-[max(0.5rem,env(safe-area-inset-right))] pl-[max(0.5rem,env(safe-area-inset-left))] max-sm:gap-0.5">
       <IconButton
         label={sidebarOpen ? 'Seitenleiste ausblenden' : 'Seitenleiste einblenden'}
         aria-pressed={sidebarOpen}
@@ -67,12 +67,13 @@ export function Toolbar() {
         <PanelLeft />
       </IconButton>
 
-      <div className="flex shrink-0 items-center gap-2 px-1">
+      {/* With a document open, phones need the room for tools */}
+      <div className={cn('flex shrink-0 items-center gap-2 px-1', document && 'max-sm:hidden')}>
         <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="size-6" />
         <span className="font-semibold tracking-tight max-lg:hidden">Doxera</span>
       </div>
 
-      <Separator orientation="vertical" className={separator} />
+      <Separator orientation="vertical" className={cn(separator, document && 'max-sm:hidden')} />
 
       <Button
         variant="ghost"
