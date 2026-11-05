@@ -353,7 +353,7 @@ Einzelfunktionen (`ocrPdf`, `watermarkPdf`, `compressPdfData`, `pdfToImageFiles`
 | F2  | E2E-Tests         | Playwright-Tests der wichtigsten Abläufe im echten Browser                          | ✅     |
 | F3  | Offline-Test      | Alle Funktionen ohne Netz (Service Worker, nachgeladene MuPDF-/OCR-Dateien) geprüft | ✅     |
 | F4  | Große PDFs        | Speicher und Geschwindigkeit bei vielen Seiten (Vorschaubilder, Rendering, Export)  | ✅     |
-| F5  | Barrierefreiheit  | Tastaturbedienung, Fokus, Beschriftungen, Kontraste, Screenreader-Durchgang         | offen  |
+| F5  | Barrierefreiheit  | Tastaturbedienung, Fokus, Beschriftungen, Kontraste, Screenreader-Durchgang         | ✅     |
 | F6  | Englisch (i18n)   | Oberfläche auf Deutsch und Englisch, Sprache nach Browser, umschaltbar              | offen  |
 
 **Öffnen mit Doxera (F1):** Das Manifest meldet die installierte App über `file_handlers` für PDFs und
@@ -390,6 +390,13 @@ rund 30 ms App-Zeit (der Rest war Playwrights eigene Elementsuche). Es gab daher
 Doxera hält die Datei einmal selbst und pdf.js einmal im Worker; Bearbeiten (MuPDF) und Neuaufbau beim Speichern
 brauchen kurzzeitig weitere Kopien – sehr große Dateien (mehrere hundert MB) können auf iPhone/iPad daher an
 Speichergrenzen stoßen.
+
+**Barrierefreiheit (F5):** `e2e/accessibility.e2e.ts` prüft mit axe-core (WCAG 2.1 A/AA) Startbildschirm, Dokument,
+Zeichenwerkzeuge, Seitenübersicht und fünf Dialoge in hellem und dunklem Design sowie die reine Tastaturbedienung.
+Behoben: zu schwacher Kontrast der grauen Nebentexte auf hellgrauen Flächen (`--muted-foreground` dunkler), des
+roten Lösch-Links und der Versionszeile; nach dem Schließen eines Dialogs, der aus einem Menü geöffnet wurde, landete
+der Fokus im Nichts – `DialogContent` gibt ihn jetzt an das zuletzt fokussierte Bedienelement außerhalb von Menüs
+zurück (z. B. den Menü-Knopf). Der Schließen-Knopf der Dialoge ist für Screenreader deutsch beschriftet.
 
 ---
 
