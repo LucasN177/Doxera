@@ -94,7 +94,7 @@ const EMPTY_HISTORY: History = { past: [], future: [] }
  * one is needed (again after a wrong one). Files that only restrict editing
  * are decrypted without asking, so all tools can work with them.
  */
-async function unlock(name: string, data: Uint8Array): Promise<Uint8Array> {
+export async function unlock(name: string, data: Uint8Array): Promise<Uint8Array> {
   if (!hasPdfSignature(data) || !isEncrypted(data)) return data
   let decrypt
   try {

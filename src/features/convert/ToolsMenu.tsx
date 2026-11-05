@@ -2,6 +2,7 @@ import {
   FileArchive,
   FileImage,
   FileSpreadsheet,
+  GitCompareArrows,
   Hash,
   Images,
   Layers,
@@ -13,6 +14,7 @@ import { DropdownMenu } from 'radix-ui'
 import { IconButton } from '@/components/layout/IconButton'
 import { useUiStore } from '@/stores/uiStore'
 import { openBatch } from '@/features/batch/pickBatchFiles'
+import { pickCompareFile } from '@/features/compare/pickCompareFile'
 import { pickImagesForPdf } from './pickImages'
 
 const item =
@@ -20,6 +22,7 @@ const item =
 
 /** Conversion and processing tools of the toolbar. */
 export function ToolsMenu() {
+  const compare = useUiStore((state) => state.compare)
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
@@ -67,6 +70,17 @@ export function ToolsMenu() {
           >
             <FileSpreadsheet /> Daten exportieren (Excel, JSON, CSV) …
           </DropdownMenu.Item>
+          <DropdownMenu.Item className={item} onSelect={() => void pickCompareFile()}>
+            <GitCompareArrows /> Mit anderer PDF vergleichen …
+          </DropdownMenu.Item>
+          {compare && (
+            <DropdownMenu.Item
+              className={item}
+              onSelect={() => useUiStore.getState().setCompare({ ...compare, open: true })}
+            >
+              <GitCompareArrows /> Vergleich mit „{compare.file.name}“ zeigen
+            </DropdownMenu.Item>
+          )}
           <DropdownMenu.Separator className="bg-border -mx-1 my-1 h-px" />
           <DropdownMenu.Item className={item} onSelect={openBatch}>
             <Layers /> Stapelverarbeitung (mehrere Dateien) …

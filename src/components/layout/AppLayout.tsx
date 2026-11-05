@@ -11,6 +11,7 @@ import { CompressDialog } from '@/features/convert/CompressDialog'
 import { PasswordDialog } from '@/features/security/PasswordDialog'
 import { ProtectDialog } from '@/features/security/ProtectDialog'
 import { HeaderFooterDialog } from '@/features/headerFooter/HeaderFooterDialog'
+import { CompareDialog } from '@/features/compare/CompareDialog'
 import { DataExportDialog } from '@/features/data/DataExportDialog'
 import { ExportImagesDialog } from '@/features/convert/ExportImagesDialog'
 import { ImagesToPdfDialog } from '@/features/convert/ImagesToPdfDialog'
@@ -70,6 +71,7 @@ export function AppLayout() {
               <CompressDialog />
               <ProtectDialog />
               <HeaderFooterDialog />
+              <CompareDialog />
               <DataExportDialog />
               <CropDialog />
             </>

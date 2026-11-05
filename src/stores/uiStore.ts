@@ -43,6 +43,9 @@ interface UiState {
   protectOpen: boolean
   setProtectOpen: (open: boolean) => void
   headerFooterOpen: boolean
+  /** File the open document is compared with; kept when the dialog closes. */
+  compare: { file: File; open: boolean } | null
+  setCompare: (compare: { file: File; open: boolean } | null) => void
   setHeaderFooterOpen: (open: boolean) => void
   /** Open question for the password of a protected PDF. */
   passwordRequest: PasswordRequest | null
@@ -91,6 +94,8 @@ export const useUiStore = create<UiState>()((set) => ({
   protectOpen: false,
   setProtectOpen: (protectOpen) => set({ protectOpen }),
   headerFooterOpen: false,
+  compare: null,
+  setCompare: (compare) => set({ compare }),
   setHeaderFooterOpen: (headerFooterOpen) => set({ headerFooterOpen }),
   passwordRequest: null,
   setPasswordRequest: (passwordRequest) => set({ passwordRequest }),

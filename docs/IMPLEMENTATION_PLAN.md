@@ -328,7 +328,7 @@ Nach Phase 6 erkannte Lücken, die vor den KI-Funktionen geschlossen werden:
 | G3  | Passwortschutz            | Geschützte PDFs öffnen, PDFs mit Passwort verschlüsseln                                               | ✅     |
 | G4  | Seitenzahlen & Kopfzeilen | Seitenzahlen, Kopf- und Fußzeilen einfügen (auch als Workflow-Schritt)                                | ✅     |
 | G5  | Lesezeichen               | Lesezeichen (Outline) beim Export erhalten                                                            | ✅     |
-| G6  | Dokumentvergleich         | Textunterschiede zweier Dokumente ohne KI hervorheben                                                 | offen  |
+| G6  | Dokumentvergleich         | Textunterschiede zweier Dokumente ohne KI hervorheben                                                 | ✅     |
 | G7  | Unicode-Schrift           | Eingebettete Unicode-Schrift statt „?“ für Zeichen außerhalb von WinAnsi                              | offen  |
 | G8  | Kleinigkeiten             | Ablegen im Stapel-Dialog, Bild-Wasserzeichen im Workflow, Excel-Datumswerte, Markierungen exportieren | offen  |
 
@@ -367,6 +367,13 @@ Lesezeichen jeder genutzten Quelle (Ziele als Seitenindex, einmal pro Quelle), `
 die neue Seitenfolge aus (erste Ausgabeseite der Quellseite; Lesezeichen gelöschter Seiten entfallen, ihre
 Kinder rücken auf) und `writeOutline` schreibt sie als /Outlines in die neue PDF. Lesezeichen eingefügter
 Dateien stehen unter deren Namen; Aufklapp-Zustand bleibt erhalten.
+
+**Dokumentvergleich (G6):** „Mit anderer PDF vergleichen“ liest den Text beider Fassungen mit pdf.js (die
+geöffnete samt Bearbeitungen über `documentBytes`, geschützte Vergleichsdateien werden entsperrt). Der Vergleich
+läuft zweistufig: Myers-Diff über normalisierte Zeilen, dann Wort-Diff innerhalb geänderter Blöcke – so fallen
+reine Umbrüche und Leerzeichen heraus. Jede Änderung zeigt entfernte/hinzugefügte Wörter mit Kontext und springt
+per Klick zur Seite in der geöffneten PDF; „Tauschen“ dreht die Richtung. Sehr verschiedene Texte (über 2000
+Änderungen) werden als ein ersetzter Block behandelt, damit Zeit und Speicher begrenzt bleiben.
 
 ## 5. Querschnittsthemen
 

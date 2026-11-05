@@ -44,6 +44,7 @@ Comprehensive tools for viewing and editing existing PDF documents.
 Tools for organizing and restructuring PDF documents.
 
 - [x] Merge multiple PDF files (insert pages of other PDFs)
+- [x] Compare two PDFs (word-level text differences without AI; jump to each change)
 - [x] Bookmarks are kept on export (following moved and deleted pages; bookmarks of inserted files under their name)
 - [x] Split PDF documents (every n pages, at selected pages or into single pages)
 - [x] Extract individual pages (save a selection as a new PDF)
