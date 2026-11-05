@@ -59,6 +59,12 @@ export interface TextAnnotation extends AnnotationBase {
   /** Page background next to the replaced text, to hide it on screen (white if missing). */
   cover?: string
   /**
+   * The replaced text is invisible text over an image (a scan): removing it
+   * doesn't change the look, so the export paints the cover over the
+   * original lines too.
+   */
+  coverOriginal?: boolean
+  /**
    * Wraps the text automatically at this width (fraction of the page width in
    * the orientation the text was written in), like the paragraph it replaces.
    */

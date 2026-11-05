@@ -3,7 +3,12 @@ import type { PageRef } from '@/types/document'
 import type { FormValues } from '@/types/forms'
 import { standardFontName } from './annotations'
 import { writeOutline, type OutlineEntry } from './outline'
-import { hasImageReplacements, hasTextReplacements, textRemovalPages } from './contentEditing'
+import {
+  hasImageReplacements,
+  hasTextReplacements,
+  replacedLines,
+  textRemovalPages,
+} from './contentEditing'
 import {
   addNoteAnnotations,
   addRedactAnnotations,
@@ -77,7 +82,8 @@ export async function buildPdf(
         sourceIndex: index,
         annotations: page.annotations?.map((item) =>
           item.type === 'text' && item.replaces
-            ? { ...item, replaces: undefined }
+            ? // Already removed; the lines stay known for covering scanned text
+              { ...item, replaces: undefined, replacesLines: replacedLines(item) }
             : // Originals are already hidden in the intermediate file
               item.type === 'image' && item.xobject
               ? { ...item, xobject: undefined }

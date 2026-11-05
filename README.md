@@ -78,6 +78,7 @@ Make documents understandable and turn unstructured information into useful data
 Extract information from scanned documents and image-based PDFs.
 
 - [x] Optical Character Recognition (OCR), entirely in the browser
+- [x] Correct recognized text on scanned pages (the scan is painted over in its paper color, the new text matches the ink color)
 - [x] Convert scanned documents into searchable PDFs (invisible text layer: search, select, copy)
 - [x] Detect text positions and document structure (blocks, paragraphs, lines, words)
 - [x] Recognize headings, paragraphs and lists; export the text as Markdown or plain text (redacted lines are left out)

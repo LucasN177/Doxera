@@ -183,6 +183,13 @@ Ganzes bearbeitet: die Annotation trägt `replacesLines` (einzeln entfernt), `wr
 `layoutTextLines` bricht im Editor (Canvas-Maße) und beim Export (PDF-Schriftmaße) gleich um. Wird der Text
 länger, wächst der Absatz nach unten – nachfolgender Inhalt rückt nicht nach.
 
+**Gescannten Text bearbeiten:** MuPDFs strukturierter Text unterscheidet sichtbaren und unsichtbaren Text
+nicht; ein eigenes MuPDF-Device sammelt die Glyphen, die über `ignoreText` (Render-Modus 3) kommen, und markiert
+Zeilen, die überwiegend daraus bestehen, als `invisible` (erkannter Text auf Scans). Deren Ersatz trägt
+`coverOriginal`: Beim Export wird zusätzlich zum Entfernen der unsichtbaren Zeile die Papierfarbe (`cover`)
+über die Scanpixel gemalt. Die Textfarbe wird im Editor aus den dunkelsten Pixeln der Zeile übernommen.
+Die Scanpixel bleiben unter der Abdeckung in der Datei – zum endgültigen Entfernen dient das Schwärzen.
+
 **Bilder bearbeiten (E4):** MuPDF liefert die Bilder einer Seite (Box, Transformation, Pixel); über die
 Reihenfolge der `/Name Do`-Aufrufe im Content-Stream wird das zugehörige Bild-XObject bestimmt. Ein
 angeklicktes Bild wird zur Bild-Annotation mit `xobject` (Original) und lässt sich verschieben,

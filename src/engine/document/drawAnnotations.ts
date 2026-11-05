@@ -1,3 +1,4 @@
+import { replacedLines } from './contentEditing'
 import { needsUnicode, unicodeFontKey, unicodeStyle } from '@/engine/fonts/unicodeFont'
 import type { PDFFont, PDFImage, PDFPage } from 'pdf-lib'
 import type {
@@ -195,6 +196,21 @@ export function drawAnnotations(
     }
 
     if (annotation.type === 'text') {
+      // Scanned text: paint over the original pixels (with a little margin)
+      if (annotation.coverOriginal) {
+        const fill = rgb(...hexToRgb(annotation.cover ?? '#ffffff'))
+        for (const rect of replacedLines(annotation)) {
+          const a = toPdf(rect.a, box)
+          const b = toPdf(rect.b, box)
+          page.drawRectangle({
+            x: Math.min(a.x, b.x) - 1.5,
+            y: Math.min(a.y, b.y) - 1.5,
+            width: Math.abs(a.x - b.x) + 3,
+            height: Math.abs(a.y - b.y) + 3,
+            color: fill,
+          })
+        }
+      }
       const textFont = textFonts.get(textFontKey(annotation)) ?? font
       drawText(page, annotation, box, textFont, color, degrees)
     }

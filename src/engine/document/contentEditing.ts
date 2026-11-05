@@ -23,6 +23,8 @@ export interface EditableLine {
    * the width to wrap at and the distance between baselines.
    */
   paragraph?: { lines: PageRect[]; wrapWidth: number; lineHeight: number }
+  /** Invisible text, e.g. recognized text over a scan (see `RawTextLine.invisible`). */
+  invisible?: boolean
 }
 
 const SAME_SIZE = 0.35
@@ -34,7 +36,8 @@ function sameStyle(a: EditableLine, b: EditableLine): boolean {
     a.font === b.font &&
     a.bold === b.bold &&
     a.italic === b.italic &&
-    a.color === b.color
+    a.color === b.color &&
+    !!a.invisible === !!b.invisible
   )
 }
 
@@ -172,6 +175,7 @@ export function toEditableLines(raw: RawPageText, rotate = 0): EditableLine[] {
       fontSize: Math.round(line.size * 10) / 10,
       color: toHex(line.color),
       ...classifyFont(line.fontName),
+      ...(line.invisible && { invisible: true }),
       segments: (line.segments ?? []).map((segment) => {
         const along = (t: number) =>
           stored(line.origin[0] + line.direction[0] * t, line.origin[1] + line.direction[1] * t).x
@@ -195,6 +199,7 @@ export function sameRect(first: PageRect, second: PageRect, tolerance = 0.002): 
 /** A text annotation that replaces an existing line or paragraph, starting with the same text and style. */
 export function replacementFor(line: EditableLine, id: string): TextAnnotation {
   return {
+    ...(line.invisible && { coverOriginal: true }),
     ...(line.paragraph && {
       replacesLines: line.paragraph.lines,
       wrapWidth: line.paragraph.wrapWidth,

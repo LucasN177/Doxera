@@ -390,6 +390,12 @@ export function AnnotationLayer({ page, scale, interactive }: AnnotationLayerPro
       },
     )
     if (cover && cover !== '#ffffff') replacement.cover = cover
+    // Scanned text has no color of its own: take the darkest ink of the line
+    if (line.invisible) {
+      replacement.color =
+        sampleInk(svgRef.current, { a: px(line.rect.a), b: px(line.rect.b) }, { width, height }) ??
+        '#000000'
+    }
     setDraft(replacement)
     store.setEditing({ pageId, id: replacement.id })
   }
@@ -1218,6 +1224,43 @@ function sampleBackground(
     const [r, g, b, alpha] = context.getImageData(x, y, 1, 1).data
     if (alpha < 250) return undefined
     return `#${[r, g, b].map((value) => value.toString(16).padStart(2, '0')).join('')}`
+  } catch {
+    return undefined
+  }
+}
+
+/** Darkest color of the rendered page within an area (the ink of scanned text). */
+function sampleInk(
+  svg: SVGSVGElement | null,
+  area: { a: { x: number; y: number }; b: { x: number; y: number } },
+  size: { width: number; height: number },
+): string | undefined {
+  const canvas = svg?.parentElement?.querySelector('canvas')
+  const context = canvas?.getContext('2d')
+  if (!canvas || !context) return undefined
+  const ratio = canvas.width / size.width
+  const x = Math.max(0, Math.floor(Math.min(area.a.x, area.b.x) * ratio))
+  const y = Math.max(0, Math.floor(Math.min(area.a.y, area.b.y) * ratio))
+  const w = Math.min(canvas.width - x, Math.ceil(Math.abs(area.a.x - area.b.x) * ratio))
+  const h = Math.min(canvas.height - y, Math.ceil(Math.abs(area.a.y - area.b.y) * ratio))
+  if (w <= 0 || h <= 0) return undefined
+  try {
+    const data = context.getImageData(x, y, w, h).data
+    // Average of the darkest pixels, so a single speck doesn't decide
+    const pixels: Array<[number, number, number, number]> = []
+    for (let i = 0; i < data.length; i += 4) {
+      // Not rendered yet (transparent): no answer rather than black
+      if (data[i + 3]! < 250) continue
+      const [r, g, b] = [data[i]!, data[i + 1]!, data[i + 2]!]
+      pixels.push([r * 0.299 + g * 0.587 + b * 0.114, r, g, b])
+    }
+    if (pixels.length === 0) return undefined
+    pixels.sort((p, q) => p[0] - q[0])
+    const darkest = pixels.slice(0, Math.max(1, Math.round(pixels.length * 0.05)))
+    const mean = [1, 2, 3].map((k) =>
+      Math.round(darkest.reduce((sum, pixel) => sum + pixel[k]!, 0) / darkest.length),
+    )
+    return `#${mean.map((value) => value.toString(16).padStart(2, '0')).join('')}`
   } catch {
     return undefined
   }

@@ -22,6 +22,11 @@ export interface RawTextLine {
    * start and end along the writing direction, measured from `origin`.
    */
   segments: RawSegment[]
+  /**
+   * The line is invisible (text render mode 3), e.g. the recognized text over
+   * a scanned page: what is seen there are image pixels.
+   */
+  invisible?: boolean
 }
 
 export interface RawSegment {
@@ -141,8 +146,43 @@ export function matchXObjects(
   })
 }
 
-/** Reads all text lines (position, font, color) and images of a page. */
-export function extractPageContent(document: Mupdf.PDFDocument, index: number): RawPageText {
+/**
+ * Positions (page space) of the glyphs a page draws invisibly. MuPDF's
+ * structured text doesn't tell visible and invisible text apart, but a
+ * device sees invisible text as "ignored".
+ */
+function invisibleGlyphs(mupdf: typeof Mupdf, page: Mupdf.PDFPage): Array<[number, number]> {
+  const points: Array<[number, number]> = []
+  const device = new mupdf.Device({
+    ignoreText(text, ctm) {
+      text.walk({
+        showGlyph(_font, trm) {
+          const [a, b, c, d, e, f] = ctm
+          const x = trm[4]
+          const y = trm[5]
+          points.push([x * a + y * c + e, x * b + y * d + f])
+        },
+      })
+    },
+  })
+  try {
+    page.run(device, mupdf.Matrix.identity)
+    device.close()
+  } finally {
+    device.destroy()
+  }
+  return points
+}
+
+/**
+ * Reads all text lines (position, font, color) and images of a page. With
+ * `mupdf`, invisible lines are marked too.
+ */
+export function extractPageContent(
+  document: Mupdf.PDFDocument,
+  index: number,
+  mupdf?: typeof Mupdf,
+): RawPageText {
   const page = document.loadPage(index)
   try {
     const bounds = page.getBounds() as Rect4
@@ -239,6 +279,20 @@ export function extractPageContent(document: Mupdf.PDFDocument, index: number): 
             },
           ],
     )
+    if (mupdf) {
+      const hidden = invisibleGlyphs(mupdf, page)
+      if (hidden.length > 0) {
+        for (const line of lines) {
+          const [x0, y0, x1, y1] = line.bbox
+          const pad = line.size * 0.25
+          const inside = hidden.filter(
+            ([x, y]) => x >= x0 - pad && x <= x1 + pad && y >= y0 - pad && y <= y1 + pad,
+          ).length
+          // Most glyphs of the line are drawn invisibly
+          if (inside >= line.text.replace(/\s/g, '').length * 0.5) line.invisible = true
+        }
+      }
+    }
     return { bounds, lines, images }
   } finally {
     page.destroy()

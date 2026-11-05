@@ -59,7 +59,7 @@ const api = {
 
   /** Text lines and images of a page; `data` is needed the first time a key is used. */
   async pageContent(key: string, index: number, data?: Uint8Array): Promise<RawPageText> {
-    return extractPageContent(await openDocument(key, data), index)
+    return extractPageContent(await openDocument(key, data), index, await loadMupdf())
   },
 
   /** Pixels of one image of a page (see `RawImage.index`). */
