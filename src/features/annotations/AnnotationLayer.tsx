@@ -171,6 +171,22 @@ export function AnnotationLayer({ page, scale, interactive }: AnnotationLayerPro
   const storedSize = unrotatedSize(page.fullSize, turns)
 
   const svgRef = useRef<SVGSVGElement>(null)
+  // Text editing only needs the line targets; elsewhere the page keeps scrolling
+  const capturing = drawing && tool !== 'edittext'
+
+  // One finger draws instead of scrolling. touch-action: none on the drawing surface is
+  // enough for Chromium, but Safari on iPhone/iPad doesn't reliably honour it on SVG and
+  // starts scrolling; a non-passive touchmove listener (React's are passive) stops that.
+  // Two fingers still pinch-zoom and scroll.
+  useEffect(() => {
+    const svg = svgRef.current
+    if (!svg || !capturing) return
+    const onTouchMove = (event: TouchEvent) => {
+      if (event.touches.length === 1 && event.cancelable) event.preventDefault()
+    }
+    svg.addEventListener('touchmove', onTouchMove, { passive: false })
+    return () => svg.removeEventListener('touchmove', onTouchMove)
+  }, [capturing])
   const drag = useRef<Drag | null>(null)
   const [draft, setDraft] = useState<Annotation | null>(null)
 
@@ -482,9 +498,6 @@ export function AnnotationLayer({ page, scale, interactive }: AnnotationLayerPro
     active && tool === 'edittext' && content?.status === 'ready' ? content.content : null
   const editableLines = ready?.paragraphs ?? []
   const editableImages = ready?.images ?? []
-  // Text editing only needs the line targets; elsewhere the page keeps scrolling
-  const capturing = drawing && tool !== 'edittext'
-
   if (shown.length === 0 && !drawing) return null
 
   const selectedHere = active && selected?.pageId === pageId ? selected.id : null
